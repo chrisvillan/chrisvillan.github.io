@@ -1,0 +1,17 @@
+.smoothscroll{ 
+    scroll-behavior: smooth; 
+} 
+
+.intro-section p{
+    font-weight: bold;
+}
+
+.counter .counter-text strong{
+    font-size: 1rem;
+    line-height: 1.0;
+    margin-bottom: 0;
+}
+
+.counter .counter-text span{
+    font-size: 0.8rem;
+}
