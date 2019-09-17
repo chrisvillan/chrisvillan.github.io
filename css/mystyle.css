@@ -13,7 +13,7 @@
 }
 
 .counter .counter-text span{
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 .site-section {
@@ -27,10 +27,6 @@
 .image-absolute-box .box {
     top: 0%;
 }
-
-/* .mb-5, .my-5 {
-    margin-bottom: 0rem!important;
-} */
 
 .skills-row {
     text-align:center;
@@ -69,3 +65,67 @@
     font-size: 20px;
     padding-left: 100px;
 }
+
+.card1 {
+  position: relative;
+  border-radius: 4px;
+  text-decoration: none;
+  z-index: 0;
+  overflow: hidden;
+}
+.card1:before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: -35px;
+  right: -16px;
+  background: #007bff;
+  height: 32px;
+  width: 32px;
+  border-radius: 32px;
+  -webkit-transform: scale(1);
+          transform: scale(1);
+  -webkit-transform-origin: 50% 50%;
+          transform-origin: 50% 50%;
+  transition: -webkit-transform 0.25s ease-out;
+  transition: transform 0.25s ease-out;
+  transition: transform 0.25s ease-out, -webkit-transform 0.25s ease-out;
+}
+.card1:hover:before {
+  -webkit-transform: scale(10);
+          transform: scale(10);
+}
+
+.card1:hover{
+    box-shadow: 0px 4px 8px rgba(38, 38, 38, 0.2);  
+}
+
+.card2:hover {
+    box-shadow: 0px 4px 8px rgba(38, 38, 38, 0.2);
+    padding: 10px;
+    background-color: white;
+    width:100%;
+    margin-bottom:28px!important;
+  }
+
+.site-section .container .row .col-lg-4 img{
+    margin-bottom: 20px;
+    object-position: -5px;
+}
+
+.site-section .container .row .col-lg-4 .hidden-p{
+    position: absolute;
+    left: 230px;
+    text-align:right;
+    color: white;
+}
+
+.pl-5, .px-5{
+    padding-left:1.5rem!important;
+    padding-right:1.5rem!important;
+    margin-right: 17px!important;
+}
+
+/* .site-section .container .row .col-lg-4 .card1:hover img{
+    display: none;
+} */
