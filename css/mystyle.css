@@ -92,8 +92,8 @@
   transition: transform 0.25s ease-out, -webkit-transform 0.25s ease-out;
 }
 .card1:hover:before {
-  -webkit-transform: scale(10);
-          transform: scale(10);
+  -webkit-transform: scale(8);
+          transform: scale(8);
 }
 
 .card1:hover{
@@ -115,15 +115,18 @@
 
 .site-section .container .row .col-lg-4 .hidden-p{
     position: absolute;
-    left: 230px;
-    text-align:right;
+    text-align: right;
+    padding-right:10px;
+    left:0;
+    right:0;
     color: white;
 }
 
 .pl-5, .px-5{
     padding-left:1.5rem!important;
     padding-right:1.5rem!important;
-    margin-right: 17px!important;
+    margin-right: 17px;
+    margin-top: 10px;
 }
 
 /* .site-section .container .row .col-lg-4 .card1:hover img{
