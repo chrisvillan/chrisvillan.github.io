@@ -7,13 +7,13 @@
 }
 
 .counter .counter-text strong{
-    font-size: 1rem;
+    font-size: 1.2rem;
     line-height: 1.0;
     margin-bottom: 0;
 }
 
 .counter .counter-text span{
-    font-size: 0.8rem;
+    font-size: 1rem;
 }
 
 .site-section {
@@ -42,4 +42,30 @@
     margin: 0px;
     padding: 0px;
     height: 0px;
+}
+
+.counter .counter-text .highlight-date{
+    font-size: 13px;
+    vertical-align:text-top;
+}
+
+.col-md-4, .col-md-3{
+    flex: 0 0 50%;
+    max-width: 50%;
+}
+
+
+.footer-section h3{
+    font-size: 20px;
+    padding-left: 100px;
+}
+
+.footer-section p{
+    font-size: 20px;
+    padding-left: 100px;
+}
+
+.footer-section .footer-links li{
+    font-size: 20px;
+    padding-left: 100px;
 }
