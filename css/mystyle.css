@@ -49,26 +49,7 @@
     vertical-align:text-top;
 }
 
-.col-md-4, .col-md-3{
-    flex: 0 0 50%;
-    max-width: 50%;
-}
 
-
-.footer-section h3{
-    font-size: 20px;
-    padding-left: 100px;
-}
-
-.footer-section p{
-    font-size: 20px;
-    padding-left: 100px;
-}
-
-.footer-section .footer-links li{
-    font-size: 20px;
-    padding-left: 100px;
-}
 
 .card1 {
   position: relative;
@@ -76,6 +57,7 @@
   text-decoration: none;
   z-index: 0;
   overflow: hidden;
+  margin:10px;
 }
 .card1:before {
   content: "";
@@ -136,3 +118,26 @@
 /* .site-section .container .row .col-lg-4 .card1:hover img{
     display: none;
 } */
+
+
+/* 
+.footer-section h3{
+    font-size: 20px;
+}
+
+.footer-section p{
+    font-size: 20px;
+}
+
+.footer-section .footer-links li{
+    font-size: 20px;
+} */
+
+/* .col-md-4, .col-md-3{
+    flex: 0 0 50%;
+    max-width: 50%;
+} */
+
+.footer-section{
+    margin-left: 20px;
+}
