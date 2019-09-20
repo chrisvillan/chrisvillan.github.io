@@ -16,6 +16,10 @@
     font-size: 0.95rem;
 }
 
+.counter{
+    margin-left: 15px;
+}
+
 .site-section {
     padding: 5em 0 5em 0;
 }
