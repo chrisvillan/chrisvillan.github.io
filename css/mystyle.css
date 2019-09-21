@@ -6,14 +6,14 @@
     font-weight: bold;
 }
 
+.intro-section:before {
+    box-shadow: 0px 4px 8px 
+}
+
 .counter .counter-text strong{
     font-size: 1.2rem;
     line-height: 1.0;
     margin-bottom: 0;
-}
-
-.counter .counter-text span{
-    font-size: 0.95rem;
 }
 
 .counter{
@@ -48,8 +48,6 @@
     font-size: 13px;
     vertical-align:text-top;
 }
-
-
 
 .card1 {
   position: relative;
@@ -91,8 +89,7 @@
     padding: 10px;
     background-color: white;
     width:100%;
-    margin-bottom:28px!important;
-    cursor: pointer; 
+    margin-bottom:20px!important; 
   }
 
 .site-section .container .row .col-lg-4 img{
@@ -140,4 +137,59 @@
 
 .footer-section{
     margin-left: 20px;
+}
+
+
+.accordion > input[type="checkbox"] {
+    position: absolute;
+    left: -100vw;
+  }
+  
+  .accordion .content {
+    overflow-y: hidden;
+    height: 0;
+    transition: height 0.3s ease;
+    margin:10px;
+  }
+  
+  .accordion > input[type="checkbox"]:checked ~ .content {
+    height: auto;
+    overflow: visible;
+  }
+  
+  .accordion label {
+    display: block;
+    font-size: 1.2rem;
+    line-height: 1.0;
+    margin-bottom: 0;
+    color: black;
+  }
+
+.counter .counter-text img{
+    margin-bottom: 2.9rem;
+    float: left;
+}
+.counter .counter-text span{
+    line-height: 1;
+    line-height: 1.7;
+    color: gray;
+    font-weight: 300;
+    font-size: 1.1rem; 
+}
+
+.handle{
+    cursor:pointer;
+}
+
+/* .mr-auto, .mx-auto {
+    margin-right: 10px!important;
+} */
+
+.col-lg-5{
+    min-width: 55%;
+    margin-right:40px;
+}
+
+.col-lg-6{
+    max-width: 40%;
 }
