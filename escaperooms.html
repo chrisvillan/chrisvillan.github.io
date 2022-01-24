@@ -5,17 +5,103 @@
     <title>escaperooms</title>
 
 
-    <link rel="stylesheet" href="css/responsivecard_template.css">
+    <link rel="stylesheet" href="css/card.css">
+    <!-- <link rel="stylesheet" href="css/filter.css"> -->
   </head>
 </html>
 
-<body>
-    <div class="card">
-        <img src="img_avatar.png" alt="Avatar" style="width:100%">
-        <div class="container">
-          <h4><b>John Doe</b></h4>
-          <p>Architect & Engineer</p>
-        </div>
-      </div>
+<body>  
 
+    <button type="button" onclick="myFunction()">Update Filter</button>
+    <form>
+        <select class="myform" id="Theme">
+            <option value="all-theme">All</option>
+            <option value="horror">Horror</option>
+            <option value="sci-fi">Sci-fi</option>
+        </select>
+        <select class="myform" id="Location">
+            <option value="all-location">All</option>
+            <option value="losangeles">Los Angeles</option>
+            <option value="orangecounty">Orange County</option>
+            </select>
+    </form>
+
+    
+
+    <div class="container">
+            <div class="filterDiv cards all-location all-theme orangecounty horror ">Horror</div>
+            <div class="filterDiv cards all-location all-theme losangeles horror">Horror LA</div>
+            <div class="filterDiv cards all-location all-theme losangeles sci-fi">Sci-fi LA</div>
+            <div class="filterDiv cards all-location all-theme orangecounty sci-fi">Sci-fi</div>
+    </div>
+    
+    <script>
+        function myFunction(){
+            // sText = document.getElementById("Theme").value
+            
+            // if (sText == "allthemes"){
+            //     filterSelection('all')
+            // }
+            // else if (sText == "horror"){
+            //     alert("hi")
+            //     // filterSelection('horror')
+            // }
+            // else if (sText == "scifi"){
+            //     filterSelection('sci-fi')
+            // }
+
+            theme = document.getElementById("Theme").value
+            loc = document.getElementById("Location").value
+            selection = theme + " " + loc
+
+            filterSelection(selection)
+
+        }
+        //initial show all
+        filterSelection("all-location all-theme")
+        
+        function filterSelection(c) {
+            var x, i;
+            match = 0
+            x = document.getElementsByClassName("filterDiv");
+            arr1 = c.split(" ");
+            // if (c == "all") c = "";
+            for (i = 0; i < x.length; i++) {
+                w3RemoveClass(x[i], "show");
+
+                for (j=0;j<arr1.length;j++){
+                    if (x[i].className.indexOf(arr1[j]) > -1) match += 1;
+                    //need to adjust, bug: selects all of multiple selections
+                    // else if (x[i].className.indexOf(arr1[j])>-1) w3AddClass(x[i], "show");
+                }
+               
+                if (match == arr1.length) w3AddClass(x[i], "show");
+                match = 0
+                // if (x[i].className.indexOf(c) > -1) w3AddClass(x[i], "show");
+                
+            }
+        }
+        
+        function w3AddClass(element, name) {
+            var i, arr1, arr2;
+            arr1 = element.className.split(" ");
+            arr2 = name.split(" ");
+            for (i = 0; i < arr2.length; i++) {
+                if (arr1.indexOf(arr2[i]) == -1) {element.className += " " + arr2[i];}
+            }
+        }
+        
+        function w3RemoveClass(element, name) {
+            var i, arr1, arr2;
+            arr1 = element.className.split(" ");
+            arr2 = name.split(" ");
+            for (i = 0; i < arr2.length; i++) {
+            while (arr1.indexOf(arr2[i]) > -1) {
+                arr1.splice(arr1.indexOf(arr2[i]), 1);     
+            }
+            }
+            element.className = arr1.join(" ");
+        }
+    
+    </script>       
 </body>
