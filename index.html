@@ -95,9 +95,44 @@
       </div>
     </div>
 
+    <h2>Events App</h2>
 
+   <!-- Display CSV here -->
+   <table id="table"></table>
+
+   <script>
+      window.onload = () => {
+      //HTML Table
+      var table = document.getElementById("table");
+
+      //AJAX FETCH CSV
+      fetch ("eventapp.csv")
+      .then(res => res.text())
+      .then (csv => {
+         console.log(csv);
+      })
+
+      //Clear HTML table
+      table.innerHTML = "";
+
+      //Split Into Rows
+      let rows = csv.split("\r\n")
+
+      //Loop through rows + split columns
+      for (let row of rows){
+         let cols = row.match(/(?:\"([^\"]*(?:\"\"[^\"]*)*)\")|([^\",]+)/g);
+         if (cols != null) {
+            let tr = table.insertRow();
+            for (let col of cols) {
+               let td = tr.insertCell();
+               td.innerHTML = col.replace(/(^"|"$)/g,"");
+            }
+         }
+      }
+   }</script>
+   
     <div class="site-section section-1" id="about-section">
-
+      
 
       <div class="container">
         <div class="row">
