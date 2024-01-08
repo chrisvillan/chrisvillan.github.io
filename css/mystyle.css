@@ -28,9 +28,9 @@
     padding: 8em 0 0 0;
 }
 
-.image-absolute-box .box {
+/* .image-absolute-box .box {
     top: 0%;
-}
+} */
 
 .skills-row {
     text-align:center;
@@ -193,5 +193,7 @@
 
 .col-lg-6{
     max-width: 40%;
+    flex: 1 1 100%;
 }
+
 
