@@ -720,7 +720,7 @@ h1, h2, h3, h4, h5,
     background: #0E5A6C;
     padding: 30px;
     max-width: 300px;
-    top: 0%;
+    top: -5%;
     right: -20%; }
     @media (max-width: 991.98px) {
       .image-absolute-box .box {
