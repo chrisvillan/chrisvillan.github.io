@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Google Sheets Data Display</title>
+</head>
+<body>
+    <div>
+        <form id="AKfycbxrDxdA63UlFiYCfAvF2jAWZeX-F6mTJd1e2q2VLQWh0B3BfEX2Z4B7Hb5AyJbLusbWYQ" method="POST" action="https://script.google.com/macros/s/AKfycbwuuWEraZM8g5DjqcTsPcIl7qMXolySisHTnAjQQ_jbay38cqYH2Ryii7q22XhhsrvyNQ/exec">
+            <input name="Email" type="email" placeholder="Email" required>
+            <input name="Name" type="text" placeholder="Name" required>
+            <button type="submit">Send</button>
+        </form>
+    </div>
+
+    <h1>Data from Google Sheets</h1>
+    <div id="dataContainer"></div>
+
+    <script>
+        // Function to fetch all data from the Google Apps Script web app
+        function fetchData() {
+            // URL of your Google Apps Script web app
+            var baseUrl = 'https://script.google.com/macros/s/AKfycbxrDxdA63UlFiYCfAvF2jAWZeX-F6mTJd1e2q2VLQWh0B3BfEX2Z4B7Hb5AyJbLusbWYQ/exec';
+
+            // Make a GET request to fetch all data
+            fetch(baseUrl)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data); // Log the data to see it in the browser console
+
+                    // Display the data in the HTML page
+                    var dataContainer = document.getElementById('dataContainer');
+                    dataContainer.innerHTML = ''; // Clear previous data
+
+                    if (data.error) {
+                        dataContainer.textContent = 'Error fetching data';
+                    } else {
+                        data.data.forEach(row => {
+                            var rowElement = document.createElement('p');
+                            rowElement.textContent = JSON.stringify(row);
+                            dataContainer.appendChild(rowElement);
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Call the fetchData function to fetch all data when the page loads
+        window.onload = function() {
+            fetchData();
+        };
+    </script>
+</body>
+</html>
