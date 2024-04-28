@@ -24,7 +24,6 @@
             border: 1px solid #ccc;
             border-radius: 8px;
             overflow: hidden;
-            flex-grow: 1; /* Let it grow to take up remaining vertical space */
         }
 
         table {
@@ -60,22 +59,25 @@
         }
 
         #updateContainer {
-            display: flex;
-            flex-direction: column;
             margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         #updateContainer input[type="text"],
-        #updateContainer button {
-            padding: 10px;
-            font-size: calc(0.8rem + 1vw);
-            border: 1px solid #ccc;
-            border-radius: 8px;
+        #updateContainer button  {
+            padding: 6px;
+            margin-right: 10px;
             margin-bottom: 10px;
+            height: 6vh; /* Match the height of table rows */
+            flex-grow: 1; /* Allow the input to grow and fill available space */
+            font-size: calc(0.8rem + 1vw); /* Responsive font size */
         }
 
         #updateContainer button {
             cursor: pointer;
+            font-size: calc(0.8rem + 1vw); /* Responsive font size */
         }
     </style>
 </head>
@@ -83,6 +85,7 @@
     <div id="updateContainer">
         <input type="text" id="userName" placeholder="Your Name">
         <button onclick="updateSheet()">Update</button>
+        <button onclick="removeSelected()">Remove Selected</button>
     </div>
 
     <div class="table-container">
@@ -101,7 +104,7 @@
     
     <script>
         var selectedRows = [];
-        var baseUrl = 'https://script.google.com/macros/s/AKfycbyvuonDODB7LoshOU5EL-bW2htOXNp6Sm3ZNvPBB-RkyOGyQ9ZPNb1gLUWHiSiZzLl5xw/exec';
+        var baseUrl = 'https://script.google.com/macros/s/AKfycby0o3R05deJgSm7BmB-88Qa6kmRFMpQOLJn-mnPi84I1JxyZjZt2fRxjSsnmkpWJd2ilg/exec';
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
             fetch(baseUrl)
@@ -191,10 +194,39 @@
             }
         }
 
+        function removeSelected() {
+            var selectedNames = selectedRows.map(row => row.cells[2].textContent);
+            var data = {
+                action: 'removeMultiple',
+                names: selectedNames
+            };
+
+            fetch(baseUrl, {
+                method: 'POST',
+                body: JSON.stringify(data),
+                headers: {
+                    'Content-Type': 'text/plain'
+                },
+                redirect: 'follow'
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                fetchData(); // Fetch the updated data and update the table
+
+                alert('Selected names removed successfully!');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Handle error
+                alert('Error occurred. Please try again.');
+            });
+        }
 
         // Call the fetchData function to fetch all data when the page loads
         window.onload = function() {
             fetchData();
+            document.getElementById('updateContainer').style.display = 'block';
         };
     </script>
 </body>
