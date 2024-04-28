@@ -26,6 +26,34 @@
             border-radius: 8px;
             overflow: hidden;
         }
+        .table-container th,
+        .table-container td {
+            padding: 8px; /* Adjust padding as needed */
+            border: 1px solid #ccc; /* Border for each cell */
+        }
+
+        /* Specify column widths */
+        .table-container th:nth-child(1),
+        .table-container td:nth-child(1) {
+            width: 40%; /* Adjust the width percentage for the first column */
+        }
+
+        .table-container th:nth-child(2),
+        .table-container td:nth-child(2) {
+            width: 20%; /* Adjust the width percentage for the second column */
+        }
+        .table-container span.dollar-sign {
+            float: left; /* Align dollar sign to the left */
+            margin-right: 5px; /* Add some space between dollar sign and price */
+        }
+        .table-container span.price-value {
+            float: right; /* Align price to the right */
+        }
+
+        .table-container th:nth-child(3),
+        .table-container td:nth-child(3) {
+            width: 40%; /* Adjust the width percentage for the third column */
+        }
 
         .text-input {
             width: 40%;
@@ -104,7 +132,7 @@
         <button onclick="removeSelected()">Remove</button>
     </div>
 
-    <div class="table-container">
+    <div id="displayContainer" class="table-container">
         <table id="dataContainer">
             <thead>
                 <tr>
@@ -126,28 +154,52 @@
             fetch(baseUrl)
                 .then(response => response.json())
                 .then(data => {
-                    var tableBody = document.querySelector('#dataContainer tbody');
-                    tableBody.innerHTML = '';
+                    var displayContainer = document.querySelector('#displayContainer');
+                    displayContainer.innerHTML = ''; // Clear existing content
 
-                    if (data.error) {
-                        var errorRow = document.createElement('tr');
-                        var errorCell = document.createElement('td');
-                        errorCell.textContent = 'Error fetching data';
-                        errorRow.appendChild(errorCell);
-                        tableBody.appendChild(errorRow);
-                    } else {
-                        data.data.forEach(row => {
-                            var item = row[0];
-                            var price = row[1];
-                            var name = row[2];
-                            var newRow = document.createElement('tr');
-                            newRow.innerHTML = `<td>${item}</td><td>$${price}</td><td>${name}</td>`;
-                            newRow.classList.add('clickable');
-                            newRow.addEventListener('click', () => toggleHighlight(newRow));
-                            tableBody.appendChild(newRow);
-                        });
-                        document.getElementById('updateContainer').style.display = 'block';
+                    var sectionTables = {}; // Object to store tables for each section
+                    var currentSection = ''; // Track the current section
+
+                    // Iterate through the data rows
+                    data.data.forEach(row => {
+                        var section = row[3] || ''; // Get the section value, handle blank sections
+                        var price = parseFloat(row[1]);
+                        var formattedPrice = price.toFixed(2)
+                        if (!row[3] || row[3] == ''){
+                            section = currentSection
+                        }
+                        
+                        if (section !== currentSection) {
+                            // If the section changes, append the current section table to the display container
+                            if (sectionTables[currentSection]) {
+                                displayContainer.appendChild(sectionTables[currentSection]);
+                            }
+                            // Clear the current section table and update currentSection
+                            sectionTables = {};
+                            currentSection = section;
+                            
+                        }
+                        if (!sectionTables[section]) {
+                            // If the section table doesn't exist, create it
+                            sectionTables[section] = document.createElement('table');
+                            sectionTables[section].innerHTML = `<thead><tr><th colspan="3">${section}</th></tr></thead><tbody></tbody>`;
+                        }
+
+                        // Add the row to the respective section table
+                        var newRow = document.createElement('tr');
+                        newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${formattedPrice}</span></td><td>${row[2]}</td>`;
+                        newRow.classList.add('clickable'); // Add selectable class to the row
+                        newRow.addEventListener('click', () => toggleHighlight(newRow));
+                        sectionTables[section].querySelector('tbody').appendChild(newRow);
+                    });
+
+                    // Append the last section table to the display container
+                    if (sectionTables[currentSection]) {
+                        displayContainer.appendChild(sectionTables[currentSection]);
                     }
+
+                    // Show the display container
+                    displayContainer.style.display = 'block';
                 })
                 .catch(error => {
                     console.error('Error:', error);
