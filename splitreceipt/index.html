@@ -69,7 +69,7 @@
 
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
-            var baseUrl = 'https://script.google.com/macros/s/AKfycbwD75nqhA4ronVtDbgG8BVRt2FVTNFnwyDUzOQtm929Wr1XJBqhl3ekh5qnpZu12Rjvyg/exec';
+            var baseUrl = 'https://script.google.com/macros/s/AKfycbzlnn5icq6eoVnPyPRTjbVW67yud3O4oIe6hYKshJxX346ySOLtRtG6VkaPLR-Ucd-tvw/exec';
 
             fetch(baseUrl)
                 .then(response => response.json())
@@ -123,7 +123,7 @@
                 selectedItems: selectedItems
                 };
 
-                fetch('https://script.google.com/macros/s/AKfycbwD75nqhA4ronVtDbgG8BVRt2FVTNFnwyDUzOQtm929Wr1XJBqhl3ekh5qnpZu12Rjvyg/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbzlnn5icq6eoVnPyPRTjbVW67yud3O4oIe6hYKshJxX346ySOLtRtG6VkaPLR-Ucd-tvw/exec', {
                     method: 'POST',
                     body: JSON.stringify(data),
                     headers: {
