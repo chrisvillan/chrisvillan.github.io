@@ -69,7 +69,7 @@
 
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
-            var baseUrl = 'https://script.google.com/macros/s/AKfycbwxV7qx31LQF6HgZtVWuaPOuM4uc3U4G0xdqFu_PZ907lS-ngVk6U-7QBf2FWWdeOzUTQ/exec';
+            var baseUrl = 'https://script.google.com/macros/s/AKfycbwD75nqhA4ronVtDbgG8BVRt2FVTNFnwyDUzOQtm929Wr1XJBqhl3ekh5qnpZu12Rjvyg/exec';
 
             fetch(baseUrl)
                 .then(response => response.json())
@@ -116,22 +116,18 @@
             var userName = document.getElementById('userName').value.trim();
             if (userName && selectedRows.length > 0) {
                 var selectedItems = selectedRows.map(row => row.cells[0].textContent).join(', ');
-                alert(`Updating Google Sheet with ${selectedItems} for ${userName}`);
 
                 var data = {
-                    sheetName: 'Sheet1', // Update with your actual sheet name
-                    columnName: 'C', // Specify the column letter to update (C for the 3rd column)
-                    userName: userName,
-                    selectedItems: selectedItems
+                sheetName: 'Sheet1', // Update with your actual sheet name
+                userName: userName,
+                selectedItems: selectedItems
                 };
-                // Add your code here to update the Google Sheet with the selected items and user's name
-                // You can use the selectedItems and userName variables to send the data to your Google Apps Script endpoint
-                // Example code to send data via fetch:
-                fetch('https://script.google.com/macros/s/AKfycbwxV7qx31LQF6HgZtVWuaPOuM4uc3U4G0xdqFu_PZ907lS-ngVk6U-7QBf2FWWdeOzUTQ/exec', {
+
+                fetch('https://script.google.com/macros/s/AKfycbwD75nqhA4ronVtDbgG8BVRt2FVTNFnwyDUzOQtm929Wr1XJBqhl3ekh5qnpZu12Rjvyg/exec', {
                     method: 'POST',
-                    body: JSON.stringify({ items: selectedItems, name: userName }),
+                    body: JSON.stringify(data),
                     headers: {
-                        'Content-Type': 'text/plain'
+                    'Content-Type': 'application/json'
                     },
                     redirect: 'follow' // Add the redirect option
                 })
@@ -147,7 +143,7 @@
             } else {
                 alert('Please select items and enter your name.');
             }
-        }
+            }
 
         // Call the fetchData function to fetch all data when the page loads
         window.onload = function() {
