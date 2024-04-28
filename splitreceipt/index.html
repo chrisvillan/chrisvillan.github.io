@@ -27,6 +27,10 @@
             overflow: hidden;
         }
 
+        .text-input {
+            width: 30%;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -95,7 +99,7 @@
 </head>
 <body>
     <div id="updateContainer">
-        <input type="text" id="userName" placeholder="Your Name">
+        <input type="text" id="userName" placeholder="Your Name" class="text-input">
         <button onclick="updateSheet()">Update</button>
         <button onclick="removeSelected()">Remove Selected</button>
     </div>
@@ -116,7 +120,7 @@
     
     <script>
         var selectedRows = [];
-        var baseUrl = 'https://script.google.com/macros/s/AKfycby0o3R05deJgSm7BmB-88Qa6kmRFMpQOLJn-mnPi84I1JxyZjZt2fRxjSsnmkpWJd2ilg/exec';
+        var baseUrl = 'https://script.google.com/macros/s/AKfycbzI_sFxJ3dcv1QihMHV0t9ZTk3xtPzVjwFo9ICmkRu2masmAXg4pUIKB0NZtjUzsyw1jA/exec';
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
             fetch(baseUrl)
@@ -169,7 +173,8 @@
                 var data = {
                     sheetName: 'Sheet1',
                     userName: userName,
-                    selectedItems: selectedItems
+                    selectedItems: selectedItems,
+                    action: 'Update'
                 };
 
                 fetch(baseUrl, {
@@ -207,32 +212,49 @@
         }
 
         function removeSelected() {
-            var selectedNames = selectedRows.map(row => row.cells[2].textContent);
-            var data = {
-                action: 'removeMultiple',
-                names: selectedNames
-            };
+            var userName = document.getElementById('userName').value.trim();
+            if (userName && selectedRows.length > 0) {
+                var selectedItems = selectedRows.map(row => row.cells[0].textContent);
+                
+                var data = {
+                    sheetName: 'Sheet1',
+                    userName: userName,
+                    selectedItems: selectedItems,
+                    action: 'Remove'
+                };
 
-            fetch(baseUrl, {
-                method: 'POST',
-                body: JSON.stringify(data),
-                headers: {
-                    'Content-Type': 'text/plain'
-                },
-                redirect: 'follow'
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                fetchData(); // Fetch the updated data and update the table
+                fetch(baseUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'text/plain'
+                    },
+                    redirect: 'follow'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    fetchData(); // Fetch the updated data and update the table
 
-                alert('Selected names removed successfully!');
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                // Handle error
-                alert('Error occurred. Please try again.');
-            });
+                    alert('Update successful!');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Check if the error is a CORS-related error
+                    if (error.toString().includes('TypeError: Failed to fetch')) {
+                        // Log the error to the console without showing an alert
+                        console.error('CORS Error: Failed to fetch data due to CORS policy');
+                        // Fetch the updated data and update the table
+                        fetchData();
+                        alert('Update successful!');
+                    } else {
+                        // Show an alert for other types of errors
+                        alert('Update failed. Please try again.');
+                    }
+                });
+            } else {
+                alert('Please select items and enter your name.');
+            }
         }
 
         // Call the fetchData function to fetch all data when the page loads
