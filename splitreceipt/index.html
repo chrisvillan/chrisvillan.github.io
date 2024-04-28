@@ -129,10 +129,11 @@
                 // Example code to send data via fetch:
                 fetch('https://script.google.com/macros/s/AKfycbzkniMH_oW5LS_SDs6ogtHxRbG5FIOTqzGMvQrRx57tRYLjWlh1vf283Yz9G5d2R5PS5g/exec', {
                     method: 'POST',
-                    body: JSON.stringify(data),
+                    body: JSON.stringify({ items: selectedItems, name: userName }),
                     headers: {
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    redirect: 'follow' // Add the redirect option
                 })
                 .then(response => response.json())
                 .then(data => {
