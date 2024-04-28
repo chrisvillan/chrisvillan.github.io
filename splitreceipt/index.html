@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Sheets Data Display</title>
     <style>
         body {
@@ -35,7 +36,7 @@
             border: 1px solid #ccc;
             padding: 10px;
             text-align: left;
-            font-size: calc(0.8rem + 1vw); /* Responsive font size */
+            font-size: calc(12px + 1vw);
         }
 
         th {
@@ -79,7 +80,18 @@
             cursor: pointer;
             font-size: calc(0.8rem + 1vw); /* Responsive font size */
         }
+        /* Media query for smaller screens */
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 16px; /* Adjust font size for smaller screens */
+            }
+
+            /* Additional adjustments if needed */
+        }
+
     </style>
+
+    
 </head>
 <body>
     <div id="updateContainer">
