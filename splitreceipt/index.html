@@ -3,19 +3,48 @@
 <head>
     <title>Google Sheets Data Display</title>
     <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            background-color: #f0f0f0;
+            flex-direction: column;
+        }
+        h1 {
+            width: 90%;
+            margin-bottom: 10px;
+        }
+
+        .table-container {
+            width: 90%;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            flex-grow: 1; /* Let it grow to take up remaining vertical space */
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
 
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
+            border: 1px solid #ccc;
+            padding: 10px;
             text-align: left;
+            font-size: calc(0.8rem + 1vw); /* Responsive font size */
         }
 
         th {
             background-color: #f2f2f2;
+        }
+
+        tr {
+            height: 6vh; /* Each row occupies 6% of the viewport height */
         }
 
         tr.clickable {
@@ -31,46 +60,50 @@
         }
 
         #updateContainer {
+            display: flex;
+            flex-direction: column;
             margin-top: 20px;
-            display: none;
         }
 
-        #updateContainer input[type="text"] {
-            padding: 6px;
-            margin-right: 10px;
+        #updateContainer input[type="text"],
+        #updateContainer button {
+            padding: 10px;
+            font-size: calc(0.8rem + 1vw);
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 10px;
         }
 
         #updateContainer button {
-            padding: 8px;
             cursor: pointer;
         }
     </style>
 </head>
 <body>
-    <h1>Data from Google Sheets</h1>
-    <table id="dataContainer">
-        <thead>
-            <tr>
-                <th>Item</th>
-                <th>Price</th>
-                <th>Name</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
-
     <div id="updateContainer">
         <input type="text" id="userName" placeholder="Your Name">
         <button onclick="updateSheet()">Update</button>
     </div>
 
+    <div class="table-container">
+        <table id="dataContainer">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Price</th>
+                    <th>Name</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>  
+
+    
     <script>
         var selectedRows = [];
-
+        var baseUrl = 'https://script.google.com/macros/s/AKfycbyvuonDODB7LoshOU5EL-bW2htOXNp6Sm3ZNvPBB-RkyOGyQ9ZPNb1gLUWHiSiZzLl5xw/exec';
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
-            var baseUrl = 'https://script.google.com/macros/s/AKfycbwnEsFgaHeWgu5A_PxSiON-gs1VHS1nDx4fev1Jltmbnl2q_yv1YYYOeCft_OPRrgdKmQ/exec';
-
             fetch(baseUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -116,27 +149,26 @@
         function updateSheet() {
             var userName = document.getElementById('userName').value.trim();
             if (userName && selectedRows.length > 0) {
-                var selectedItems = selectedRows.map(row => row.cells[0].textContent).join(', ');
-
+                var selectedItems = selectedRows.map(row => row.cells[0].textContent);
+                
                 var data = {
-                    sheetName: 'Sheet1', // Update with your actual sheet name
+                    sheetName: 'Sheet1',
                     userName: userName,
                     selectedItems: selectedItems
                 };
 
-                fetch('https://script.google.com/macros/s/AKfycbwnEsFgaHeWgu5A_PxSiON-gs1VHS1nDx4fev1Jltmbnl2q_yv1YYYOeCft_OPRrgdKmQ/exec', {
+                fetch(baseUrl, {
                     method: 'POST',
                     body: JSON.stringify(data),
                     headers: {
                         'Content-Type': 'text/plain'
                     },
-                    redirect: 'follow' // Add the redirect option
+                    redirect: 'follow'
                 })
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
-                    // Fetch the updated data and update the table
-                    fetchData();
+                    fetchData(); // Fetch the updated data and update the table
 
                     alert('Update successful!');
                 })
@@ -158,6 +190,7 @@
                 alert('Please select items and enter your name.');
             }
         }
+
 
         // Call the fetchData function to fetch all data when the page loads
         window.onload = function() {
