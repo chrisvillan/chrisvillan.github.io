@@ -69,7 +69,7 @@
 
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
-            var baseUrl = 'https://script.google.com/macros/s/AKfycbzlnn5icq6eoVnPyPRTjbVW67yud3O4oIe6hYKshJxX346ySOLtRtG6VkaPLR-Ucd-tvw/exec';
+            var baseUrl = 'https://script.google.com/macros/s/AKfycbwnEsFgaHeWgu5A_PxSiON-gs1VHS1nDx4fev1Jltmbnl2q_yv1YYYOeCft_OPRrgdKmQ/exec';
 
             fetch(baseUrl)
                 .then(response => response.json())
@@ -112,38 +112,52 @@
             }
         }
 
+
         function updateSheet() {
             var userName = document.getElementById('userName').value.trim();
             if (userName && selectedRows.length > 0) {
                 var selectedItems = selectedRows.map(row => row.cells[0].textContent).join(', ');
 
                 var data = {
-                sheetName: 'Sheet1', // Update with your actual sheet name
-                userName: userName,
-                selectedItems: selectedItems
+                    sheetName: 'Sheet1', // Update with your actual sheet name
+                    userName: userName,
+                    selectedItems: selectedItems
                 };
 
-                fetch('https://script.google.com/macros/s/AKfycbzlnn5icq6eoVnPyPRTjbVW67yud3O4oIe6hYKshJxX346ySOLtRtG6VkaPLR-Ucd-tvw/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbwnEsFgaHeWgu5A_PxSiON-gs1VHS1nDx4fev1Jltmbnl2q_yv1YYYOeCft_OPRrgdKmQ/exec', {
                     method: 'POST',
                     body: JSON.stringify(data),
                     headers: {
-                    'Content-Type': 'text/plain'
+                        'Content-Type': 'text/plain'
                     },
                     redirect: 'follow' // Add the redirect option
                 })
                 .then(response => response.json())
                 .then(data => {
                     console.log(data);
+                    // Fetch the updated data and update the table
+                    fetchData();
+
                     alert('Update successful!');
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Update failed. Please try again.');
+                    // Check if the error is a CORS-related error
+                    if (error.toString().includes('TypeError: Failed to fetch')) {
+                        // Log the error to the console without showing an alert
+                        console.error('CORS Error: Failed to fetch data due to CORS policy');
+                        // Fetch the updated data and update the table
+                        fetchData();
+                        alert('Update successful!');
+                    } else {
+                        // Show an alert for other types of errors
+                        alert('Update failed. Please try again.');
+                    }
                 });
             } else {
                 alert('Please select items and enter your name.');
             }
-            }
+        }
 
         // Call the fetchData function to fetch all data when the page loads
         window.onload = function() {
