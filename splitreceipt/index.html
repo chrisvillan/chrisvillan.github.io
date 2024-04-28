@@ -2,48 +2,150 @@
 <html>
 <head>
     <title>Google Sheets Data Display</title>
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr.clickable {
+            cursor: pointer;
+        }
+
+        tr.clickable:hover {
+            background-color: #f0f0f0;
+        }
+
+        tr.highlight {
+            background-color: #cceeff;
+        }
+
+        #updateContainer {
+            margin-top: 20px;
+            display: none;
+        }
+
+        #updateContainer input[type="text"] {
+            padding: 6px;
+            margin-right: 10px;
+        }
+
+        #updateContainer button {
+            padding: 8px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <div>
-        <form id="AKfycbxrDxdA63UlFiYCfAvF2jAWZeX-F6mTJd1e2q2VLQWh0B3BfEX2Z4B7Hb5AyJbLusbWYQ" method="POST" action="https://script.google.com/macros/s/AKfycbwuuWEraZM8g5DjqcTsPcIl7qMXolySisHTnAjQQ_jbay38cqYH2Ryii7q22XhhsrvyNQ/exec">
-            <input name="Email" type="email" placeholder="Email" required>
-            <input name="Name" type="text" placeholder="Name" required>
-            <button type="submit">Send</button>
-        </form>
+    <h1>Data from Google Sheets</h1>
+    <table id="dataContainer">
+        <thead>
+            <tr>
+                <th>Item</th>
+                <th>Price</th>
+                <th>Name</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div id="updateContainer">
+        <input type="text" id="userName" placeholder="Your Name">
+        <button onclick="updateSheet()">Update</button>
     </div>
 
-    <h1>Data from Google Sheets</h1>
-    <div id="dataContainer"></div>
-
     <script>
+        var selectedRows = [];
+
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
-            // URL of your Google Apps Script web app
-            var baseUrl = 'https://script.google.com/macros/s/AKfycbxrDxdA63UlFiYCfAvF2jAWZeX-F6mTJd1e2q2VLQWh0B3BfEX2Z4B7Hb5AyJbLusbWYQ/exec';
+            var baseUrl = 'https://script.google.com/macros/s/AKfycbzIYVqYxapehJqvEcynSmhVpoqCWeQICRv9qwBxv-1S7G-KS3_NeAVRIy8wUeB2lkOz9A/exec';
 
-            // Make a GET request to fetch all data
             fetch(baseUrl)
                 .then(response => response.json())
                 .then(data => {
-                    console.log(data); // Log the data to see it in the browser console
-
-                    // Display the data in the HTML page
-                    var dataContainer = document.getElementById('dataContainer');
-                    dataContainer.innerHTML = ''; // Clear previous data
+                    var tableBody = document.querySelector('#dataContainer tbody');
+                    tableBody.innerHTML = '';
 
                     if (data.error) {
-                        dataContainer.textContent = 'Error fetching data';
+                        var errorRow = document.createElement('tr');
+                        var errorCell = document.createElement('td');
+                        errorCell.textContent = 'Error fetching data';
+                        errorRow.appendChild(errorCell);
+                        tableBody.appendChild(errorRow);
                     } else {
                         data.data.forEach(row => {
-                            var rowElement = document.createElement('p');
-                            rowElement.textContent = JSON.stringify(row);
-                            dataContainer.appendChild(rowElement);
+                            var item = row[0];
+                            var price = row[1];
+                            var name = row[2];
+                            var newRow = document.createElement('tr');
+                            newRow.innerHTML = `<td>${item}</td><td>$${price}</td><td>${name}</td>`;
+                            newRow.classList.add('clickable');
+                            newRow.addEventListener('click', () => toggleHighlight(newRow));
+                            tableBody.appendChild(newRow);
                         });
+                        document.getElementById('updateContainer').style.display = 'block';
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
+        }
+
+        function toggleHighlight(row) {
+            row.classList.toggle('highlight');
+            var index = selectedRows.indexOf(row);
+            if (index === -1) {
+                selectedRows.push(row);
+            } else {
+                selectedRows.splice(index, 1);
+            }
+        }
+
+        function updateSheet() {
+            var userName = document.getElementById('userName').value.trim();
+            if (userName && selectedRows.length > 0) {
+                var selectedItems = selectedRows.map(row => row.cells[0].textContent).join(', ');
+                alert(`Updating Google Sheet with ${selectedItems} for ${userName}`);
+
+                var data = {
+                    sheetName: 'Sheet1', // Update with your actual sheet name
+                    columnName: 'C', // Specify the column letter to update (C for the 3rd column)
+                    userName: userName,
+                    selectedItems: selectedItems
+                };
+                // Add your code here to update the Google Sheet with the selected items and user's name
+                // You can use the selectedItems and userName variables to send the data to your Google Apps Script endpoint
+                // Example code to send data via fetch:
+                fetch('https://script.google.com/macros/s/AKfycbzIYVqYxapehJqvEcynSmhVpoqCWeQICRv9qwBxv-1S7G-KS3_NeAVRIy8wUeB2lkOz9A/exec', {
+                    method: 'POST',
+                    body: JSON.stringify(data),
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    alert('Update successful!');
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Update failed. Please try again.');
+                });
+            } else {
+                alert('Please select items and enter your name.');
+            }
         }
 
         // Call the fetchData function to fetch all data when the page loads
