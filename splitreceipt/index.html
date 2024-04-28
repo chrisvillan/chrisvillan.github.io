@@ -69,7 +69,7 @@
 
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
-            var baseUrl = 'https://script.google.com/macros/s/AKfycbzkniMH_oW5LS_SDs6ogtHxRbG5FIOTqzGMvQrRx57tRYLjWlh1vf283Yz9G5d2R5PS5g/exec';
+            var baseUrl = 'https://script.google.com/macros/s/AKfycbwxV7qx31LQF6HgZtVWuaPOuM4uc3U4G0xdqFu_PZ907lS-ngVk6U-7QBf2FWWdeOzUTQ/exec';
 
             fetch(baseUrl)
                 .then(response => response.json())
@@ -127,7 +127,7 @@
                 // Add your code here to update the Google Sheet with the selected items and user's name
                 // You can use the selectedItems and userName variables to send the data to your Google Apps Script endpoint
                 // Example code to send data via fetch:
-                fetch('https://script.google.com/macros/s/AKfycbzkniMH_oW5LS_SDs6ogtHxRbG5FIOTqzGMvQrRx57tRYLjWlh1vf283Yz9G5d2R5PS5g/exec', {
+                fetch('https://script.google.com/macros/s/AKfycbwxV7qx31LQF6HgZtVWuaPOuM4uc3U4G0xdqFu_PZ907lS-ngVk6U-7QBf2FWWdeOzUTQ/exec', {
                     method: 'POST',
                     body: JSON.stringify({ items: selectedItems, name: userName }),
                     headers: {
