@@ -21,12 +21,10 @@
         }
 
         .table-container {
-            width: 98%;
+            width: 100%;
             border: 1px solid #ccc;
             border-radius: 8px;
             overflow: hidden;
-            margin-left:1%;
-            margin-right:1%;
             /* margin-right:5%; */
         }
         .table-container th,
@@ -142,35 +140,33 @@
             justify-content: space-between;
             align-items: center;
             margin-top: 20px;
-            margin-left: 1%;
+            /* margin-left: 1%; */
+            flex-direction: row;
         }
-
         .dropdown-container {
-            flex-grow: 1;
-            margin-right: 10px;
-        }
-        .dropdown-list {
+            flex-grow:2;
             width: 100%;
             padding: 6px;
             margin-bottom: 10px;
             height: 6vh;
             font-size: calc(0.8rem + 1vw);
         }
-
-        .column-button {
-            padding: 10px; /* Add padding for spacing */
-  
-            /* border: 1px solid #ccc;  */
-        }
-        .update-buttons {
+        .update-row {
             display: flex;
             gap: 10px;
         }
-        .update-buttons button {
+        .update-row button {
             padding: 6px;
             height: 6vh;
             font-size: calc(0.8rem + 1vw);
             cursor: pointer;
+            width: 50%;
+            white-space: nowrap;
+        }
+        .update-text{
+            white-space: nowrap;
+            padding:0.5%;
+            margin:0;
         }
     </style>
 
@@ -178,19 +174,18 @@
 </head>
 <body>
     <div id="updateContainer">
-        <div class="dropdown-container">
-            <!-- <input type="text" id="userName" placeholder="Your Name" class="text-input"> -->
-            <select id="userName" class="dropdown-list"></select>
-        </div>
-        <div class="column-button">
-            <div class="update-buttons">
-                <button onclick="removeSelected()">Remove</button>
-                <button onclick="updateSheet()">Add Item</button>
+        <div class="update-row">
+            <select id="userName" class="dropdown-container"></select>
+            <button onclick="removeSelected()">Remove</button>
+            <button onclick="updateSheet()">Add Item</button>
+            <div>
+                <p class="update-text">Select your name in the dropdown list</p>
+                <p class="update-text">Click on row items to make selections</p>
+                <p class="update-text">Click on 'Add Item'/'Remove' button to add/remove your name to the row</p>
             </div>
         </div>
-            
-           
     </div>
+
 
     <div id="displayContainer" class="table-container">
         <table id="dataContainer">
