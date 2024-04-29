@@ -198,7 +198,6 @@
                         var section = row[3] || ''; // Get the section value, handle blank sections
                         var price = parseFloat(row[1]);
                         
-
                         if (!row[3] || row[3] == ''){
                             section = currentSection
                         }
@@ -409,6 +408,7 @@
             } else {
                 alert('Please select items and enter your name.');
             }
+            selectedRows = [];
         }
 
         function removeSelected() {
@@ -455,6 +455,7 @@
             } else {
                 alert('Please select items and enter your name.');
             }
+            selectedRows = [];
         }
 
         // Call the fetchData function to fetch all data when the page loads
