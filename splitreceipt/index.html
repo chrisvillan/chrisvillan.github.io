@@ -168,8 +168,10 @@
             font-size: calc(0.8rem + 1vw);
             cursor: pointer;
             /* width: 50%; */
+            width: 40%;
             white-space: nowrap;
         }
+        
         .update-text{
             /* white-space: nowrap; */
             padding:0.5%;
@@ -184,12 +186,12 @@
             <div class="update-col1">
                 <select id="userName" class="dropdown-container"></select>
                 <button onclick="removeSelected()">Remove</button>
-                <button onclick="updateSheet()">Add Item</button>
+                <button onclick="updateSheet()">Add</button>
             </div>
             <div class="update-col2">
-                <p class="update-text">Select your name in the dropdown list</p>
-                <p class="update-text">Click on row items to make selections</p>
-                <p class="update-text">Click on 'Add Item'/'Remove' button to add/remove your name on the row</p>
+                <p class="update-text">- Select your name in the dropdown list.</p>
+                <p class="update-text">- Click on row items to make selections.</p>
+                <p class="update-text">- Click on buttons to add/remove your name on the row.</p>
             </div>
         </div>
     </div>
