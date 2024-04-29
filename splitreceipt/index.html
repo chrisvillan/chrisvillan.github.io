@@ -301,8 +301,9 @@
                         var users = row[2].split(", ");
                         users.forEach(user => {
                             if (user === userName && userName) { // Use triple equals for comparison
-                                userTotal += parseFloat(row[1])/users.length; // Add to userTotal
+                                
                                 itemprice = parseFloat(row[1])/users.length;
+                                userTotal += parseFloat(itemprice.toFixed(2))
                                 userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                             }
                         });
@@ -327,20 +328,20 @@
                                     var formattedPerc = taxPerc.toFixed(2) + '%'
                                     newRow.innerHTML = `<td><span class="taxtip">${row[0]}</span></td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
                                     var taxPrice = userSubTotal * (taxPerc/100)
-                                    userTotal += parseFloat(taxPrice.toFixed(2))
                                     itemprice = parseFloat(taxPrice.toFixed(2))
+                                    userTotal += parseFloat(itemprice.toFixed(2))
                                     userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                                 }else if (row[0] === 'Tip'){
                                     tipPerc = (parseFloat(row[1])/subtotal) * 100
                                     var formattedPerc = tipPerc.toFixed(2) + '%'
                                     newRow.innerHTML = `<td><span class="taxtip">${row[0]}</span></td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
                                     var tipPrice = userSubTotal * (tipPerc/100)
-                                    userTotal += parseFloat(tipPrice.toFixed(2))
                                     itemprice = parseFloat(tipPrice.toFixed(2))
+                                    userTotal += parseFloat(itemprice.toFixed(2))
                                     userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                                 }else{
-                                    userTotal += parseFloat(row[1]); // Add to userTotal
                                     itemprice = parseFloat(row[1]);
+                                    userTotal += parseFloat(itemprice.toFixed(2))
                                     userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                                 }
                             } else{
