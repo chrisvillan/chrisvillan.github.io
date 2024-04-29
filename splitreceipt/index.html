@@ -124,6 +124,7 @@
             display: flex;
             gap: 10px; /* Adjust the gap between buttons */
             margin-bottom: 10px;
+            width: 100%
         }
         .update-buttons button {
             padding: 6px;
@@ -160,8 +161,9 @@
         <!-- <input type="text" id="userName" placeholder="Your Name" class="text-input"> -->
             <select id="userName" class="dropdown-list"></select>
             <div class="update-buttons">
-                <button onclick="updateSheet()">Update</button>
                 <button onclick="removeSelected()">Remove</button>
+                <button onclick="updateSheet()">Add Item</button>
+
             </div>
            
     </div>
