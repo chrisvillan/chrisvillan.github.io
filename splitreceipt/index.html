@@ -141,15 +141,21 @@
             align-items: center;
             margin-top: 20px;
             /* margin-left: 1%; */
-            flex-direction: row;
+            /* flex-direction: row; */
         }
         .dropdown-container {
             flex-grow:2;
-            width: 100%;
+            width:90%;
             padding: 6px;
             margin-bottom: 10px;
             height: 6vh;
             font-size: calc(0.8rem + 1vw);
+        }
+        .update-col1 {
+            width: 30%;
+        }
+        .update-col2 {
+            width: 80%;
         }
         .update-row {
             display: flex;
@@ -160,7 +166,7 @@
             height: 6vh;
             font-size: calc(0.8rem + 1vw);
             cursor: pointer;
-            width: 50%;
+            /* width: 50%; */
             white-space: nowrap;
         }
         .update-text{
@@ -169,19 +175,20 @@
             margin:0;
         }
     </style>
-
     
 </head>
 <body>
     <div id="updateContainer">
         <div class="update-row">
-            <select id="userName" class="dropdown-container"></select>
-            <button onclick="removeSelected()">Remove</button>
-            <button onclick="updateSheet()">Add Item</button>
-            <div>
+            <div class="update-col1">
+                <select id="userName" class="dropdown-container"></select>
+                <button onclick="removeSelected()">Remove</button>
+                <button onclick="updateSheet()">Add Item</button>
+            </div>
+            <div class="update-col2">
                 <p class="update-text">Select your name in the dropdown list</p>
                 <p class="update-text">Click on row items to make selections</p>
-                <p class="update-text">Click on 'Add Item'/'Remove' button to add/remove your name to the row</p>
+                <p class="update-text">Click on 'Add Item'/'Remove' button to add/remove your name on the row</p>
             </div>
         </div>
     </div>
