@@ -105,9 +105,9 @@
             cursor: pointer;
         }
 
-        tr.clickable:hover {
+        /* tr.clickable:hover {
             background-color: #f0f0f0;
-        }
+        } */
 
         tr.highlight {
             background-color: #cceeff;
@@ -355,6 +355,7 @@
 
         function toggleHighlight(row) {
             row.classList.toggle('highlight');
+            row.blur(); // Remove focus from the clicked row
             var index = selectedRows.indexOf(row);
             if (index === -1) {
                 selectedRows.push(row);
