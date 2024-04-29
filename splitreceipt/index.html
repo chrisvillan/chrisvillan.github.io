@@ -44,15 +44,19 @@
             width: 20%; /* Adjust the width percentage for the second column */
         }
         .table-container span.dollar-sign {
-            float: left; /* Align dollar sign to the left */
+            float: left;
             margin-right: 5px; /* Add some space between dollar sign and price */
         }
         .table-container span.price-value {
-            float: right; /* Align price to the right */
+            float: right; 
         }
         .table-container span.total {
-            float: right; /* Align price to the right */
+            float: right; 
             font-weight: bold;
+        }
+
+        .table-container span.taxtip {
+            float: right; 
         }
 
         .table-container span.user-total {
@@ -75,11 +79,11 @@
         }
 
         .table-container span.total-dollar-sign {
-            float: left; /* Align price to the right */
+            float: left; 
             font-weight: bold;
         }
         .table-container span.total-price {
-            float: right; /* Align price to the right */
+            float: right; 
             font-weight: bold;
         }
         .table-container .table-header{
@@ -321,7 +325,7 @@
                                 if (row[0] === 'Tax') {
                                     taxPerc = (parseFloat(row[1])/subtotal) * 100
                                     var formattedPerc = taxPerc.toFixed(2) + '%'
-                                    newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
+                                    newRow.innerHTML = `<td><span class="taxtip">${row[0]}</span></td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
                                     var taxPrice = userSubTotal * (taxPerc/100)
                                     userTotal += parseFloat(taxPrice.toFixed(2))
                                     itemprice = parseFloat(taxPrice.toFixed(2))
@@ -329,7 +333,7 @@
                                 }else if (row[0] === 'Tip'){
                                     tipPerc = (parseFloat(row[1])/subtotal) * 100
                                     var formattedPerc = tipPerc.toFixed(2) + '%'
-                                    newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
+                                    newRow.innerHTML = `<td><span class="taxtip">${row[0]}</span></td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
                                     var tipPrice = userSubTotal * (tipPerc/100)
                                     userTotal += parseFloat(tipPrice.toFixed(2))
                                     itemprice = parseFloat(tipPrice.toFixed(2))
@@ -340,7 +344,11 @@
                                     userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                                 }
                             } else{
-                                newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td></td>`;
+                                if (row[0] === 'Tax' || row[0] === 'Tip'){
+                                    newRow.innerHTML = `<td><span class="taxtip">${row[0]}</span></td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td></td>`;
+                                }else{
+                                    newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td></td>`;
+                                }
                             }
                         }
                         
