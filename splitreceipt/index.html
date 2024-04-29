@@ -49,7 +49,22 @@
         .table-container span.price-value {
             float: right; /* Align price to the right */
         }
-
+        .table-container span.total {
+            float: right; /* Align price to the right */
+            font-weight: bold;
+        }
+        .table-container span.total-dollar-sign {
+            float: left; /* Align price to the right */
+            font-weight: bold;
+        }
+        .table-container span.total-price {
+            float: right; /* Align price to the right */
+            font-weight: bold;
+        }
+        .table-container .table-header{
+            text-align: center;
+            background-color: lightblue; 
+        }
         .table-container th:nth-child(3),
         .table-container td:nth-child(3) {
             width: 40%; /* Adjust the width percentage for the third column */
@@ -58,7 +73,14 @@
         .text-input {
             width: 40%;
         }
-
+        .dropdown-list {
+            width: 100%;
+            padding: 6px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            height: 6vh;
+            font-size: calc(0.8rem + 1vw);
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -92,25 +114,22 @@
         }
 
         #updateContainer {
-            margin-top: 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-top: 20px;
         }
-
-        #updateContainer input[type="text"],
-        #updateContainer button  {
-            padding: 6px;
-            margin-right: 10px;
+      
+        .update-buttons {
+            display: flex;
+            gap: 10px; /* Adjust the gap between buttons */
             margin-bottom: 10px;
-            height: 6vh; /* Match the height of table rows */
-            flex-grow: 1; /* Allow the input to grow and fill available space */
-            font-size: calc(0.8rem + 1vw); /* Responsive font size */
         }
-
-        #updateContainer button {
+        .update-buttons button {
+            padding: 6px;
+            height: 6vh;
+            font-size: calc(0.8rem + 1vw);
             cursor: pointer;
-            font-size: calc(0.8rem + 1vw); /* Responsive font size */
         }
         /* Media query for smaller screens */
         @media (max-width: 768px) {
@@ -127,18 +146,22 @@
 </head>
 <body>
     <div id="updateContainer">
-        <input type="text" id="userName" placeholder="Your Name" class="text-input">
-        <button onclick="updateSheet()">Update</button>
-        <button onclick="removeSelected()">Remove</button>
+        <!-- <input type="text" id="userName" placeholder="Your Name" class="text-input"> -->
+        <select id="userName" class="dropdown-list"></select>
+        <div class="update-buttons">
+            <button onclick="updateSheet()">Update</button>
+            <button onclick="removeSelected()">Remove</button>
+        </div>
+        
     </div>
 
     <div id="displayContainer" class="table-container">
         <table id="dataContainer">
             <thead>
                 <tr>
-                    <th>Item</th>
-                    <th>Price</th>
-                    <th>Name</th>
+                    <th></th>
+                    <th></th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -151,6 +174,8 @@
         var baseUrl = 'https://script.google.com/macros/s/AKfycbzI_sFxJ3dcv1QihMHV0t9ZTk3xtPzVjwFo9ICmkRu2masmAXg4pUIKB0NZtjUzsyw1jA/exec';
         // Function to fetch all data from the Google Apps Script web app
         function fetchData() {
+            var userName = document.getElementById('userName').value.trim();
+            var userlist = []
             fetch(baseUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -159,12 +184,34 @@
 
                     var sectionTables = {}; // Object to store tables for each section
                     var currentSection = ''; // Track the current section
-
+                    var total = 0.00;
+                    var subtotal = 0.00;
+                    var taxPerc = 0.0000;
+                    var tipPerc = 0.0000
+                    var userSubTotal = 0.00
+                    var userTotal = 0.00;
+                    var userItems = [];
+                    var itemprice = 0.00
+                    var taxtip_set = false;
                     // Iterate through the data rows
                     data.data.forEach(row => {
                         var section = row[3] || ''; // Get the section value, handle blank sections
                         var price = parseFloat(row[1]);
-                        var formattedPrice = price.toFixed(2)
+                        total = total + price;
+                        
+                        if (row[4]) {
+                            userlist.push(String(row[4]))
+                        }
+                        
+                        var users = row[2].split(", ");
+                        users.forEach(user => {
+                            if (user === userName && userName) { // Use triple equals for comparison
+                                userTotal += parseFloat(row[1]); // Add to userTotal
+                                itemprice = parseFloat(row[1]);
+                                userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
+                            }
+                        });
+
                         if (!row[3] || row[3] == ''){
                             section = currentSection
                         }
@@ -172,7 +219,30 @@
                         if (section !== currentSection) {
                             // If the section changes, append the current section table to the display container
                             if (sectionTables[currentSection]) {
+                                var items = userItems.join(" + ");
+                                var newRow = document.createElement('tr');
+                                newRow.innerHTML = `<td><span class="total">Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${total.toFixed(2)}</span></td><td></td>`;
+                                sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
+                                
+                                if (!userName){
+                                    var newRow = document.createElement('tr');
+                                    newRow.innerHTML = `<td><span class="total">User Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">0.00</span></td><td></td>`;
+                                } else{
+                                    var newRow = document.createElement('tr');
+                                    newRow.innerHTML = `<td><span class="total">${userName} Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${userTotal.toFixed(2)}</span></td><td>${items}</td>`;
+                                }
+                                sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
+
                                 displayContainer.appendChild(sectionTables[currentSection]);
+                                total = 0.00;
+                                subtotal = 0.00;
+                                taxPerc = 0.0000;
+                                tipPerc = 0.0000;
+                                userSubTotal = 0.00;
+                                userTotal = 0.00;
+                                itemprice = 0.00;
+                                userItems = [];
+                                taxtip_set = false;
                             }
                             // Clear the current section table and update currentSection
                             sectionTables = {};
@@ -182,28 +252,103 @@
                         if (!sectionTables[section]) {
                             // If the section table doesn't exist, create it
                             sectionTables[section] = document.createElement('table');
-                            sectionTables[section].innerHTML = `<thead><tr><th colspan="3">${section}</th></tr></thead><tbody></tbody>`;
+                            sectionTables[section].innerHTML = `<thead><tr><th colspan="3" class="table-header">${section}</th></tr></thead><tbody></tbody>`;
                         }
 
                         // Add the row to the respective section table
                         var newRow = document.createElement('tr');
-                        newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${formattedPrice}</span></td><td>${row[2]}</td>`;
-                        newRow.classList.add('clickable'); // Add selectable class to the row
-                        newRow.addEventListener('click', () => toggleHighlight(newRow));
+                        if(row[0] != 'Tax' && row[0] != 'Tip'){
+                            newRow.classList.add('clickable'); // Add selectable class to the row
+                            newRow.addEventListener('click', () => toggleHighlight(newRow));
+                            subtotal += parseFloat(row[1]);
+                            newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${row[2]}</td>`;
+                        } else{
+                            if (userName){
+                                if (row[0] === 'Tax' || row[0] === 'Tip'){
+                                    if (taxtip_set == false){
+                                        userSubTotal = userTotal
+                                        taxtip_set = true
+                                    }
+                                } 
+                                if (row[0] === 'Tax') {
+                                    taxPerc = (parseFloat(row[1])/subtotal) * 100
+                                    var formattedPerc = taxPerc.toFixed(2) + '%'
+                                    newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
+                                    var taxPrice = userSubTotal * (taxPerc/100)
+                                    userTotal += parseFloat(taxPrice.toFixed(2))
+                                    itemprice = parseFloat(taxPrice.toFixed(2))
+                                    userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
+                                }else if (row[0] === 'Tip'){
+                                    tipPerc = (parseFloat(row[1])/subtotal) * 100
+                                    var formattedPerc = taxPerc.toFixed(2) + '%'
+                                    newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
+                                    var tipPrice = userSubTotal * (tipPerc/100)
+                                    userTotal += parseFloat(tipPrice.toFixed(2))
+                                    itemprice = parseFloat(tipPrice.toFixed(2))
+                                    userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
+                                }else{
+                                    userTotal += parseFloat(row[1]); // Add to userTotal
+                                    itemprice = parseFloat(row[1]);
+                                    userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
+                                }
+                            } else{
+                                newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td></td>`;
+                            }
+                        }
+                        
                         sectionTables[section].querySelector('tbody').appendChild(newRow);
                     });
 
                     // Append the last section table to the display container
                     if (sectionTables[currentSection]) {
+                        var items = userItems.join(" + ");
+                        var newRow = document.createElement('tr');
+                        newRow.innerHTML = `<td><span class="total">Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${total.toFixed(2)}</span></td><td></td>`;
+                        sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
+                        
+                        if (!userName){
+                            var newRow = document.createElement('tr');
+                            newRow.innerHTML = `<td><span class="total">User Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">0.00</span></td><td></td>`;
+                        } else{
+                            var newRow = document.createElement('tr');
+                            newRow.innerHTML = `<td><span class="total">${userName} Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${userTotal.toFixed(2)}</span></td><td>${items}</td>`;
+                        }
+                        sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
+
                         displayContainer.appendChild(sectionTables[currentSection]);
-                    }
+            }
 
                     // Show the display container
                     displayContainer.style.display = 'block';
+                    
+                    var dropdown = document.getElementById('userName');
+                    if (dropdown.length == 0) {
+                        // userlist.push(String(dropdown.option.length))
+                        userlist.push("")
+                        userlist.forEach(optionText => {
+                            var option = document.createElement('option');
+                            option.value = optionText;
+                            option.textContent = optionText;
+                            dropdown.appendChild(option);
+                        });
+                        dropdown.selectedIndex = dropdown.length-1
+                        dropdown.addEventListener('change', function() {
+                        // Get the selected option's value
+                        const selectedValue = dropdown.value;
+
+                        // Call your function with the selected value
+                        fetchData();
+                    });
+                    }
+                    
                 })
                 .catch(error => {
                     console.error('Error:', error);
                 });
+            selectedRows = [];
+
+            
+
         }
 
         function toggleHighlight(row) {
