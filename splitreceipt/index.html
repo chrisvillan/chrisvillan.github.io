@@ -197,20 +197,7 @@
                     data.data.forEach(row => {
                         var section = row[3] || ''; // Get the section value, handle blank sections
                         var price = parseFloat(row[1]);
-                        total = total + price;
                         
-                        if (row[4]) {
-                            userlist.push(String(row[4]))
-                        }
-                        
-                        var users = row[2].split(", ");
-                        users.forEach(user => {
-                            if (user === userName && userName) { // Use triple equals for comparison
-                                userTotal += parseFloat(row[1]); // Add to userTotal
-                                itemprice = parseFloat(row[1]);
-                                userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
-                            }
-                        });
 
                         if (!row[3] || row[3] == ''){
                             section = currentSection
@@ -219,6 +206,7 @@
                         if (section !== currentSection) {
                             // If the section changes, append the current section table to the display container
                             if (sectionTables[currentSection]) {
+                                
                                 var items = userItems.join(" + ");
                                 var newRow = document.createElement('tr');
                                 newRow.innerHTML = `<td><span class="total">Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${total.toFixed(2)}</span></td><td></td>`;
@@ -254,6 +242,21 @@
                             sectionTables[section] = document.createElement('table');
                             sectionTables[section].innerHTML = `<thead><tr><th colspan="3" class="table-header">${section}</th></tr></thead><tbody></tbody>`;
                         }
+                        
+                        total = total + price;
+                        
+                        if (row[4]) {
+                            userlist.push(String(row[4]))
+                        }
+                        
+                        var users = row[2].split(", ");
+                        users.forEach(user => {
+                            if (user === userName && userName) { // Use triple equals for comparison
+                                userTotal += parseFloat(row[1]); // Add to userTotal
+                                itemprice = parseFloat(row[1]);
+                                userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
+                            }
+                        });
 
                         // Add the row to the respective section table
                         var newRow = document.createElement('tr');
@@ -280,7 +283,7 @@
                                     userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                                 }else if (row[0] === 'Tip'){
                                     tipPerc = (parseFloat(row[1])/subtotal) * 100
-                                    var formattedPerc = taxPerc.toFixed(2) + '%'
+                                    var formattedPerc = tipPerc.toFixed(2) + '%'
                                     newRow.innerHTML = `<td>${row[0]}</td><td><span class="dollar-sign">$</span><span class="price-value">${price.toFixed(2)}</span></td><td>${formattedPerc}</td>`;
                                     var tipPrice = userSubTotal * (tipPerc/100)
                                     userTotal += parseFloat(tipPrice.toFixed(2))
