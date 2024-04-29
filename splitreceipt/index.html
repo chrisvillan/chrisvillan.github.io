@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google Sheets Data Display</title>
+    <title>Split Receipt</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -53,6 +53,26 @@
             float: right; /* Align price to the right */
             font-weight: bold;
         }
+
+        .table-container span.user-total {
+            float: right; 
+            font-weight: bold;
+            background-color: yellow;
+        }
+        .table-container span.user-dollar-sign {
+            float: left; 
+            font-weight: bold;
+            background-color: yellow;
+        }
+        .table-container span.user-price {
+            float: right; 
+            font-weight: bold;
+            background-color: yellow;
+        }
+        .table-container span.user-item{
+            font-weight: bold;
+        }
+
         .table-container span.total-dollar-sign {
             float: left; /* Align price to the right */
             font-weight: bold;
@@ -73,14 +93,7 @@
         .text-input {
             width: 40%;
         }
-        .dropdown-list {
-            width: 100%;
-            padding: 6px;
-            margin-right: 10px;
-            margin-bottom: 10px;
-            height: 6vh;
-            font-size: calc(0.8rem + 1vw);
-        }
+        
         table {
             width: 100%;
             border-collapse: collapse;
@@ -113,25 +126,6 @@
             background-color: #cceeff;
         }
 
-        #updateContainer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
-        }
-      
-        .update-buttons {
-            display: flex;
-            gap: 10px; /* Adjust the gap between buttons */
-            margin-bottom: 10px;
-            width: 100%
-        }
-        .update-buttons button {
-            padding: 6px;
-            height: 6vh;
-            font-size: calc(0.8rem + 1vw);
-            cursor: pointer;
-        }
         /* Media query for smaller screens */
         @media (max-width: 768px) {
             th, td {
@@ -140,17 +134,39 @@
 
             /* Additional adjustments if needed */
         }
-        .column-container {
-            display: flex; /* Use flexbox to create a flexible layout */
+        #updateContainer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
         }
-        .column-dropdrown {
-            flex: 1; /* Make each column flexible and take up equal space */
-            padding: 10px; /* Add padding for spacing */
+
+        .dropdown-container {
+            flex-grow: 1;
+            margin-right: 10px;
         }
-        .column {
-            flex: 1; /* Make each column flexible and take up equal space */
+        .dropdown-list {
+            width: 100%;
+            padding: 6px;
+            margin-bottom: 10px;
+            height: 6vh;
+            font-size: calc(0.8rem + 1vw);
+        }
+
+        .column-button {
             padding: 10px; /* Add padding for spacing */
+  
             /* border: 1px solid #ccc;  */
+        }
+        .update-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .update-buttons button {
+            padding: 6px;
+            height: 6vh;
+            font-size: calc(0.8rem + 1vw);
+            cursor: pointer;
         }
     </style>
 
@@ -158,13 +174,17 @@
 </head>
 <body>
     <div id="updateContainer">
-        <!-- <input type="text" id="userName" placeholder="Your Name" class="text-input"> -->
+        <div class="dropdown-container">
+            <!-- <input type="text" id="userName" placeholder="Your Name" class="text-input"> -->
             <select id="userName" class="dropdown-list"></select>
+        </div>
+        <div class="column-button">
             <div class="update-buttons">
                 <button onclick="removeSelected()">Remove</button>
                 <button onclick="updateSheet()">Add Item</button>
-
             </div>
+        </div>
+            
            
     </div>
 
@@ -227,10 +247,10 @@
                                 
                                 if (!userName){
                                     var newRow = document.createElement('tr');
-                                    newRow.innerHTML = `<td><span class="total">User Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">0.00</span></td><td></td>`;
+                                    newRow.innerHTML = `<td><span class="user-total">User Owes</span></td><td><span class="user-dollar-sign">$</span><span class="user-price">0.00</span></td><td><span class="user-item"></td>`;
                                 } else{
                                     var newRow = document.createElement('tr');
-                                    newRow.innerHTML = `<td><span class="total">${userName} Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${userTotal.toFixed(2)}</span></td><td>${items}</td>`;
+                                    newRow.innerHTML = `<td><span class="user-total">${userName} Owes</span></td><td><span class="user-dollar-sign">$</span><span class="user-price">${userTotal.toFixed(2)}</span></td><td><span class="user-item">${items}</span></td>`;
                                 }
                                 sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
 
@@ -324,15 +344,15 @@
                         
                         if (!userName){
                             var newRow = document.createElement('tr');
-                            newRow.innerHTML = `<td><span class="total">User Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">0.00</span></td><td></td>`;
+                            newRow.innerHTML = `<td><span class="user-total">User Owes</span></td><td><span class="user-dollar-sign">$</span><span class="user-price">0.00</span></td><td><span class="user-item"></span></td>`;
                         } else{
                             var newRow = document.createElement('tr');
-                            newRow.innerHTML = `<td><span class="total">${userName} Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${userTotal.toFixed(2)}</span></td><td>${items}</td>`;
+                            newRow.innerHTML = `<td><span class="user-total">${userName} Owes</span></td><td><span class="user-dollar-sign">$</span><span class="user-price">${userTotal.toFixed(2)}</span></td><td><span class="user-item">${items}</span></td>`;
                         }
                         sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
 
                         displayContainer.appendChild(sectionTables[currentSection]);
-            }
+                }
 
                     // Show the display container
                     displayContainer.style.display = 'block';
