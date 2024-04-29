@@ -139,7 +139,18 @@
 
             /* Additional adjustments if needed */
         }
-
+        .column-container {
+            display: flex; /* Use flexbox to create a flexible layout */
+        }
+        .column-dropdrown {
+            flex: 1; /* Make each column flexible and take up equal space */
+            padding: 10px; /* Add padding for spacing */
+        }
+        .column {
+            flex: 1; /* Make each column flexible and take up equal space */
+            padding: 10px; /* Add padding for spacing */
+            /* border: 1px solid #ccc;  */
+        }
     </style>
 
     
@@ -147,12 +158,12 @@
 <body>
     <div id="updateContainer">
         <!-- <input type="text" id="userName" placeholder="Your Name" class="text-input"> -->
-        <select id="userName" class="dropdown-list"></select>
-        <div class="update-buttons">
-            <button onclick="updateSheet()">Update</button>
-            <button onclick="removeSelected()">Remove</button>
-        </div>
-        
+            <select id="userName" class="dropdown-list"></select>
+            <div class="update-buttons">
+                <button onclick="updateSheet()">Update</button>
+                <button onclick="removeSelected()">Remove</button>
+            </div>
+           
     </div>
 
     <div id="displayContainer" class="table-container">
@@ -176,6 +187,7 @@
         function fetchData() {
             var userName = document.getElementById('userName').value.trim();
             var userlist = []
+            userlist.push("")
             fetch(baseUrl)
                 .then(response => response.json())
                 .then(data => {
@@ -206,7 +218,7 @@
                             // If the section changes, append the current section table to the display container
                             if (sectionTables[currentSection]) {
                                 
-                                var items = userItems.join(" + ");
+                                var items = userItems.join("<br>");
                                 var newRow = document.createElement('tr');
                                 newRow.innerHTML = `<td><span class="total">Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${total.toFixed(2)}</span></td><td></td>`;
                                 sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
@@ -251,8 +263,8 @@
                         var users = row[2].split(", ");
                         users.forEach(user => {
                             if (user === userName && userName) { // Use triple equals for comparison
-                                userTotal += parseFloat(row[1]); // Add to userTotal
-                                itemprice = parseFloat(row[1]);
+                                userTotal += parseFloat(row[1])/users.length; // Add to userTotal
+                                itemprice = parseFloat(row[1])/users.length;
                                 userItems.push(String(row[0]) + ':$' + String(itemprice.toFixed(2)));
                             }
                         });
@@ -303,7 +315,7 @@
 
                     // Append the last section table to the display container
                     if (sectionTables[currentSection]) {
-                        var items = userItems.join(" + ");
+                        var items = userItems.join("<br>");
                         var newRow = document.createElement('tr');
                         newRow.innerHTML = `<td><span class="total">Total</span></td><td><span class="total-dollar-sign">$</span><span class="total-price">${total.toFixed(2)}</span></td><td></td>`;
                         sectionTables[currentSection].querySelector('tbody').appendChild(newRow);
@@ -326,14 +338,14 @@
                     var dropdown = document.getElementById('userName');
                     if (dropdown.length == 0) {
                         // userlist.push(String(dropdown.option.length))
-                        userlist.push("")
+                        
                         userlist.forEach(optionText => {
                             var option = document.createElement('option');
                             option.value = optionText;
                             option.textContent = optionText;
                             dropdown.appendChild(option);
                         });
-                        dropdown.selectedIndex = dropdown.length-1
+                        dropdown.selectedIndex = 0
                         dropdown.addEventListener('change', function() {
                         // Get the selected option's value
                         const selectedValue = dropdown.value;
