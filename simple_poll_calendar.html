@@ -546,6 +546,7 @@
     const PEOPLE = ["Chris", "Siya", "Sarah", "Jason"];
 
     const STORAGE_KEY = "availabilityPollData_v1";
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL3VcGQy7qkgG9liXIkElsJSBXPURkEuyJ3pS6SZpJm-xdhj5pBkLwY_O5HfzIIKTOcw/exec";
     const state = {
       currentDate: new Date(),
       selectedPerson: PEOPLE[0],
@@ -778,8 +779,35 @@
 
     function persistData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-      saveStatus.textContent = "Saved just now";
-      setTimeout(() => saveStatus.textContent = "Saved locally", 1200);
+      saveStatus.textContent = "Saving...";
+    
+      if (state.activeDateKey) {
+        fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          body: JSON.stringify({
+            person: state.selectedPerson,
+            date: state.activeDateKey,
+            selectionType: getSelectionType(state.draft),
+            times: state.draft.exactTimes.map(formatHour),
+            am: state.draft.am,
+            pm: state.draft.pm
+          })
+        });
+    
+        saveStatus.textContent = "Saved to Google Sheets";
+        setTimeout(() => saveStatus.textContent = "Saved", 1200);
+      }
+    }
+
+    function getSelectionType(entry) {
+      const types = [];
+    
+      if (entry.am) types.push("AM");
+      if (entry.pm) types.push("PM");
+      if (entry.exactTimes.length) types.push("Exact Times");
+    
+      return types.join(" + ") || "Cleared";
     }
 
     function loadData() {
