@@ -464,6 +464,7 @@
         <h1>Availability Poll</h1>
         <p>Pick a person, click dates, and mark AM, PM, or exact hourly availability.</p>
       </div>
+      <div class="pill" id="saveStatus">Loading Google Sheets...</div>
     </section>
 
     <section class="toolbar">
@@ -499,7 +500,7 @@
 
       <div class="helper-row">
         <span>Tip: clicked dates will reopen with that person's saved choices already selected.</span>
-        <span id="storageNote">Browser storage active</span>
+        <span id="storageNote">Google Sheets sync active</span>
       </div>
     </section>
   </main>
@@ -534,14 +535,13 @@
     // Edit this list when you want to change the dropdown names.
     const PEOPLE = ["Chris", "Siya", "Sarah", "Jason"];
 
-    const STORAGE_KEY = "availabilityPollData_v1";
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL3VcGQy7qkgG9liXIkElsJSBXPURkEuyJ3pS6SZpJm-xdhj5pBkLwY_O5HfzIIKTOcw/exec";
     const state = {
       currentDate: new Date(),
       selectedPerson: PEOPLE[0],
       activeDateKey: null,
       draft: { am: false, pm: false, exactTimes: [] },
-      data: loadData()
+      data: {}
     };
 
     const monthLabel = document.getElementById("monthLabel");
@@ -559,7 +559,7 @@
     const timeGrid = document.getElementById("timeGrid");
     const exactSummary = document.getElementById("exactSummary");
 
-    function init() {
+    async function init() {
       PEOPLE.forEach(person => {
         const option = document.createElement("option");
         option.value = person;
@@ -568,8 +568,9 @@
       });
 
       personSelect.value = state.selectedPerson;
-      renderCalendar();
       bindEvents();
+      await loadRemoteData();
+      renderCalendar();
     }
 
     function bindEvents() {
@@ -757,11 +758,42 @@
       personSummary.textContent = `${count} selected day${count === 1 ? "" : "s"}`;
     }
 
-    function persistData() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-      saveStatus.textContent = "Saved locally";
+    function loadRemoteData() {
+      if (!GOOGLE_SCRIPT_URL) return Promise.resolve();
 
+      saveStatus.textContent = "Loading Google Sheets...";
+
+      return new Promise((resolve) => {
+        const callbackName = `pollLoad_${Date.now()}`;
+        const script = document.createElement("script");
+
+        const cleanup = () => {
+          delete window[callbackName];
+          script.remove();
+        };
+
+        window[callbackName] = (result) => {
+          state.data = result.data || {};
+          saveStatus.textContent = "Loaded from Google Sheets";
+          cleanup();
+          resolve();
+        };
+
+        script.onerror = () => {
+          saveStatus.textContent = "Could not load Google Sheets";
+          cleanup();
+          resolve();
+        };
+
+        script.src = `${GOOGLE_SCRIPT_URL}?action=load&callback=${callbackName}&t=${Date.now()}`;
+        document.body.appendChild(script);
+      });
+    }
+
+    function persistData() {
       if (!state.activeDateKey || !GOOGLE_SCRIPT_URL) return;
+
+      saveStatus.textContent = "Saving to Google Sheets...";
 
       fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
@@ -772,12 +804,13 @@
           selectionType: getSelectionType(state.draft),
           times: state.draft.exactTimes.map(formatHour),
           am: state.draft.am,
-          pm: state.draft.pm
+          pm: state.draft.pm,
+          cleared: !state.draft.am && !state.draft.pm && !state.draft.exactTimes.length
         })
       });
 
       saveStatus.textContent = "Saved to Google Sheets";
-      setTimeout(() => saveStatus.textContent = "Saved", 1200);
+      setTimeout(() => saveStatus.textContent = "Google Sheets sync active", 1200);
     }
 
     function getSelectionType(entry) {
@@ -786,14 +819,6 @@
       if (entry.pm) types.push("PM");
       if (entry.exactTimes.length) types.push("Exact Times");
       return types.join(" + ") || "Cleared";
-    }
-
-    function loadData() {
-      try {
-        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-      } catch {
-        return {};
-      }
     }
 
     function getTimeOptions() {
