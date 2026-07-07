@@ -282,21 +282,25 @@
       background: rgba(2, 6, 23, 0.68);
       backdrop-filter: blur(8px);
       display: none;
-      align-items: center;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      align-items: flex-start;
       justify-content: center;
       padding: 18px;
       z-index: 10;
-      animation: fadeIn 0.18s ease;
     }
 
-    .overlay.show { display: flex; }
+    .overlay.show {
+      display: block;
+    }
 
     .modal {
-      width: min(720px, 100%);
+      width: min(720px, calc(100% - 24px));
       background: white;
       border-radius: 30px;
       box-shadow: var(--shadow);
       padding: 22px;
+      margin: 24px auto;
       animation: popIn 0.22s ease;
     }
 
