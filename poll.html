@@ -292,7 +292,7 @@
     .overlay.show { display: flex; }
 
     .modal {
-      width: min(540px, 100%);
+      width: min(720px, 100%);
       background: white;
       border-radius: 30px;
       box-shadow: var(--shadow);
@@ -462,8 +462,9 @@
     <section class="hero">
       <div>
         <h1>Availability Poll</h1>
-        <p>Pick a person, click dates, and mark AM, PM, or exact hourly availability. Your choices save locally for now and can later be wired to Google Sheets.</p>
+        <p>Pick a person, click dates, and mark AM, PM, or exact hourly availability.</p>
       </div>
+      <div class="pill" id="saveStatus">Saved locally</div>
     </section>
 
     <section class="toolbar">
@@ -498,7 +499,7 @@
       <div class="calendar-grid" id="calendarGrid"></div>
 
       <div class="helper-row">
-        <span>Tip: selecting AM/PM is quick. Use exact times when someone only has specific hours.</span>
+        <span>Tip: clicked dates will reopen with that person's saved choices already selected.</span>
         <span id="storageNote">Browser storage active</span>
       </div>
     </section>
@@ -519,24 +520,14 @@
         <button class="choice-btn" id="pmBtn">PM <small>Afternoon / evening</small></button>
       </div>
 
-      <button class="ghost-btn" id="openTimesBtn">Set Exact Times</button>
+      <div class="inline-times-section">
+        <div class="section-title">Exact Times</div>
+        <div class="time-grid" id="timeGrid"></div>
+        <div class="summary-text" id="exactSummary">No exact times selected yet.</div>
+      </div>
+
       <button class="primary-btn" id="saveDayBtn">Save Date</button>
       <button class="danger-link" id="clearDayBtn">Clear this date</button>
-    </div>
-  </div>
-
-  <div class="overlay" id="timeModal">
-    <div class="modal large">
-      <div class="modal-header">
-        <div>
-          <h3>Set exact times</h3>
-          <p>Choose one or more hourly blocks from 6 AM through 2 AM.</p>
-        </div>
-        <button class="close-btn" id="closeTimeModal" aria-label="Close">×</button>
-      </div>
-      <div class="time-grid" id="timeGrid"></div>
-      <div class="summary-text" id="exactSummary">No exact times selected yet.</div>
-      <button class="primary-btn" id="applyTimesBtn">Apply Times</button>
     </div>
   </div>
 
@@ -562,7 +553,6 @@
     const saveStatus = document.getElementById("saveStatus");
 
     const dayModal = document.getElementById("dayModal");
-    const timeModal = document.getElementById("timeModal");
     const dayModalTitle = document.getElementById("dayModalTitle");
     const dayModalSubtitle = document.getElementById("dayModalSubtitle");
     const amBtn = document.getElementById("amBtn");
@@ -593,25 +583,19 @@
       });
 
       document.getElementById("closeDayModal").addEventListener("click", closeDayModal);
-      document.getElementById("closeTimeModal").addEventListener("click", closeTimeModal);
       document.getElementById("saveDayBtn").addEventListener("click", saveActiveDay);
       document.getElementById("clearDayBtn").addEventListener("click", clearActiveDay);
-      document.getElementById("openTimesBtn").addEventListener("click", openTimeModal);
-      document.getElementById("applyTimesBtn").addEventListener("click", closeTimeModal);
 
       amBtn.addEventListener("click", () => toggleDraft("am"));
       pmBtn.addEventListener("click", () => toggleDraft("pm"));
 
-      [dayModal, timeModal].forEach(modal => {
-        modal.addEventListener("click", (event) => {
-          if (event.target === modal) modal.classList.remove("show");
-        });
+      dayModal.addEventListener("click", (event) => {
+        if (event.target === dayModal) closeDayModal();
       });
 
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
           dayModal.classList.remove("show");
-          timeModal.classList.remove("show");
         }
       });
     }
@@ -681,6 +665,8 @@
       dayModalTitle.textContent = date.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
       dayModalSubtitle.textContent = `Editing ${state.selectedPerson}'s availability.`;
       updateChoiceButtons();
+      renderTimeButtons();
+      updateExactSummary();
       dayModal.classList.add("show");
     }
 
@@ -698,15 +684,6 @@
       pmBtn.classList.toggle("selected", state.draft.pm);
     }
 
-    function openTimeModal() {
-      renderTimeButtons();
-      updateExactSummary();
-      timeModal.classList.add("show");
-    }
-
-    function closeTimeModal() {
-      timeModal.classList.remove("show");
-    }
 
     function renderTimeButtons() {
       timeGrid.innerHTML = "";
@@ -758,10 +735,15 @@
 
     function clearActiveDay() {
       if (!state.activeDateKey) return;
+
       if (state.data[state.selectedPerson]) {
         delete state.data[state.selectedPerson][state.activeDateKey];
       }
+
       state.draft = { am: false, pm: false, exactTimes: [] };
+      updateChoiceButtons();
+      renderTimeButtons();
+      updateExactSummary();
       persistData();
       closeDayModal();
       renderCalendar();
@@ -778,34 +760,32 @@
 
     function persistData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state.data));
-      saveStatus.textContent = "Saving...";
-    
-      if (state.activeDateKey) {
-        fetch(GOOGLE_SCRIPT_URL, {
-          method: "POST",
-          mode: "no-cors",
-          body: JSON.stringify({
-            person: state.selectedPerson,
-            date: state.activeDateKey,
-            selectionType: getSelectionType(state.draft),
-            times: state.draft.exactTimes.map(formatHour),
-            am: state.draft.am,
-            pm: state.draft.pm
-          })
-        });
-    
-        saveStatus.textContent = "Saved to Google Sheets";
-        setTimeout(() => saveStatus.textContent = "Saved", 1200);
-      }
+      saveStatus.textContent = "Saved locally";
+
+      if (!state.activeDateKey || !GOOGLE_SCRIPT_URL) return;
+
+      fetch(GOOGLE_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        body: JSON.stringify({
+          person: state.selectedPerson,
+          date: state.activeDateKey,
+          selectionType: getSelectionType(state.draft),
+          times: state.draft.exactTimes.map(formatHour),
+          am: state.draft.am,
+          pm: state.draft.pm
+        })
+      });
+
+      saveStatus.textContent = "Saved to Google Sheets";
+      setTimeout(() => saveStatus.textContent = "Saved", 1200);
     }
 
     function getSelectionType(entry) {
       const types = [];
-    
       if (entry.am) types.push("AM");
       if (entry.pm) types.push("PM");
       if (entry.exactTimes.length) types.push("Exact Times");
-    
       return types.join(" + ") || "Cleared";
     }
 
