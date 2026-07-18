@@ -84,6 +84,53 @@
       flex-wrap: wrap;
     }
 
+    .overlap-picker {
+      display: none;
+      grid-column: 1 / -1;
+      gap: 10px;
+      padding: 12px 14px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .overlap-picker.show {
+      display: grid;
+    }
+
+    .overlap-picker-title {
+      color: rgba(255, 255, 255, 0.86);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .overlap-person-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .person-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 850;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .person-check input {
+      width: 16px;
+      height: 16px;
+      accent-color: var(--primary);
+      cursor: pointer;
+    }
+
     label {
       color: rgba(255, 255, 255, 0.78);
       font-weight: 700;
@@ -548,6 +595,16 @@
       .toolbar {
         grid-template-columns: 1fr;
       }
+
+      .overlap-person-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .person-check {
+        border-radius: 14px;
+        justify-content: flex-start;
+      }
     
       select {
         width: 100%;
@@ -640,6 +697,10 @@
         <select id="personSelect"></select>
       </div>
       <div class="pill" id="personSummary">0 selected days</div>
+      <div class="overlap-picker" id="overlapPicker">
+        <div class="overlap-picker-title">Choose who to include in the overlap</div>
+        <div class="overlap-person-list" id="overlapPersonList"></div>
+      </div>
     </section>
 
     <section class="calendar-card">
@@ -729,7 +790,8 @@
       selectedPerson: PEOPLE[0],
       activeDateKey: null,
       draft: { am: false, pm: false, exactTimes: [] },
-      data: {}
+      data: {},
+      overlapPeople: [...PEOPLE]
     };
 
     const monthLabel = document.getElementById("monthLabel");
@@ -738,6 +800,8 @@
     const personSelect = document.getElementById("personSelect");
     const personSummary = document.getElementById("personSummary");
     const saveStatus = document.getElementById("saveStatus");
+    const overlapPicker = document.getElementById("overlapPicker");
+    const overlapPersonList = document.getElementById("overlapPersonList");
 
     const dayModal = document.getElementById("dayModal");
     const dayModalTitle = document.getElementById("dayModalTitle");
@@ -763,10 +827,11 @@
 
       const groupOption = document.createElement("option");
       groupOption.value = GROUP_VIEW;
-      groupOption.textContent = "Everyone — Find overlap";
+      groupOption.textContent = "Find overlap";
       personSelect.appendChild(groupOption);
 
       personSelect.value = state.selectedPerson;
+      renderOverlapPeople();
       bindEvents();
       await loadRemoteData();
       renderCalendar();
@@ -778,6 +843,7 @@
 
       personSelect.addEventListener("change", (event) => {
         state.selectedPerson = event.target.value;
+        updateOverlapPickerVisibility();
         renderCalendar();
       });
 
@@ -803,6 +869,43 @@
           groupModal.classList.remove("show");
         }
       });
+    }
+
+    function renderOverlapPeople() {
+      overlapPersonList.innerHTML = "";
+
+      PEOPLE.forEach(person => {
+        const label = document.createElement("label");
+        label.className = "person-check";
+        label.innerHTML = `
+          <input type="checkbox" value="${person}" ${state.overlapPeople.includes(person) ? "checked" : ""}>
+          <span>${person}</span>
+        `;
+
+        const checkbox = label.querySelector("input");
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) {
+            if (!state.overlapPeople.includes(person)) state.overlapPeople.push(person);
+          } else {
+            state.overlapPeople = state.overlapPeople.filter(name => name !== person);
+          }
+
+          state.overlapPeople = PEOPLE.filter(name => state.overlapPeople.includes(name));
+          renderCalendar();
+        });
+
+        overlapPersonList.appendChild(label);
+      });
+
+      updateOverlapPickerVisibility();
+    }
+
+    function updateOverlapPickerVisibility() {
+      overlapPicker.classList.toggle("show", state.selectedPerson === GROUP_VIEW);
+    }
+
+    function getOverlapPeople() {
+      return state.overlapPeople;
     }
 
     function changeMonth(direction) {
@@ -870,7 +973,7 @@
     function renderGroupBadges(summary) {
       if (!summary || summary.responders === 0) return "";
       const badges = [
-        `<span class="badge overlap-badge">${summary.responders}/${PEOPLE.length} people</span>`
+        `<span class="badge overlap-badge">${summary.responders}/${getOverlapPeople().length} people</span>`
       ];
 
       if (summary.bestCount > 0) {
@@ -884,7 +987,8 @@
 
     function getGroupDaySummary(dateKey) {
       const hourly = getHourlyAvailability(dateKey);
-      const responders = PEOPLE.filter(person => state.data[person]?.[dateKey]).length;
+      const selectedPeople = getOverlapPeople();
+      const responders = selectedPeople.filter(person => state.data[person]?.[dateKey]).length;
       let bestHour = null;
       let bestCount = 0;
 
@@ -900,7 +1004,7 @@
 
     function getHourlyAvailability(dateKey) {
       return getTimeOptions().map(option => {
-        const people = PEOPLE.filter(person => {
+        const people = getOverlapPeople().filter(person => {
           const entry = state.data[person]?.[dateKey];
           return entry ? isAvailableAtHour(entry, option.value) : false;
         });
@@ -923,15 +1027,18 @@
     function openGroupModal(dateKey) {
       const date = fromDateKey(dateKey);
       const summary = getGroupDaySummary(dateKey);
-      const responders = PEOPLE.filter(person => state.data[person]?.[dateKey]);
-      const noResponse = PEOPLE.filter(person => !state.data[person]?.[dateKey]);
+      const selectedPeople = getOverlapPeople();
+      const responders = selectedPeople.filter(person => state.data[person]?.[dateKey]);
+      const noResponse = selectedPeople.filter(person => !state.data[person]?.[dateKey]);
 
       groupModalTitle.textContent = date.toLocaleDateString(undefined, {
         weekday: "long",
         month: "long",
         day: "numeric"
       });
-      groupModalSubtitle.textContent = "Times are ranked by how many people are available.";
+      groupModalSubtitle.textContent = selectedPeople.length
+        ? `Times are ranked across ${selectedPeople.length} selected people.`
+        : "Select at least one person in the overlap filters.";
 
       groupSummary.innerHTML = `
         <div class="summary-card">
@@ -957,7 +1064,7 @@
             <div class="overlap-row ${index === 0 ? "best" : ""}">
               <div class="overlap-row-top">
                 <span>${item.label}</span>
-                <span class="overlap-count">${item.people.length}/${PEOPLE.length} available</span>
+                <span class="overlap-count">${item.people.length}/${getOverlapPeople().length} available</span>
               </div>
               <div class="overlap-names">${item.people.join(", ")}</div>
             </div>
@@ -1089,6 +1196,16 @@
           0
         );
         personSummary.textContent = `${PEOPLE.length} people · ${totalResponses} total responses`;
+        return;
+      }
+
+      if (state.selectedPerson === GROUP_VIEW) {
+        const selectedCount = getOverlapPeople().length;
+        const totalResponses = getOverlapPeople().reduce(
+          (total, person) => total + Object.keys(state.data[person] || {}).length,
+          0
+        );
+        personSummary.textContent = `${selectedCount} selected · ${totalResponses} total responses`;
         return;
       }
 
