@@ -436,6 +436,93 @@
       line-height: 1.45;
     }
 
+
+    .group-day {
+      background: linear-gradient(145deg, rgba(255,255,255,0.95), rgba(238,242,255,0.9));
+    }
+
+    .overlap-badge {
+      background: #ede9fe;
+      color: #6d28d9;
+    }
+
+    .best-badge {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .group-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+
+    .summary-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 14px;
+      text-align: center;
+    }
+
+    .summary-card strong {
+      display: block;
+      font-size: 1.45rem;
+      margin-bottom: 3px;
+    }
+
+    .summary-card span {
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .overlap-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .overlap-row {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #f8fafc;
+      padding: 13px 14px;
+    }
+
+    .overlap-row.best {
+      background: #ecfdf5;
+      border-color: rgba(16, 185, 129, 0.28);
+    }
+
+    .overlap-row-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      font-weight: 900;
+    }
+
+    .overlap-count {
+      color: var(--primary-dark);
+      white-space: nowrap;
+    }
+
+    .overlap-names {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.4;
+    }
+
+    .group-note {
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 0.82rem;
+      line-height: 1.45;
+    }
+
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
@@ -524,6 +611,16 @@
         max-height: calc(100vh - 40px);
         overflow-y: auto;
       }
+
+      .group-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .overlap-row-top {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 4px;
+      }
     }
   </style>
 </head>
@@ -601,9 +698,30 @@
     </div>
   </div>
 
+
+  <div class="overlay" id="groupModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <h3 id="groupModalTitle">Group availability</h3>
+          <p id="groupModalSubtitle">Best overlap for everyone.</p>
+        </div>
+        <button class="close-btn" id="closeGroupModal" aria-label="Close">×</button>
+      </div>
+
+      <div class="group-summary" id="groupSummary"></div>
+      <div class="overlap-list" id="overlapList"></div>
+      <div class="group-note">
+        AM counts as available from 6:00 AM–11:00 AM. PM counts as available from
+        12:00 PM–2:00 AM. Exact-time selections are included at their selected hours.
+      </div>
+    </div>
+  </div>
+
   <script>
     // Edit this list when you want to change the dropdown names.
     const PEOPLE = ["Chris", "Siya", "Sarah", "Jason", "Rex", "Steph", "Ryan"];
+    const GROUP_VIEW = "__GROUP__";
 
     const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL3VcGQy7qkgG9liXIkElsJSBXPURkEuyJ3pS6SZpJm-xdhj5pBkLwY_O5HfzIIKTOcw/exec";
     const state = {
@@ -629,6 +747,12 @@
     const timeGrid = document.getElementById("timeGrid");
     const exactSummary = document.getElementById("exactSummary");
 
+    const groupModal = document.getElementById("groupModal");
+    const groupModalTitle = document.getElementById("groupModalTitle");
+    const groupModalSubtitle = document.getElementById("groupModalSubtitle");
+    const groupSummary = document.getElementById("groupSummary");
+    const overlapList = document.getElementById("overlapList");
+
     async function init() {
       PEOPLE.forEach(person => {
         const option = document.createElement("option");
@@ -636,6 +760,11 @@
         option.textContent = person;
         personSelect.appendChild(option);
       });
+
+      const groupOption = document.createElement("option");
+      groupOption.value = GROUP_VIEW;
+      groupOption.textContent = "Everyone — Find overlap";
+      personSelect.appendChild(groupOption);
 
       personSelect.value = state.selectedPerson;
       bindEvents();
@@ -653,6 +782,7 @@
       });
 
       document.getElementById("closeDayModal").addEventListener("click", closeDayModal);
+      document.getElementById("closeGroupModal").addEventListener("click", closeGroupModal);
       document.getElementById("saveDayBtn").addEventListener("click", saveActiveDay);
       document.getElementById("clearDayBtn").addEventListener("click", clearActiveDay);
 
@@ -663,9 +793,14 @@
         if (event.target === dayModal) closeDayModal();
       });
 
+      groupModal.addEventListener("click", (event) => {
+        if (event.target === groupModal) closeGroupModal();
+      });
+
       window.addEventListener("keydown", (event) => {
         if (event.key === "Escape") {
           dayModal.classList.remove("show");
+          groupModal.classList.remove("show");
         }
       });
     }
@@ -685,9 +820,13 @@
       const firstDay = new Date(year, month, 1);
       const lastDay = new Date(year, month + 1, 0);
       const todayKey = toDateKey(new Date());
+      const isGroupView = state.selectedPerson === GROUP_VIEW;
 
       monthLabel.textContent = firstDay.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-      monthSubLabel.textContent = `${lastDay.getDate()} days · ${state.selectedPerson}'s availability`;
+      monthSubLabel.textContent = isGroupView
+        ? `${lastDay.getDate()} days · group overlap`
+        : `${lastDay.getDate()} days · ${state.selectedPerson}'s availability`;
+
       calendarGrid.innerHTML = "";
 
       for (let i = 0; i < firstDay.getDay(); i++) {
@@ -699,14 +838,20 @@
       for (let day = 1; day <= lastDay.getDate(); day++) {
         const date = new Date(year, month, day);
         const dateKey = toDateKey(date);
-        const entry = getEntry(dateKey);
+        const entry = isGroupView ? getGroupDaySummary(dateKey) : getEntry(dateKey);
         const dayEl = document.createElement("button");
-        dayEl.className = `day ${dateKey === todayKey ? "today" : ""}`;
+        dayEl.className = `day ${isGroupView ? "group-day" : ""} ${dateKey === todayKey ? "today" : ""}`;
         dayEl.innerHTML = `
           <div class="day-number">${day}</div>
-          <div class="badges">${renderBadges(entry)}</div>
+          <div class="badges">${isGroupView ? renderGroupBadges(entry) : renderBadges(entry)}</div>
         `;
-        dayEl.addEventListener("click", () => openDayModal(dateKey));
+        dayEl.addEventListener("click", () => {
+          if (isGroupView) {
+            openGroupModal(dateKey);
+          } else {
+            openDayModal(dateKey);
+          }
+        });
         calendarGrid.appendChild(dayEl);
       }
 
@@ -720,6 +865,120 @@
       if (entry.pm) badges.push('<span class="badge pm">PM</span>');
       if (entry.exactTimes?.length) badges.push(`<span class="badge exact">${entry.exactTimes.length} times</span>`);
       return badges.join("");
+    }
+
+    function renderGroupBadges(summary) {
+      if (!summary || summary.responders === 0) return "";
+      const badges = [
+        `<span class="badge overlap-badge">${summary.responders}/${PEOPLE.length} people</span>`
+      ];
+
+      if (summary.bestCount > 0) {
+        badges.push(
+          `<span class="badge best-badge">Best ${formatHour(summary.bestHour)} · ${summary.bestCount}</span>`
+        );
+      }
+
+      return badges.join("");
+    }
+
+    function getGroupDaySummary(dateKey) {
+      const hourly = getHourlyAvailability(dateKey);
+      const responders = PEOPLE.filter(person => state.data[person]?.[dateKey]).length;
+      let bestHour = null;
+      let bestCount = 0;
+
+      hourly.forEach(item => {
+        if (item.people.length > bestCount) {
+          bestCount = item.people.length;
+          bestHour = item.hour;
+        }
+      });
+
+      return { responders, bestHour, bestCount, hourly };
+    }
+
+    function getHourlyAvailability(dateKey) {
+      return getTimeOptions().map(option => {
+        const people = PEOPLE.filter(person => {
+          const entry = state.data[person]?.[dateKey];
+          return entry ? isAvailableAtHour(entry, option.value) : false;
+        });
+
+        return {
+          hour: option.value,
+          label: option.label,
+          people
+        };
+      });
+    }
+
+    function isAvailableAtHour(entry, hour) {
+      if (entry.exactTimes?.includes(hour)) return true;
+      if (entry.am && hour >= 6 && hour <= 11) return true;
+      if (entry.pm && hour >= 12 && hour <= 26) return true;
+      return false;
+    }
+
+    function openGroupModal(dateKey) {
+      const date = fromDateKey(dateKey);
+      const summary = getGroupDaySummary(dateKey);
+      const responders = PEOPLE.filter(person => state.data[person]?.[dateKey]);
+      const noResponse = PEOPLE.filter(person => !state.data[person]?.[dateKey]);
+
+      groupModalTitle.textContent = date.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric"
+      });
+      groupModalSubtitle.textContent = "Times are ranked by how many people are available.";
+
+      groupSummary.innerHTML = `
+        <div class="summary-card">
+          <strong>${summary.responders}</strong>
+          <span>people responded</span>
+        </div>
+        <div class="summary-card">
+          <strong>${summary.bestCount || 0}</strong>
+          <span>best overlap</span>
+        </div>
+        <div class="summary-card">
+          <strong>${summary.bestHour === null ? "—" : formatHour(summary.bestHour)}</strong>
+          <span>best starting hour</span>
+        </div>
+      `;
+
+      const ranked = summary.hourly
+        .filter(item => item.people.length > 0)
+        .sort((a, b) => b.people.length - a.people.length || a.hour - b.hour);
+
+      overlapList.innerHTML = ranked.length
+        ? ranked.map((item, index) => `
+            <div class="overlap-row ${index === 0 ? "best" : ""}">
+              <div class="overlap-row-top">
+                <span>${item.label}</span>
+                <span class="overlap-count">${item.people.length}/${PEOPLE.length} available</span>
+              </div>
+              <div class="overlap-names">${item.people.join(", ")}</div>
+            </div>
+          `).join("")
+        : `<div class="summary-text">No availability has been entered for this day yet.</div>`;
+
+      if (responders.length || noResponse.length) {
+        overlapList.insertAdjacentHTML("beforeend", `
+          <div class="summary-text">
+            <strong>Responded:</strong> ${responders.length ? responders.join(", ") : "Nobody"}<br>
+            <strong>No response:</strong> ${noResponse.length ? noResponse.join(", ") : "Everyone responded"}
+          </div>
+        `);
+      }
+
+      groupModal.classList.add("show");
+      groupModal.scrollTop = 0;
+    }
+
+    function closeGroupModal() {
+      groupModal.classList.remove("show");
     }
 
     function openDayModal(dateKey) {
@@ -824,6 +1083,15 @@
     }
 
     function updatePersonSummary() {
+      if (state.selectedPerson === GROUP_VIEW) {
+        const totalResponses = PEOPLE.reduce(
+          (sum, person) => sum + Object.keys(state.data[person] || {}).length,
+          0
+        );
+        personSummary.textContent = `${PEOPLE.length} people · ${totalResponses} total responses`;
+        return;
+      }
+
       const count = Object.keys(state.data[state.selectedPerson] || {}).length;
       personSummary.textContent = `${count} selected day${count === 1 ? "" : "s"}`;
     }
