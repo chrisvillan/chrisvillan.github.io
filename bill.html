@@ -25,7 +25,7 @@
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
         }
 
@@ -55,53 +55,14 @@
             font-weight: bold;
         }
 
-        .upload-options {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        .upload-button {
-            width: 100%;
-            min-height: 52px;
-            background: #eef2ff;
-            color: #1e3a8a;
-            border: 1px solid #c7d2fe;
-        }
-
-        .upload-button:hover {
-            background: #e0e7ff;
-        }
-
         .hidden-file-input {
             display: none;
         }
 
-        .image-container {
-            display: none;
-            margin-top: 20px;
-        }
-
-        .image-container h2,
-        .result-container h2 {
-            margin-bottom: 10px;
-            font-size: 18px;
-        }
-
-        #imagePreview {
-            display: block;
-            width: 100%;
-            max-height: 500px;
-            object-fit: contain;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: #f9fafb;
-        }
-
-        .button-row {
-            display: flex;
+        .upload-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
             gap: 12px;
-            margin-top: 20px;
         }
 
         button {
@@ -111,6 +72,73 @@
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
+        }
+
+        .upload-button {
+            min-height: 52px;
+            border: 1px solid #bfdbfe;
+            background: #eff6ff;
+            color: #1d4ed8;
+        }
+
+        .upload-button:hover {
+            background: #dbeafe;
+        }
+
+        .image-section {
+            display: none;
+            margin-top: 22px;
+        }
+
+        .image-section h2,
+        .result-container h2 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .preview-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+
+        .preview-panel {
+            min-width: 0;
+        }
+
+        .preview-panel h3 {
+            margin: 0 0 8px;
+            color: #4b5563;
+            font-size: 15px;
+        }
+
+        #imagePreview,
+        #processedCanvas {
+            display: block;
+            width: 100%;
+            max-height: 550px;
+            object-fit: contain;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        #processedPanel {
+            display: none;
+        }
+
+        #processingNote {
+            display: none;
+            margin: 10px 0 0;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
         }
 
         #scanButton {
@@ -123,8 +151,11 @@
             background: #1d4ed8;
         }
 
-        #scanButton:disabled {
+        #scanButton:disabled,
+        .upload-button:disabled {
             background: #9ca3af;
+            border-color: #9ca3af;
+            color: white;
             cursor: not-allowed;
         }
 
@@ -201,7 +232,7 @@
             color: #991b1b;
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 700px) {
             body {
                 padding: 12px;
             }
@@ -210,7 +241,8 @@
                 padding: 18px;
             }
 
-            .upload-options {
+            .upload-options,
+            .preview-grid {
                 grid-template-columns: 1fr;
             }
 
@@ -231,11 +263,12 @@
             <h1>Receipt OCR</h1>
 
             <p class="description">
-                Upload or take a picture of a receipt. The page will scan
-                the image and display the text it recognizes.
+                Take a new picture or choose an existing receipt image.
+                The page will straighten and clean the receipt before
+                scanning its text.
             </p>
 
-            <div class="upload-label">Select receipt image</div>
+            <span class="upload-label">Select receipt image</span>
 
             <div class="upload-options">
                 <button id="cameraButton" class="upload-button" type="button">
@@ -262,18 +295,35 @@
                 accept="image/*"
             >
 
-            <div id="imageContainer" class="image-container">
-                <h2>Image preview</h2>
+            <div id="imageSection" class="image-section">
+                <h2>Receipt preview</h2>
 
-                <img
-                    id="imagePreview"
-                    alt="Selected receipt preview"
-                >
+                <div class="preview-grid">
+                    <div class="preview-panel">
+                        <h3>Original</h3>
+
+                        <img
+                            id="imagePreview"
+                            alt="Selected receipt preview"
+                        >
+                    </div>
+
+                    <div id="processedPanel" class="preview-panel">
+                        <h3>Processed for OCR</h3>
+
+                        <canvas id="processedCanvas"></canvas>
+                    </div>
+                </div>
+
+                <p id="processingNote"></p>
             </div>
+
+            <!-- Hidden canvas used to resize the original image. -->
+            <canvas id="sourceCanvas" hidden></canvas>
 
             <div class="button-row">
                 <button id="scanButton" type="button" disabled>
-                    Scan Receipt
+                    Process and Scan Receipt
                 </button>
 
                 <button id="clearButton" type="button">
@@ -282,7 +332,7 @@
             </div>
 
             <div id="statusContainer" class="status-container">
-                <div id="statusText">Preparing OCR...</div>
+                <div id="statusText">Preparing image...</div>
 
                 <div class="progress-background">
                     <div id="progressBar"></div>
@@ -310,6 +360,12 @@
         src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js">
     </script>
 
+    <!-- OpenCV.js for receipt detection and perspective correction -->
+    <script
+        async
+        src="https://docs.opencv.org/4.x/opencv.js">
+    </script>
+
     <script>
         const cameraButton =
             document.getElementById("cameraButton");
@@ -323,11 +379,23 @@
         const galleryInput =
             document.getElementById("galleryInput");
 
-        const imageContainer =
-            document.getElementById("imageContainer");
+        const imageSection =
+            document.getElementById("imageSection");
 
         const imagePreview =
             document.getElementById("imagePreview");
+
+        const sourceCanvas =
+            document.getElementById("sourceCanvas");
+
+        const processedCanvas =
+            document.getElementById("processedCanvas");
+
+        const processedPanel =
+            document.getElementById("processedPanel");
+
+        const processingNote =
+            document.getElementById("processingNote");
 
         const scanButton =
             document.getElementById("scanButton");
@@ -378,32 +446,38 @@
 
             clearError();
             resetResults();
+            clearProcessedPreview();
 
             if (!file) {
-                selectedFile = null;
-                scanButton.disabled = true;
-                imageContainer.style.display = "none";
                 return;
             }
 
             if (!file.type.startsWith("image/")) {
                 showError("Please select a valid image file.");
                 event.target.value = "";
-                selectedFile = null;
-                scanButton.disabled = true;
                 return;
             }
 
             selectedFile = file;
+
+            /*
+                Clear the other input so selecting the same image again
+                will still trigger its change event.
+            */
+            if (event.target === cameraInput) {
+                galleryInput.value = "";
+            } else {
+                cameraInput.value = "";
+            }
 
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
             }
 
             previewUrl = URL.createObjectURL(file);
-
             imagePreview.src = previewUrl;
-            imageContainer.style.display = "block";
+
+            imageSection.style.display = "block";
             scanButton.disabled = false;
         }
 
@@ -415,33 +489,56 @@
 
             clearError();
             resetResults();
-
-            scanButton.disabled = true;
-            cameraButton.disabled = true;
-            galleryButton.disabled = true;
+            setControlsDisabled(true);
 
             statusContainer.style.display = "block";
-            statusText.textContent = "Loading OCR...";
-            progressBar.style.width = "0%";
+            statusText.textContent = "Loading image tools...";
+            progressBar.style.width = "5%";
 
             try {
-                /*
-                    A worker performs the OCR in a separate browser thread.
+                await waitForOpenCv();
 
-                    The worker is created once and reused if the user scans
-                    another receipt.
-                */
+                statusText.textContent =
+                    "Detecting and straightening receipt...";
+
+                progressBar.style.width = "12%";
+
+                const preprocessingResult =
+                    await preprocessReceipt(selectedFile);
+
+                processingNote.textContent =
+                    preprocessingResult.receiptDetected
+                        ? "Receipt edges were detected and perspective correction was applied."
+                        : "Receipt edges were not confidently detected, so the full image was cleaned and scanned.";
+
+                processingNote.style.display = "block";
+                processedPanel.style.display = "block";
+
                 if (!worker) {
+                    statusText.textContent = "Loading OCR engine...";
+
                     worker = await Tesseract.createWorker("eng", 1, {
                         logger: updateOcrProgress
+                    });
+
+                    await worker.setParameters({
+                        tessedit_pageseg_mode: "6",
+                        preserve_interword_spaces: "1",
+                        user_defined_dpi: "300"
                     });
                 }
 
                 statusText.textContent = "Recognizing receipt text...";
 
-                const result = await worker.recognize(selectedFile);
+                /*
+                    Tesseract scans the cleaned canvas instead of the
+                    original phone photo.
+                */
+                const result =
+                    await worker.recognize(processedCanvas);
 
                 const text = result.data.text.trim();
+
                 const confidence = Math.round(
                     result.data.confidence || 0
                 );
@@ -457,25 +554,526 @@
                 statusText.textContent = "OCR complete";
                 progressBar.style.width = "100%";
             } catch (error) {
-                console.error("OCR error:", error);
+                console.error("Receipt scan error:", error);
 
                 showError(
-                    "The receipt could not be scanned. " +
-                    "Try another image with better lighting and focus."
+                    "The receipt could not be processed. " +
+                    "Try a clearer image with the complete receipt visible."
                 );
 
                 statusContainer.style.display = "none";
             } finally {
-                scanButton.disabled = false;
-                cameraButton.disabled = false;
-                galleryButton.disabled = false;
+                setControlsDisabled(false);
             }
+        }
+
+        function waitForOpenCv(timeoutMilliseconds = 20000) {
+            return new Promise((resolve, reject) => {
+                const startTime = Date.now();
+
+                const checkOpenCv = () => {
+                    if (
+                        typeof cv !== "undefined" &&
+                        cv.Mat
+                    ) {
+                        resolve();
+                        return;
+                    }
+
+                    if (
+                        Date.now() - startTime >
+                        timeoutMilliseconds
+                    ) {
+                        reject(
+                            new Error("OpenCV.js failed to load.")
+                        );
+
+                        return;
+                    }
+
+                    setTimeout(checkOpenCv, 100);
+                };
+
+                checkOpenCv();
+            });
+        }
+
+        async function preprocessReceipt(file) {
+            const image = await loadImage(file);
+
+            /*
+                Large phone photos use a lot of memory in OpenCV.
+                Resize while preserving enough detail for small receipt text.
+            */
+            const maximumDimension = 2200;
+
+            const scale = Math.min(
+                1,
+                maximumDimension /
+                    Math.max(image.naturalWidth, image.naturalHeight)
+            );
+
+            const sourceWidth =
+                Math.round(image.naturalWidth * scale);
+
+            const sourceHeight =
+                Math.round(image.naturalHeight * scale);
+
+            sourceCanvas.width = sourceWidth;
+            sourceCanvas.height = sourceHeight;
+
+            const sourceContext =
+                sourceCanvas.getContext("2d", {
+                    willReadFrequently: true
+                });
+
+            sourceContext.clearRect(
+                0,
+                0,
+                sourceWidth,
+                sourceHeight
+            );
+
+            sourceContext.drawImage(
+                image,
+                0,
+                0,
+                sourceWidth,
+                sourceHeight
+            );
+
+            let source = null;
+            let gray = null;
+            let blurred = null;
+            let edges = null;
+            let kernel = null;
+            let contours = null;
+            let hierarchy = null;
+            let warped = null;
+            let cleaned = null;
+
+            try {
+                source = cv.imread(sourceCanvas);
+                gray = new cv.Mat();
+                blurred = new cv.Mat();
+                edges = new cv.Mat();
+
+                cv.cvtColor(
+                    source,
+                    gray,
+                    cv.COLOR_RGBA2GRAY
+                );
+
+                cv.GaussianBlur(
+                    gray,
+                    blurred,
+                    new cv.Size(5, 5),
+                    0,
+                    0,
+                    cv.BORDER_DEFAULT
+                );
+
+                cv.Canny(
+                    blurred,
+                    edges,
+                    50,
+                    150
+                );
+
+                kernel = cv.getStructuringElement(
+                    cv.MORPH_RECT,
+                    new cv.Size(5, 5)
+                );
+
+                cv.morphologyEx(
+                    edges,
+                    edges,
+                    cv.MORPH_CLOSE,
+                    kernel
+                );
+
+                contours = new cv.MatVector();
+                hierarchy = new cv.Mat();
+
+                cv.findContours(
+                    edges,
+                    contours,
+                    hierarchy,
+                    cv.RETR_LIST,
+                    cv.CHAIN_APPROX_SIMPLE
+                );
+
+                const receiptCorners =
+                    findLargestReceiptQuadrilateral(
+                        contours,
+                        source.cols * source.rows
+                    );
+
+                let receiptDetected = false;
+
+                if (receiptCorners) {
+                    warped = warpReceipt(
+                        source,
+                        receiptCorners
+                    );
+
+                    receiptDetected = true;
+                } else {
+                    warped = source.clone();
+                }
+
+                cleaned = cleanReceiptForOcr(warped);
+
+                cv.imshow(processedCanvas, cleaned);
+
+                return {
+                    receiptDetected
+                };
+            } finally {
+                [
+                    source,
+                    gray,
+                    blurred,
+                    edges,
+                    kernel,
+                    contours,
+                    hierarchy,
+                    warped,
+                    cleaned
+                ].forEach((matrix) => {
+                    if (matrix) {
+                        matrix.delete();
+                    }
+                });
+            }
+        }
+
+        function findLargestReceiptQuadrilateral(
+            contours,
+            imageArea
+        ) {
+            let bestCorners = null;
+            let bestArea = 0;
+
+            /*
+                Ignore tiny rectangles such as logos and text boxes.
+                The detected receipt should cover at least 15% of the image.
+            */
+            const minimumArea = imageArea * 0.15;
+
+            for (
+                let index = 0;
+                index < contours.size();
+                index++
+            ) {
+                const contour = contours.get(index);
+                const perimeter = cv.arcLength(contour, true);
+                const approximation = new cv.Mat();
+
+                cv.approxPolyDP(
+                    contour,
+                    approximation,
+                    0.02 * perimeter,
+                    true
+                );
+
+                const area = Math.abs(
+                    cv.contourArea(approximation)
+                );
+
+                if (
+                    approximation.rows === 4 &&
+                    area > minimumArea &&
+                    area > bestArea &&
+                    cv.isContourConvex(approximation)
+                ) {
+                    const points = [];
+
+                    for (
+                        let pointIndex = 0;
+                        pointIndex < 4;
+                        pointIndex++
+                    ) {
+                        points.push({
+                            x: approximation.intPtr(
+                                pointIndex,
+                                0
+                            )[0],
+
+                            y: approximation.intPtr(
+                                pointIndex,
+                                0
+                            )[1]
+                        });
+                    }
+
+                    bestCorners = orderCorners(points);
+                    bestArea = area;
+                }
+
+                approximation.delete();
+                contour.delete();
+            }
+
+            return bestCorners;
+        }
+
+        function orderCorners(points) {
+            /*
+                Return corners in this order:
+                top-left, top-right, bottom-right, bottom-left.
+            */
+            const topLeft = points.reduce(
+                (best, point) =>
+                    point.x + point.y <
+                    best.x + best.y
+                        ? point
+                        : best
+            );
+
+            const bottomRight = points.reduce(
+                (best, point) =>
+                    point.x + point.y >
+                    best.x + best.y
+                        ? point
+                        : best
+            );
+
+            const topRight = points.reduce(
+                (best, point) =>
+                    point.x - point.y >
+                    best.x - best.y
+                        ? point
+                        : best
+            );
+
+            const bottomLeft = points.reduce(
+                (best, point) =>
+                    point.x - point.y <
+                    best.x - best.y
+                        ? point
+                        : best
+            );
+
+            return [
+                topLeft,
+                topRight,
+                bottomRight,
+                bottomLeft
+            ];
+        }
+
+        function warpReceipt(source, corners) {
+            const [
+                topLeft,
+                topRight,
+                bottomRight,
+                bottomLeft
+            ] = corners;
+
+            const topWidth =
+                distance(topLeft, topRight);
+
+            const bottomWidth =
+                distance(bottomLeft, bottomRight);
+
+            const leftHeight =
+                distance(topLeft, bottomLeft);
+
+            const rightHeight =
+                distance(topRight, bottomRight);
+
+            const outputWidth = Math.max(
+                1,
+                Math.round(
+                    Math.max(topWidth, bottomWidth)
+                )
+            );
+
+            const outputHeight = Math.max(
+                1,
+                Math.round(
+                    Math.max(leftHeight, rightHeight)
+                )
+            );
+
+            const sourcePoints = cv.matFromArray(
+                4,
+                1,
+                cv.CV_32FC2,
+                [
+                    topLeft.x,
+                    topLeft.y,
+
+                    topRight.x,
+                    topRight.y,
+
+                    bottomRight.x,
+                    bottomRight.y,
+
+                    bottomLeft.x,
+                    bottomLeft.y
+                ]
+            );
+
+            const destinationPoints = cv.matFromArray(
+                4,
+                1,
+                cv.CV_32FC2,
+                [
+                    0,
+                    0,
+
+                    outputWidth - 1,
+                    0,
+
+                    outputWidth - 1,
+                    outputHeight - 1,
+
+                    0,
+                    outputHeight - 1
+                ]
+            );
+
+            const transform = cv.getPerspectiveTransform(
+                sourcePoints,
+                destinationPoints
+            );
+
+            const output = new cv.Mat();
+
+            cv.warpPerspective(
+                source,
+                output,
+                transform,
+                new cv.Size(outputWidth, outputHeight),
+                cv.INTER_CUBIC,
+                cv.BORDER_REPLICATE
+            );
+
+            sourcePoints.delete();
+            destinationPoints.delete();
+            transform.delete();
+
+            return output;
+        }
+
+        function cleanReceiptForOcr(receipt) {
+            const gray = new cv.Mat();
+
+            cv.cvtColor(
+                receipt,
+                gray,
+                cv.COLOR_RGBA2GRAY
+            );
+
+            /*
+                Upscaling helps Tesseract with small thermal receipt text.
+            */
+            let working = gray;
+
+            if (gray.cols < 1400) {
+                const scale = 1400 / gray.cols;
+                const resized = new cv.Mat();
+
+                cv.resize(
+                    gray,
+                    resized,
+                    new cv.Size(
+                        Math.round(gray.cols * scale),
+                        Math.round(gray.rows * scale)
+                    ),
+                    0,
+                    0,
+                    cv.INTER_CUBIC
+                );
+
+                working = resized;
+            }
+
+            const denoised = new cv.Mat();
+
+            cv.GaussianBlur(
+                working,
+                denoised,
+                new cv.Size(3, 3),
+                0
+            );
+
+            const thresholded = new cv.Mat();
+
+            cv.adaptiveThreshold(
+                denoised,
+                thresholded,
+                255,
+                cv.ADAPTIVE_THRESH_GAUSSIAN_C,
+                cv.THRESH_BINARY,
+                31,
+                15
+            );
+
+            /*
+                Add a white margin so characters near the receipt edge
+                are not clipped during OCR.
+            */
+            const bordered = new cv.Mat();
+
+            cv.copyMakeBorder(
+                thresholded,
+                bordered,
+                30,
+                30,
+                30,
+                30,
+                cv.BORDER_CONSTANT,
+                new cv.Scalar(255, 255, 255, 255)
+            );
+
+            gray.delete();
+
+            if (working !== gray) {
+                working.delete();
+            }
+
+            denoised.delete();
+            thresholded.delete();
+
+            return bordered;
+        }
+
+        function distance(pointA, pointB) {
+            return Math.hypot(
+                pointA.x - pointB.x,
+                pointA.y - pointB.y
+            );
+        }
+
+        function loadImage(file) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+                const temporaryUrl = URL.createObjectURL(file);
+
+                image.onload = () => {
+                    URL.revokeObjectURL(temporaryUrl);
+                    resolve(image);
+                };
+
+                image.onerror = () => {
+                    URL.revokeObjectURL(temporaryUrl);
+                    reject(
+                        new Error("The selected image could not be loaded.")
+                    );
+                };
+
+                image.src = temporaryUrl;
+            });
         }
 
         function updateOcrProgress(message) {
             console.log(message);
 
-            const readableStatus = formatStatus(message.status);
+            const readableStatus =
+                formatStatus(message.status);
 
             if (readableStatus) {
                 statusText.textContent = readableStatus;
@@ -486,7 +1084,15 @@
                     message.progress * 100
                 );
 
-                progressBar.style.width = `${percentage}%`;
+                /*
+                    Reserve the beginning of the bar for preprocessing,
+                    then use the remaining portion for OCR.
+                */
+                const displayedPercentage =
+                    15 + Math.round(percentage * 0.85);
+
+                progressBar.style.width =
+                    `${displayedPercentage}%`;
 
                 if (message.status === "recognizing text") {
                     statusText.textContent =
@@ -497,15 +1103,31 @@
 
         function formatStatus(status) {
             const statusLabels = {
-                "loading tesseract core": "Loading OCR engine...",
-                "initializing tesseract": "Initializing OCR...",
+                "loading tesseract core":
+                    "Loading OCR engine...",
+
+                "initializing tesseract":
+                    "Initializing OCR...",
+
                 "loading language traineddata":
                     "Loading English language data...",
-                "initializing api": "Preparing text recognition...",
-                "recognizing text": "Recognizing receipt text..."
+
+                "initializing api":
+                    "Preparing text recognition...",
+
+                "recognizing text":
+                    "Recognizing receipt text..."
             };
 
             return statusLabels[status] || status || "";
+        }
+
+        function setControlsDisabled(disabled) {
+            scanButton.disabled =
+                disabled || !selectedFile;
+
+            cameraButton.disabled = disabled;
+            galleryButton.disabled = disabled;
         }
 
         function resetResults() {
@@ -516,26 +1138,43 @@
             progressBar.style.width = "0%";
         }
 
+        function clearProcessedPreview() {
+            const context =
+                processedCanvas.getContext("2d");
+
+            context.clearRect(
+                0,
+                0,
+                processedCanvas.width,
+                processedCanvas.height
+            );
+
+            processedCanvas.width = 0;
+            processedCanvas.height = 0;
+
+            processedPanel.style.display = "none";
+            processingNote.style.display = "none";
+            processingNote.textContent = "";
+        }
+
         function clearPage() {
             selectedFile = null;
 
             cameraInput.value = "";
             galleryInput.value = "";
-            cameraButton.disabled = false;
-            galleryButton.disabled = false;
-
-            scanButton.disabled = true;
 
             imagePreview.removeAttribute("src");
-            imageContainer.style.display = "none";
+            imageSection.style.display = "none";
 
             if (previewUrl) {
                 URL.revokeObjectURL(previewUrl);
                 previewUrl = null;
             }
 
+            clearProcessedPreview();
             resetResults();
             clearError();
+            setControlsDisabled(false);
         }
 
         function showError(message) {
@@ -548,9 +1187,6 @@
             errorMessage.style.display = "none";
         }
 
-        /*
-            Clean up the OCR worker if the user leaves the page.
-        */
         window.addEventListener("beforeunload", () => {
             if (worker) {
                 worker.terminate();
