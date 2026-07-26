@@ -264,8 +264,8 @@
 
             <p class="description">
                 Take a new picture or choose an existing receipt image.
-                The page will straighten and clean the receipt before
-                scanning its text.
+                The page will crop, perspective-correct, rotate, and clean
+                the receipt before scanning its text.
             </p>
 
             <span class="upload-label">Select receipt image</span>
@@ -506,10 +506,16 @@
                 const preprocessingResult =
                     await preprocessReceipt(selectedFile);
 
+                const rotationMessage =
+                    Math.abs(preprocessingResult.rotationAngle) >= 0.2
+                        ? ` Text alignment detected; rotated ${preprocessingResult.rotationAngle.toFixed(1)}° before OCR.`
+                        : " Text lines were already close to horizontal.";
+
                 processingNote.textContent =
-                    preprocessingResult.receiptDetected
+                    (preprocessingResult.receiptDetected
                         ? "Receipt edges were detected and perspective correction was applied."
-                        : "Receipt edges were not confidently detected, so the full image was cleaned and scanned.";
+                        : "Receipt edges were not confidently detected, so the full image was used.")
+                    + rotationMessage;
 
                 processingNote.style.display = "block";
                 processedPanel.style.display = "block";
@@ -722,12 +728,16 @@
                     warped = source.clone();
                 }
 
-                cleaned = cleanReceiptForOcr(warped);
+                const deskewResult = autoDeskewReceipt(warped);
+                deskewed = deskewResult.image;
+
+                cleaned = cleanReceiptForOcr(deskewed);
 
                 cv.imshow(processedCanvas, cleaned);
 
                 return {
-                    receiptDetected
+                    receiptDetected,
+                    rotationAngle: deskewResult.rotationAngle
                 };
             } finally {
                 [
@@ -739,6 +749,7 @@
                     contours,
                     hierarchy,
                     warped,
+                    deskewed,
                     cleaned
                 ].forEach((matrix) => {
                     if (matrix) {
@@ -956,6 +967,187 @@
             transform.delete();
 
             return output;
+        }
+
+
+        function autoDeskewReceipt(receipt) {
+            const gray = new cv.Mat();
+            const blurred = new cv.Mat();
+            const edges = new cv.Mat();
+            const lines = new cv.Mat();
+
+            try {
+                cv.cvtColor(
+                    receipt,
+                    gray,
+                    cv.COLOR_RGBA2GRAY
+                );
+
+                cv.GaussianBlur(
+                    gray,
+                    blurred,
+                    new cv.Size(3, 3),
+                    0
+                );
+
+                cv.Canny(
+                    blurred,
+                    edges,
+                    50,
+                    150,
+                    3,
+                    false
+                );
+
+                /*
+                    Detect long, nearly-horizontal strokes. Receipt text
+                    creates many short line segments with a shared angle.
+                */
+                const minimumLineLength = Math.max(
+                    40,
+                    Math.round(receipt.cols * 0.08)
+                );
+
+                cv.HoughLinesP(
+                    edges,
+                    lines,
+                    1,
+                    Math.PI / 180,
+                    35,
+                    minimumLineLength,
+                    12
+                );
+
+                const angles = [];
+
+                for (let row = 0; row < lines.rows; row++) {
+                    const line = lines.intPtr(row, 0);
+                    const x1 = line[0];
+                    const y1 = line[1];
+                    const x2 = line[2];
+                    const y2 = line[3];
+
+                    const deltaX = x2 - x1;
+                    const deltaY = y2 - y1;
+                    const length = Math.hypot(deltaX, deltaY);
+
+                    if (length < minimumLineLength) {
+                        continue;
+                    }
+
+                    let angle =
+                        Math.atan2(deltaY, deltaX) *
+                        180 / Math.PI;
+
+                    /* Normalize equivalent line directions. */
+                    while (angle <= -90) angle += 180;
+                    while (angle > 90) angle -= 180;
+
+                    /*
+                        Ignore receipt borders and strong vertical edges.
+                        We only use plausible text-line slopes.
+                    */
+                    if (angle >= -25 && angle <= 25) {
+                        const repeats = Math.max(
+                            1,
+                            Math.round(length / minimumLineLength)
+                        );
+
+                        for (let count = 0; count < repeats; count++) {
+                            angles.push(angle);
+                        }
+                    }
+                }
+
+                if (angles.length < 4) {
+                    return {
+                        image: receipt.clone(),
+                        rotationAngle: 0
+                    };
+                }
+
+                angles.sort((a, b) => a - b);
+
+                const middle = Math.floor(angles.length / 2);
+                const detectedAngle =
+                    angles.length % 2 === 0
+                        ? (angles[middle - 1] + angles[middle]) / 2
+                        : angles[middle];
+
+                if (Math.abs(detectedAngle) < 0.2) {
+                    return {
+                        image: receipt.clone(),
+                        rotationAngle: 0
+                    };
+                }
+
+                const correctionAngle = -detectedAngle;
+
+                return {
+                    image: rotateImageKeepingBounds(
+                        receipt,
+                        correctionAngle
+                    ),
+                    rotationAngle: correctionAngle
+                };
+            } finally {
+                gray.delete();
+                blurred.delete();
+                edges.delete();
+                lines.delete();
+            }
+        }
+
+        function rotateImageKeepingBounds(source, angleDegrees) {
+            const angleRadians =
+                Math.abs(angleDegrees) * Math.PI / 180;
+
+            const cosine = Math.cos(angleRadians);
+            const sine = Math.sin(angleRadians);
+
+            const outputWidth = Math.ceil(
+                source.cols * cosine +
+                source.rows * sine
+            );
+
+            const outputHeight = Math.ceil(
+                source.rows * cosine +
+                source.cols * sine
+            );
+
+            const center = new cv.Point(
+                source.cols / 2,
+                source.rows / 2
+            );
+
+            const rotationMatrix =
+                cv.getRotationMatrix2D(
+                    center,
+                    angleDegrees,
+                    1
+                );
+
+            rotationMatrix.doublePtr(0, 2)[0] +=
+                outputWidth / 2 - center.x;
+
+            rotationMatrix.doublePtr(1, 2)[0] +=
+                outputHeight / 2 - center.y;
+
+            const rotated = new cv.Mat();
+
+            cv.warpAffine(
+                source,
+                rotated,
+                rotationMatrix,
+                new cv.Size(outputWidth, outputHeight),
+                cv.INTER_CUBIC,
+                cv.BORDER_CONSTANT,
+                new cv.Scalar(255, 255, 255, 255)
+            );
+
+            rotationMatrix.delete();
+
+            return rotated;
         }
 
         function cleanReceiptForOcr(receipt) {
