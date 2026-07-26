@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Shared Bill</title>
   <style>
-    *{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:Arial,Helvetica,sans-serif}.shell{max-width:1000px;margin:auto;padding:20px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 5px 18px rgba(0,0,0,.06);padding:22px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.topbar h1{margin:0;font-size:25px}.subtle{color:#6b7280;line-height:1.5}.screen{display:none}.screen.active{display:block}.grid{display:grid;gap:14px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:block;font-weight:700;margin-bottom:7px}input,select,textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:8px;font:inherit;background:#fff}button{border:0;border-radius:9px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer}.primary{background:#2563eb;color:#fff}.secondary{background:#e5e7eb;color:#111827}.success{background:#059669;color:#fff}.danger{background:#dc2626;color:#fff}.ghost{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}.small{padding:8px 11px;font-size:14px}button:disabled{opacity:.55;cursor:not-allowed}.choice-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px}.choice{min-height:58px}.section{margin-top:22px;padding-top:22px;border-top:1px solid #e5e7eb}.section h2,.section h3{margin-top:0}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.right{margin-left:auto}.status{margin-top:14px;padding:11px;border-radius:8px;background:#eff6ff;color:#1d4ed8;display:none}.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}.successbox{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}.table-wrap{overflow:auto;border:1px solid #d1d5db;border-radius:9px}.table{width:100%;min-width:720px;border-collapse:collapse}.table th,.table td{padding:10px;border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;vertical-align:middle}.table th{background:#f3f4f6;text-align:left}.table tr:last-child td{border-bottom:0}.table th:last-child,.table td:last-child{border-right:0}.money{text-align:right}.people-editor{display:grid;gap:8px}.person-row{display:flex;gap:8px}.person-row input{flex:1}.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.preview-grid img,.preview-grid canvas{width:100%;max-height:500px;object-fit:contain;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb}.mode-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#ecfdf5;color:#047857;font-weight:700;font-size:13px}.totals-box{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.metric{padding:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px}.metric span{display:block;color:#6b7280;font-size:13px}.metric strong{display:block;margin-top:5px;font-size:20px}.item-card{border:1px solid #d1d5db;border-radius:10px;padding:14px;margin-bottom:10px}.item-head{display:flex;justify-content:space-between;gap:12px}.quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.pick-card{display:flex;align-items:center;gap:13px;width:100%;padding:15px;margin-bottom:10px;border:2px solid #e5e7eb;border-radius:12px;background:#fff;text-align:left;transition:.15s ease}.pick-card:hover{border-color:#93c5fd;background:#f8fbff}.pick-card.selected{border-color:#059669;background:#ecfdf5}.pick-card.unavailable{opacity:.55;cursor:not-allowed;background:#f3f4f6}.pick-check{display:flex;align-items:center;justify-content:center;flex:0 0 26px;width:26px;height:26px;border:2px solid #9ca3af;border-radius:7px;font-size:17px;color:#fff}.pick-card.selected .pick-check{border-color:#059669;background:#059669}.pick-main{min-width:0;flex:1}.pick-name{display:block;font-size:17px}.pick-price{font-size:16px;font-weight:700;white-space:nowrap}.pick-state{display:block;margin-top:3px;color:#6b7280;font-size:13px}.qty-stepper{display:none;align-items:center;gap:10px;margin-top:10px}.pick-card.selected .qty-stepper{display:flex}.qty-button{width:38px;height:38px;padding:0;border-radius:9px;background:#d1fae5;color:#047857;font-size:22px;line-height:1}.qty-count{min-width:32px;text-align:center;font-size:18px;font-weight:700}.pick-unit-note{display:block;margin-top:3px;color:#6b7280;font-size:13px}.pick-price{text-align:right}.participant-total{position:sticky;bottom:10px;background:#111827;color:#fff;border-radius:12px;padding:16px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}.participant-total .grid{grid-template-columns:repeat(4,1fr)}.participant-total span{display:block;color:#d1d5db;font-size:12px}.participant-total strong{font-size:20px}.summary-actions{display:flex;justify-content:flex-end;margin:14px 0}.assignment-list{display:grid;gap:4px}.assignment-chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:13px;margin:2px 4px 2px 0}.unclaimed{color:#b45309;font-weight:700}.summary-note{margin:0 0 14px;color:#6b7280}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;padding:12px}.modal.open{display:flex;align-items:center;justify-content:center}.modal-box{background:#111827;color:#fff;width:100%;max-width:760px;border-radius:14px;padding:15px;max-height:calc(100vh - 24px);overflow:auto}.camera-wrap{position:relative;background:#000;border-radius:10px;overflow:hidden}.camera-wrap video{display:block;width:100%;max-height:72vh}.camera-guide{position:absolute;inset:8%;border:2px dashed rgba(255,255,255,.6);border-radius:10px;pointer-events:none}.hidden{display:none!important}@media(max-width:720px){.shell{padding:10px}.card{padding:16px}.grid.two,.grid.three,.preview-grid,.totals-box{grid-template-columns:1fr}.participant-total .grid{grid-template-columns:1fr 1fr}.topbar{align-items:flex-start}.right{margin-left:0}.table{min-width:650px}}
+    *{box-sizing:border-box}body{margin:0;background:#f3f4f6;color:#111827;font-family:Arial,Helvetica,sans-serif}.shell{max-width:1000px;margin:auto;padding:20px}.card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;box-shadow:0 5px 18px rgba(0,0,0,.06);padding:22px}.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.topbar h1{margin:0;font-size:25px}.subtle{color:#6b7280;line-height:1.5}.screen{display:none}.screen.active{display:block}.grid{display:grid;gap:14px}.grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}label{display:block;font-weight:700;margin-bottom:7px}input,select,textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:8px;font:inherit;background:#fff}button{border:0;border-radius:9px;padding:11px 16px;font:inherit;font-weight:700;cursor:pointer}.primary{background:#2563eb;color:#fff}.secondary{background:#e5e7eb;color:#111827}.success{background:#059669;color:#fff}.danger{background:#dc2626;color:#fff}.ghost{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}.small{padding:8px 11px;font-size:14px}button:disabled{opacity:.55;cursor:not-allowed}.choice-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:18px}.choice{min-height:58px}.section{margin-top:22px;padding-top:22px;border-top:1px solid #e5e7eb}.section h2,.section h3{margin-top:0}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.right{margin-left:auto}.status{margin-top:14px;padding:11px;border-radius:8px;background:#eff6ff;color:#1d4ed8;display:none}.error{background:#fef2f2;color:#991b1b;border:1px solid #fecaca}.successbox{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0}.table-wrap{overflow:auto;border:1px solid #d1d5db;border-radius:9px}.table{width:100%;min-width:720px;border-collapse:collapse}.table th,.table td{padding:10px;border-right:1px solid #d1d5db;border-bottom:1px solid #d1d5db;vertical-align:middle}.table th{background:#f3f4f6;text-align:left}.table tr:last-child td{border-bottom:0}.table th:last-child,.table td:last-child{border-right:0}.money{text-align:right}.people-editor{display:grid;gap:8px}.person-row{display:flex;gap:8px}.person-row input{flex:1}.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.preview-grid img,.preview-grid canvas{width:100%;max-height:500px;object-fit:contain;border:1px solid #d1d5db;border-radius:8px;background:#f9fafb}.mode-pill{display:inline-block;padding:6px 10px;border-radius:999px;background:#ecfdf5;color:#047857;font-weight:700;font-size:13px}.totals-box{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}.metric{padding:14px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px}.metric span{display:block;color:#6b7280;font-size:13px}.metric strong{display:block;margin-top:5px;font-size:20px}.item-card{border:1px solid #d1d5db;border-radius:10px;padding:14px;margin-bottom:10px}.item-head{display:flex;justify-content:space-between;gap:12px}.quick{display:flex;gap:7px;flex-wrap:wrap;margin-top:9px}.pick-card{display:flex;align-items:center;gap:13px;width:100%;padding:15px;margin-bottom:10px;border:2px solid #e5e7eb;border-radius:12px;background:#fff;text-align:left;transition:.15s ease}.pick-card:hover{border-color:#93c5fd;background:#f8fbff}.pick-card.selected{border-color:#059669;background:#ecfdf5}.pick-card.unremaining{opacity:.55;cursor:not-allowed;background:#f3f4f6}.pick-check{display:flex;align-items:center;justify-content:center;flex:0 0 26px;width:26px;height:26px;border:2px solid #9ca3af;border-radius:7px;font-size:17px;color:#fff}.pick-card.selected .pick-check{border-color:#059669;background:#059669}.pick-main{min-width:0;flex:1}.pick-name{display:block;font-size:17px}.pick-price{font-size:16px;font-weight:700;white-space:nowrap}.pick-price-group{flex:0 0 auto;text-align:right}.pick-availability{display:block;margin-top:4px;color:#6b7280;font-size:13px;font-weight:400;white-space:nowrap}.pick-state{display:block;margin-top:3px;color:#6b7280;font-size:13px}.qty-stepper{display:none;align-items:center;gap:10px;margin-top:10px}.pick-card.selected .qty-stepper{display:flex}.qty-button{width:38px;height:38px;padding:0;border-radius:9px;background:#d1fae5;color:#047857;font-size:22px;line-height:1}.qty-count{min-width:32px;text-align:center;font-size:18px;font-weight:700}.pick-unit-note{display:block;margin-top:3px;color:#6b7280;font-size:13px}.pick-price{text-align:right}.participant-total{position:sticky;bottom:10px;background:#111827;color:#fff;border-radius:12px;padding:16px;margin-top:18px;box-shadow:0 8px 24px rgba(0,0,0,.25)}.participant-total .grid{grid-template-columns:repeat(4,1fr)}.participant-total span{display:block;color:#d1d5db;font-size:12px}.participant-total strong{font-size:20px}.summary-actions{display:flex;justify-content:flex-end;margin:14px 0}.assignment-list{display:grid;gap:4px}.assignment-chip{display:inline-block;padding:4px 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;font-size:13px;margin:2px 4px 2px 0}.unclaimed{color:#b45309;font-weight:700}.summary-note{margin:0 0 14px;color:#6b7280}.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:1000;padding:12px}.modal.open{display:flex;align-items:center;justify-content:center}.modal-box{background:#111827;color:#fff;width:100%;max-width:760px;border-radius:14px;padding:15px;max-height:calc(100vh - 24px);overflow:auto}.camera-wrap{position:relative;background:#000;border-radius:10px;overflow:hidden}.camera-wrap video{display:block;width:100%;max-height:72vh}.camera-guide{position:absolute;inset:8%;border:2px dashed rgba(255,255,255,.6);border-radius:10px;pointer-events:none}.hidden{display:none!important}@media(max-width:720px){.shell{padding:10px}.card{padding:16px}.grid.two,.grid.three,.preview-grid,.totals-box{grid-template-columns:1fr}.participant-total .grid{grid-template-columns:1fr 1fr}.topbar{align-items:flex-start}.right{margin-left:0}.table{min-width:650px}}
   </style>
 </head>
 <body>
@@ -134,41 +134,43 @@ function renderParticipantItems(){
 
     const others=roundMoney((appState.assignedByItem[item.itemId]||0)-saved);
     const remainingAmount=Math.max(0,roundMoney(Number(item.lineTotal||0)-others));
-    const availableQuantity=Math.max(
+    const remainingQuantity=Math.max(
       0,
       Math.min(totalQuantity,Math.floor((remainingAmount+0.001)/unitPrice))
     );
     let selectedQuantity=Math.max(
       0,
-      Math.min(availableQuantity,Math.round(Number(saved||0)/unitPrice))
+      Math.min(remainingQuantity,Math.round(Number(saved||0)/unitPrice))
     );
 
     const selected=selectedQuantity>0;
-    const unavailable=!selected&&availableQuantity<=0;
+    const unremaining=!selected&&remainingQuantity<=0;
     const card=document.createElement('div');
-    card.className='pick-card'+(selected?' selected':'')+(unavailable?' unavailable':'');
+    card.className='pick-card'+(selected?' selected':'')+(unremaining?' unremaining':'');
 
     const priceLabel=totalQuantity>1
       ? `${money(unitPrice)} each`
       : money(unitPrice);
 
-    const availabilityLabel=availableQuantity===1
-      ? '1 available'
-      : `${availableQuantity} available`;
+    const availabilityLabel=remainingQuantity===1
+      ? '1 remaining'
+      : `${remainingQuantity} remaining`;
 
     card.innerHTML=`
       <span class="pick-check">${selected?'✓':''}</span>
       <span class="pick-main">
         <strong class="pick-name">${escapeHtml(item.name)}</strong>
-        <span class="pick-unit-note">${unavailable?'No quantities available':availabilityLabel}</span>
-        <span class="pick-state">${selected?`${selectedQuantity} selected`:unavailable?'Already claimed':'Tap to select'}</span>
+        <span class="pick-state">${selected?`${selectedQuantity} selected`:unremaining?'Already claimed':'Tap to select'}</span>
         <span class="qty-stepper">
           <button type="button" class="qty-button qty-minus" aria-label="Remove one">−</button>
           <span class="qty-count">${selectedQuantity}</span>
           <button type="button" class="qty-button qty-plus" aria-label="Add one">+</button>
         </span>
       </span>
-      <span class="pick-price">${priceLabel}</span>
+      <span class="pick-price-group">
+        <span class="pick-price">${priceLabel}</span>
+        <span class="pick-availability">${unremaining?'None remaining':availabilityLabel}</span>
+      </span>
       <input class="shareInput" data-item-id="${item.itemId}" type="hidden" value="${Number(saved).toFixed(2)}">
     `;
 
@@ -187,9 +189,9 @@ function renderParticipantItems(){
       check.textContent=isSelected?'✓':'';
       state.textContent=isSelected
         ? `${selectedQuantity} selected`
-        : availableQuantity<=0?'Already claimed':'Tap to select';
+        : remainingQuantity<=0?'Already claimed':'Tap to select';
       minus.disabled=selectedQuantity<=0;
-      plus.disabled=selectedQuantity>=availableQuantity;
+      plus.disabled=selectedQuantity>=remainingQuantity;
       updateParticipantTotals();
     }
 
@@ -198,7 +200,7 @@ function renderParticipantItems(){
         The + and − buttons manage quantity themselves. Clicking anywhere
         else on the row toggles the whole item on or off.
       */
-      if(event.target.closest('.qty-button')||unavailable)return;
+      if(event.target.closest('.qty-button')||unremaining)return;
 
       selectedQuantity = selectedQuantity > 0 ? 0 : 1;
       refresh();
@@ -214,7 +216,7 @@ function renderParticipantItems(){
 
     plus.onclick=event=>{
       event.stopPropagation();
-      if(selectedQuantity<availableQuantity){
+      if(selectedQuantity<remainingQuantity){
         selectedQuantity++;
         refresh();
       }
