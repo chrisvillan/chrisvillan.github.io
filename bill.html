@@ -534,26 +534,42 @@
                     });
                 }
 
-                statusText.textContent = "Recognizing receipt text...";
+                statusText.textContent =
+                    "Testing several text rotations...";
 
                 /*
-                    Tesseract scans the cleaned canvas instead of the
-                    original phone photo.
+                    The automatic deskew may still leave a small residual
+                    angle. Test nearby rotations and keep the OCR result
+                    with the highest confidence score.
                 */
-                const result =
-                    await worker.recognize(processedCanvas);
+                const sweepResult = await recognizeBestRotation(
+                    processedCanvas,
+                    [-15, -10, -5, 0, 5, 10, 15]
+                );
 
-                const text = result.data.text.trim();
+                /*
+                    Replace the preview with the exact rotation that won,
+                    so the displayed image matches what Tesseract used.
+                */
+                copyCanvas(
+                    sweepResult.canvas,
+                    processedCanvas
+                );
+
+                const text = sweepResult.result.data.text.trim();
 
                 const confidence = Math.round(
-                    result.data.confidence || 0
+                    sweepResult.result.data.confidence || 0
                 );
 
                 recognizedText.value =
                     text || "No readable text was found.";
 
                 confidenceText.textContent =
-                    `OCR confidence: ${confidence}%`;
+                    `OCR confidence: ${confidence}% | Best extra rotation: ${sweepResult.angle > 0 ? "+" : ""}${sweepResult.angle}°`;
+
+                processingNote.textContent +=
+                    ` Tesseract tested rotations from -15° to +15° and selected ${sweepResult.angle > 0 ? "+" : ""}${sweepResult.angle}° with the highest confidence.`;
 
                 resultContainer.style.display = "block";
 
@@ -571,6 +587,116 @@
             } finally {
                 setControlsDisabled(false);
             }
+        }
+
+
+        async function recognizeBestRotation(sourceCanvas, angles) {
+            let best = null;
+
+            for (let index = 0; index < angles.length; index++) {
+                const angle = angles[index];
+
+                statusText.textContent =
+                    `Testing rotation ${index + 1} of ${angles.length}: ${angle > 0 ? "+" : ""}${angle}°`;
+
+                const baseProgress = 15;
+                const sweepProgress = 80;
+                const completedFraction = index / angles.length;
+
+                progressBar.style.width =
+                    `${baseProgress + Math.round(completedFraction * sweepProgress)}%`;
+
+                const rotatedCanvas = rotateCanvasExpanded(
+                    sourceCanvas,
+                    angle
+                );
+
+                const result = await worker.recognize(rotatedCanvas);
+                const confidence = Number(result.data.confidence || 0);
+
+                console.log(
+                    `Rotation ${angle}° confidence:`,
+                    confidence
+                );
+
+                if (!best || confidence > best.confidence) {
+                    if (best && best.canvas) {
+                        best.canvas.width = 0;
+                        best.canvas.height = 0;
+                    }
+
+                    best = {
+                        angle,
+                        confidence,
+                        result,
+                        canvas: rotatedCanvas
+                    };
+                } else {
+                    rotatedCanvas.width = 0;
+                    rotatedCanvas.height = 0;
+                }
+            }
+
+            if (!best) {
+                throw new Error("No OCR rotation produced a result.");
+            }
+
+            return best;
+        }
+
+        function rotateCanvasExpanded(sourceCanvas, angleDegrees) {
+            const angleRadians = angleDegrees * Math.PI / 180;
+            const cosine = Math.abs(Math.cos(angleRadians));
+            const sine = Math.abs(Math.sin(angleRadians));
+
+            const outputWidth = Math.ceil(
+                sourceCanvas.width * cosine +
+                sourceCanvas.height * sine
+            );
+
+            const outputHeight = Math.ceil(
+                sourceCanvas.width * sine +
+                sourceCanvas.height * cosine
+            );
+
+            const outputCanvas = document.createElement("canvas");
+            outputCanvas.width = outputWidth;
+            outputCanvas.height = outputHeight;
+
+            const context = outputCanvas.getContext("2d", {
+                willReadFrequently: true
+            });
+
+            context.fillStyle = "white";
+            context.fillRect(0, 0, outputWidth, outputHeight);
+
+            context.translate(outputWidth / 2, outputHeight / 2);
+            context.rotate(angleRadians);
+            context.drawImage(
+                sourceCanvas,
+                -sourceCanvas.width / 2,
+                -sourceCanvas.height / 2
+            );
+
+            return outputCanvas;
+        }
+
+        function copyCanvas(sourceCanvas, destinationCanvas) {
+            destinationCanvas.width = sourceCanvas.width;
+            destinationCanvas.height = sourceCanvas.height;
+
+            const context = destinationCanvas.getContext("2d", {
+                willReadFrequently: true
+            });
+
+            context.clearRect(
+                0,
+                0,
+                destinationCanvas.width,
+                destinationCanvas.height
+            );
+
+            context.drawImage(sourceCanvas, 0, 0);
         }
 
         function waitForOpenCv(timeoutMilliseconds = 20000) {
