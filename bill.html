@@ -70,7 +70,7 @@
   </div>
 </div>
 
-<div id="summaryModal" class="modal"><div class="modal-box" style="background:#fff;color:#111827;max-width:980px"><div class="toolbar"><div><h2 style="margin:0">Full bill summary</h2><p id="summaryUpdatedText" class="subtle" style="margin:5px 0 0">Latest saved selections</p></div><button id="closeSummaryButton" class="secondary right">Close</button></div><div id="summaryLoading" class="status" style="display:none"></div><div id="summaryContent"><div class="section"><h3>Receipt items and assignments</h3><p class="summary-note">This shows the selections that everyone has saved so far.</p><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Item</th><th class="money">Item total</th><th>Claimed by</th><th class="money">Unclaimed</th></tr></thead><tbody id="summaryItemsBody"></tbody></table></div></div><div class="section"><h3>Totals by person</h3><div class="table-wrap"><table class="table"><thead><tr><th>Person</th><th class="money">Items</th><th class="money">Tax</th><th class="money">Tip</th><th class="money">Total</th></tr></thead><tbody id="summaryPeopleBody"></tbody><tfoot><tr><th>Receipt total</th><th id="summaryReceiptSubtotal" class="money"></th><th id="summaryReceiptTax" class="money"></th><th id="summaryReceiptTip" class="money"></th><th id="summaryReceiptTotal" class="money"></th></tr></tfoot></table></div></div></div></div></div>
+<div id="summaryModal" class="modal"><div class="modal-box" style="background:#fff;color:#111827;max-width:980px"><div class="toolbar"><div><h2 id="summaryTitle" style="margin:0">Full bill summary</h2><p id="summaryUpdatedText" class="subtle" style="margin:5px 0 0">Latest saved selections</p></div><button id="closeSummaryButton" class="secondary right">Close</button></div><div id="summaryLoading" class="status" style="display:none"></div><div id="summaryContent"><div class="section"><h3>Receipt items and assignments</h3><p class="summary-note">This shows the selections that everyone has saved so far.</p><div class="table-wrap"><table class="table"><thead><tr><th>#</th><th>Item</th><th class="money">Item total</th><th>Claimed by</th><th class="money">Unclaimed</th></tr></thead><tbody id="summaryItemsBody"></tbody></table></div></div><div class="section"><h3>Totals by person</h3><div class="table-wrap"><table class="table"><thead><tr><th>Person</th><th class="money">Items</th><th class="money">Tax</th><th class="money">Tip</th><th class="money">Total</th></tr></thead><tbody id="summaryPeopleBody"></tbody><tfoot><tr><th>Receipt total</th><th id="summaryReceiptSubtotal" class="money"></th><th id="summaryReceiptTax" class="money"></th><th id="summaryReceiptTip" class="money"></th><th id="summaryReceiptTotal" class="money"></th></tr></tfoot></table></div></div></div></div></div>
 
 <div id="modeModal" class="modal"><div class="modal-box"><h2>Analysis mode</h2><p class="subtle">Gemini Vision reads the processed image directly. Tesseract first reads the text, then Gemini structures it.</p><div class="grid two"><button class="success modeChoice" data-mode="vision">Gemini Vision (default)</button><button class="ghost modeChoice" data-mode="tesseract">Tesseract + Gemini text</button></div><button id="closeModeButton" class="secondary" style="margin-top:12px">Cancel</button></div></div>
 
@@ -228,11 +228,13 @@ function renderParticipantItems(){
 }
 function getParticipantSubtotal(){return roundMoney([...document.querySelectorAll('.shareInput')].reduce((sum,i)=>sum+(Number(i.value)||0),0));}
 function updateParticipantTotals(){const sub=getParticipantSubtotal(),taxRate=appState.bill.subtotal?appState.bill.tax/appState.bill.subtotal:0,tipRate=appState.bill.subtotal?appState.bill.tip/appState.bill.subtotal:0,tax=roundMoney(sub*taxRate),tip=roundMoney(sub*tipRate),total=roundMoney(sub+tax+tip);$('personSubtotal').textContent=money(sub);$('personTax').textContent=money(tax);$('personTip').textContent=money(tip);$('personTotal').textContent=money(total);}
-async function openFullSummary(){
+async function openFullSummary(options={}){
   const modal=$('summaryModal');
   modal.classList.add('open');
+  $('summaryTitle').textContent='Full bill summary';
+  $('closeSummaryButton').style.display='';
   $('summaryContent').style.display='none';
-  $('summaryLoading').textContent='Refreshing everyone’s saved selections…';
+  $('summaryLoading').textContent=options.loadingMessage || 'Refreshing everyone’s saved selections…';
   $('summaryLoading').className='status';
   $('summaryLoading').style.display='block';
   try{
@@ -242,10 +244,11 @@ async function openFullSummary(){
     renderFullSummary();
     $('summaryLoading').style.display='none';
     $('summaryContent').style.display='block';
-    $('summaryUpdatedText').textContent='Latest saved selections · '+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
+    $('summaryUpdatedText').textContent=(options.saved ? 'Items saved · ' : 'Latest saved selections · ')+new Date().toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
   }catch(e){
     $('summaryLoading').textContent=e.message;
     $('summaryLoading').className='status error';
+    $('closeSummaryButton').style.display='';
   }
 }
 function renderFullSummary(){
@@ -287,9 +290,18 @@ $('saveSelectionButton').onclick=async()=>{
     shareAmount:Number(i.value)||0
   }));
 
+  const modal=$('summaryModal');
+  modal.classList.add('open');
+  $('summaryTitle').textContent='Saving your items…';
+  $('summaryUpdatedText').textContent='Please keep this window open.';
+  $('closeSummaryButton').style.display='none';
+  $('summaryContent').style.display='none';
+  $('summaryLoading').className='status';
+  $('summaryLoading').textContent='Saving your selections to the shared bill…';
+  $('summaryLoading').style.display='block';
+
   try{
     $('saveSelectionButton').disabled=true;
-    setStatus('Saving your items…');
 
     const result=await api({
       action:'saveSelection',
@@ -300,18 +312,21 @@ $('saveSelectionButton').onclick=async()=>{
     appState=result.state;
     renderParticipantItems();
     updateParticipantTotals();
-    setStatus('Your items were saved.','success');
 
-    /*
-      Use a simple confirmation popup so the success message is visible
-      even when the participant is scrolled near the bottom of the page.
-    */
-    alert('Items saved.');
+    $('summaryTitle').textContent='Items saved';
+    $('summaryUpdatedText').textContent='Your selections were saved successfully.';
+    $('summaryLoading').textContent='Items saved. Updating everyone’s selections and opening the full bill summary…';
 
-    /* After OK, open the latest full-bill summary automatically. */
-    await openFullSummary();
+    await openFullSummary({
+      saved:true,
+      loadingMessage:'Items saved. Refreshing everyone’s selections and opening the full bill summary…'
+    });
   }catch(e){
-    setStatus(e.message,'error');
+    $('summaryTitle').textContent='Could not save items';
+    $('summaryUpdatedText').textContent='Please try again.';
+    $('summaryLoading').textContent=e.message;
+    $('summaryLoading').className='status error';
+    $('closeSummaryButton').style.display='';
   }finally{
     $('saveSelectionButton').disabled=false;
   }
