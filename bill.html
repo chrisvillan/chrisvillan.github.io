@@ -8,7 +8,7 @@
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>Receipt OCR</title>
+    <title>Receipt Scanner</title>
 
     <style>
         * {
@@ -40,6 +40,118 @@
         h1 {
             margin-top: 0;
             margin-bottom: 8px;
+        }
+
+
+        .title-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+        }
+
+        .title-copy {
+            min-width: 0;
+        }
+
+        #settingsButton {
+            flex: 0 0 auto;
+            padding: 9px 12px;
+            border: 1px solid #d1d5db;
+            background: #f9fafb;
+            color: #374151;
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        #settingsButton:hover {
+            background: #f3f4f6;
+        }
+
+        .mode-badge {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            background: #ecfdf5;
+            color: #047857;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .settings-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1200;
+            padding: 18px;
+            background: rgba(17, 24, 39, 0.65);
+        }
+
+        .settings-modal.open {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: min(12vh, 90px);
+        }
+
+        .settings-card {
+            width: 100%;
+            max-width: 520px;
+            padding: 22px;
+            border-radius: 14px;
+            background: white;
+            box-shadow: 0 18px 50px rgba(0, 0, 0, 0.25);
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .settings-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        #closeSettingsButton {
+            padding: 8px 11px;
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        .mode-option {
+            display: block;
+            margin-top: 12px;
+            padding: 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .mode-option:has(input:checked) {
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .mode-option input {
+            margin-right: 8px;
+        }
+
+        .mode-option strong {
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+
+        .mode-option span {
+            display: block;
+            margin-left: 25px;
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.4;
         }
 
         .description {
@@ -461,6 +573,10 @@
                 display: block;
             }
 
+            .title-row {
+                align-items: flex-start;
+            }
+
             .scanner-actions {
                 flex-direction: column;
             }
@@ -471,12 +587,23 @@
 <body>
     <main class="container">
         <section class="card">
-            <h1>Receipt OCR</h1>
+            <div class="title-row">
+                <div class="title-copy">
+                    <h1>Receipt Scanner</h1>
+                    <div id="modeBadge" class="mode-badge">Gemini Vision</div>
+                </div>
 
-            <p class="description">
-                Take a new picture or choose an existing receipt image.
-                The page will crop, perspective-correct, rotate, and clean
-                the receipt before scanning its text.
+                <button
+                    id="settingsButton"
+                    type="button"
+                    aria-label="Receipt analysis settings"
+                    title="Analysis settings"
+                >⚙️</button>
+            </div>
+
+            <p id="pageDescription" class="description">
+                Gemini Vision will read the processed receipt image directly
+                and create the spreadsheet table.
             </p>
 
             <span class="upload-label">Select receipt image</span>
@@ -512,7 +639,7 @@
                     </div>
 
                     <div id="processedPanel" class="preview-panel">
-                        <h3>Processed for OCR</h3>
+                        <h3>Processed receipt</h3>
 
                         <canvas id="processedCanvas"></canvas>
                     </div>
@@ -526,7 +653,7 @@
 
             <div class="button-row">
                 <button id="scanButton" type="button" disabled>
-                    Process and Scan Receipt
+                    Process and Analyze Receipt
                 </button>
 
                 <button id="clearButton" type="button">
@@ -558,10 +685,6 @@
 
             <section id="analyzerSection" class="analyzer-section">
                 <div class="analyzer-actions">
-                    <button id="analyzeButton" type="button">
-                        Analyze Receipt with Gemini
-                    </button>
-
                     <span id="analysisStatus"></span>
                 </div>
 
@@ -612,6 +735,27 @@
             </section>
         </section>
     </main>
+
+    <div id="settingsModal" class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <section class="settings-card">
+            <div class="settings-header">
+                <h2 id="settingsTitle">Analysis method</h2>
+                <button id="closeSettingsButton" type="button">Close</button>
+            </div>
+
+            <label class="mode-option">
+                <input type="radio" name="analysisMode" value="vision" checked>
+                <strong>Gemini Vision — recommended</strong>
+                <span>Sends the processed receipt image directly to Gemini. This is the default and generally gives the best reading.</span>
+            </label>
+
+            <label class="mode-option">
+                <input type="radio" name="analysisMode" value="tesseract">
+                <strong>Tesseract + Gemini text</strong>
+                <span>Tesseract reads the image in your browser, then only the recognized text is sent to Gemini for structuring.</span>
+            </label>
+        </section>
+    </div>
 
     <div
         id="scannerModal"
@@ -675,6 +819,24 @@
     <script>
         const cameraButton =
             document.getElementById("cameraButton");
+
+        const settingsButton =
+            document.getElementById("settingsButton");
+
+        const settingsModal =
+            document.getElementById("settingsModal");
+
+        const closeSettingsButton =
+            document.getElementById("closeSettingsButton");
+
+        const modeBadge =
+            document.getElementById("modeBadge");
+
+        const pageDescription =
+            document.getElementById("pageDescription");
+
+        const analysisModeInputs =
+            document.querySelectorAll('input[name="analysisMode"]');
 
         const galleryButton =
             document.getElementById("galleryButton");
@@ -757,8 +919,6 @@
         const analyzerSection =
             document.getElementById("analyzerSection");
 
-        const analyzeButton =
-            document.getElementById("analyzeButton");
 
         const analysisStatus =
             document.getElementById("analysisStatus");
@@ -786,6 +946,11 @@
         let selectedFile = null;
         let previewUrl = null;
         let worker = null;
+        let analysisMode = localStorage.getItem("receiptAnalysisMode") || "vision";
+
+        if (!["vision", "tesseract"].includes(analysisMode)) {
+            analysisMode = "vision";
+        }
 
         let scannerStream = null;
         let scannerAnimationFrame = null;
@@ -803,7 +968,25 @@
         galleryInput.addEventListener("change", handleImageSelection);
         scanButton.addEventListener("click", scanReceipt);
         clearButton.addEventListener("click", clearPage);
-        analyzeButton.addEventListener("click", analyzeReceiptWithGemini);
+
+        settingsButton.addEventListener("click", openSettings);
+        closeSettingsButton.addEventListener("click", closeSettings);
+
+        settingsModal.addEventListener("click", (event) => {
+            if (event.target === settingsModal) {
+                closeSettings();
+            }
+        });
+
+        analysisModeInputs.forEach((input) => {
+            input.addEventListener("change", () => {
+                if (input.checked) {
+                    setAnalysisMode(input.value);
+                }
+            });
+        });
+
+        applyAnalysisModeToPage();
 
         captureScannerButton.addEventListener(
             "click",
@@ -1290,6 +1473,17 @@
                 return;
             }
 
+            if (
+                !APPS_SCRIPT_URL ||
+                APPS_SCRIPT_URL.includes("PASTE_YOUR")
+            ) {
+                showError(
+                    "Add your deployed Google Apps Script /exec URL " +
+                    "to APPS_SCRIPT_URL first."
+                );
+                return;
+            }
+
             clearError();
             resetResults();
             setControlsDisabled(true);
@@ -1303,15 +1497,14 @@
 
                 statusText.textContent =
                     "Detecting and straightening receipt...";
-
-                progressBar.style.width = "12%";
+                progressBar.style.width = "15%";
 
                 const preprocessingResult =
                     await preprocessReceipt(selectedFile);
 
                 const rotationMessage =
                     Math.abs(preprocessingResult.rotationAngle) >= 0.2
-                        ? ` Text alignment detected; rotated ${preprocessingResult.rotationAngle.toFixed(1)}° before OCR.`
+                        ? ` Text alignment detected; rotated ${preprocessingResult.rotationAngle.toFixed(1)}°.`
                         : " Text lines were already close to horizontal.";
 
                 processingNote.textContent =
@@ -1323,57 +1516,210 @@
                 processingNote.style.display = "block";
                 processedPanel.style.display = "block";
 
-                if (!worker) {
-                    statusText.textContent = "Loading OCR engine...";
-
-                    worker = await Tesseract.createWorker("eng", 1, {
-                        logger: updateOcrProgress
-                    });
-
-                    await worker.setParameters({
-                        tessedit_pageseg_mode: "6",
-                        preserve_interword_spaces: "1",
-                        user_defined_dpi: "300"
-                    });
+                if (analysisMode === "vision") {
+                    await runGeminiVisionAnalysis();
+                } else {
+                    await runTesseractTextAnalysis();
                 }
 
-                statusText.textContent = "Recognizing receipt text...";
-
-                /*
-                    Tesseract scans the cleaned canvas instead of the
-                    original phone photo.
-                */
-                const result =
-                    await worker.recognize(processedCanvas);
-
-                const text = result.data.text.trim();
-
-                const confidence = Math.round(
-                    result.data.confidence || 0
-                );
-
-                recognizedText.value =
-                    text || "No readable text was found.";
-
-                confidenceText.textContent =
-                    `OCR confidence: ${confidence}%`;
-
-                resultContainer.style.display = "block";
-                analyzerSection.style.display = "block";
-
-                statusText.textContent = "OCR complete";
+                statusText.textContent = "Analysis complete";
                 progressBar.style.width = "100%";
             } catch (error) {
-                console.error("Receipt scan error:", error);
+                console.error("Receipt processing error:", error);
+
+                const methodName = analysisMode === "vision"
+                    ? "Gemini Vision"
+                    : "Tesseract + Gemini";
 
                 showError(
-                    "The receipt could not be processed. " +
-                    "Try a clearer image with the complete receipt visible."
+                    methodName + " could not analyze the receipt: " +
+                    error.message
                 );
 
                 statusContainer.style.display = "none";
             } finally {
                 setControlsDisabled(false);
+            }
+        }
+
+        async function runGeminiVisionAnalysis() {
+            statusText.textContent =
+                "Compressing image for Gemini Vision...";
+            progressBar.style.width = "35%";
+
+            const imagePayload =
+                canvasToGeminiImage(processedCanvas);
+
+            statusText.textContent =
+                "Gemini Vision is reading and analyzing the receipt...";
+            progressBar.style.width = "55%";
+
+            const receipt = await requestGeminiAnalysis({
+                action: "analyzeReceiptImage",
+                mimeType: imagePayload.mimeType,
+                imageBase64: imagePayload.base64
+            });
+
+            renderReceiptAnalysis(receipt);
+            analyzerSection.style.display = "block";
+            analysisStatus.textContent =
+                "Analyzed directly from the receipt image.";
+        }
+
+        async function runTesseractTextAnalysis() {
+            if (!worker) {
+                statusText.textContent = "Loading OCR engine...";
+
+                worker = await Tesseract.createWorker("eng", 1, {
+                    logger: updateOcrProgress
+                });
+
+                await worker.setParameters({
+                    tessedit_pageseg_mode: "6",
+                    preserve_interword_spaces: "1",
+                    user_defined_dpi: "300"
+                });
+            }
+
+            statusText.textContent = "Recognizing receipt text...";
+            progressBar.style.width = "30%";
+
+            const result = await worker.recognize(processedCanvas);
+            const text = result.data.text.trim();
+            const confidence = Math.round(result.data.confidence || 0);
+
+            if (!text) {
+                throw new Error("Tesseract found no readable receipt text.");
+            }
+
+            recognizedText.value = text;
+            confidenceText.textContent =
+                `OCR confidence: ${confidence}%`;
+            resultContainer.style.display = "block";
+
+            statusText.textContent =
+                "Gemini is structuring the recognized text...";
+            progressBar.style.width = "75%";
+
+            const receipt = await requestGeminiAnalysis({
+                action: "analyzeReceipt",
+                ocrText: text
+            });
+
+            renderReceiptAnalysis(receipt);
+            analyzerSection.style.display = "block";
+            analysisStatus.textContent =
+                "Tesseract read the image; Gemini structured the OCR text.";
+        }
+
+        async function requestGeminiAnalysis(requestBody) {
+            const response = await fetch(APPS_SCRIPT_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain;charset=utf-8"
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!response.ok) {
+                throw new Error(
+                    `Apps Script returned HTTP ${response.status}.`
+                );
+            }
+
+            const payload = await response.json();
+
+            if (!payload.ok) {
+                throw new Error(
+                    payload.error || "Gemini analysis failed."
+                );
+            }
+
+            return payload.receipt;
+        }
+
+        function canvasToGeminiImage(canvas) {
+            const maximumSide = 1800;
+            const scale = Math.min(
+                1,
+                maximumSide / Math.max(canvas.width, canvas.height)
+            );
+
+            const exportCanvas = document.createElement("canvas");
+            exportCanvas.width = Math.max(
+                1,
+                Math.round(canvas.width * scale)
+            );
+            exportCanvas.height = Math.max(
+                1,
+                Math.round(canvas.height * scale)
+            );
+
+            const context = exportCanvas.getContext("2d");
+            context.fillStyle = "white";
+            context.fillRect(
+                0,
+                0,
+                exportCanvas.width,
+                exportCanvas.height
+            );
+            context.drawImage(
+                canvas,
+                0,
+                0,
+                exportCanvas.width,
+                exportCanvas.height
+            );
+
+            const dataUrl =
+                exportCanvas.toDataURL("image/jpeg", 0.82);
+
+            return {
+                mimeType: "image/jpeg",
+                base64: dataUrl.split(",")[1]
+            };
+        }
+
+        function openSettings() {
+            settingsModal.classList.add("open");
+        }
+
+        function closeSettings() {
+            settingsModal.classList.remove("open");
+        }
+
+        function setAnalysisMode(mode) {
+            if (!["vision", "tesseract"].includes(mode)) {
+                return;
+            }
+
+            analysisMode = mode;
+            localStorage.setItem("receiptAnalysisMode", mode);
+            applyAnalysisModeToPage();
+            resetResults();
+            clearError();
+            closeSettings();
+        }
+
+        function applyAnalysisModeToPage() {
+            analysisModeInputs.forEach((input) => {
+                input.checked = input.value === analysisMode;
+            });
+
+            if (analysisMode === "vision") {
+                modeBadge.textContent = "Gemini Vision";
+                pageDescription.textContent =
+                    "Gemini Vision will read the processed receipt image " +
+                    "directly and create the spreadsheet table.";
+                scanButton.textContent =
+                    "Process and Analyze with Gemini Vision";
+            } else {
+                modeBadge.textContent = "Tesseract + Gemini text";
+                pageDescription.textContent =
+                    "Tesseract will read the receipt locally, then Gemini " +
+                    "will organize the OCR text into the spreadsheet table.";
+                scanButton.textContent =
+                    "Process with Tesseract + Gemini";
             }
         }
 
@@ -1460,6 +1806,7 @@
             let contours = null;
             let hierarchy = null;
             let warped = null;
+            let deskewed = null;
             let cleaned = null;
 
             try {
@@ -2122,70 +2469,6 @@
 
 
 
-        async function analyzeReceiptWithGemini() {
-            const ocrText = recognizedText.value.trim();
-
-            if (!ocrText) {
-                showError("Scan a receipt before running the analyzer.");
-                return;
-            }
-
-            if (
-                !APPS_SCRIPT_URL ||
-                APPS_SCRIPT_URL.includes("PASTE_YOUR")
-            ) {
-                showError(
-                    "Add your deployed Google Apps Script web app URL " +
-                    "to APPS_SCRIPT_URL in bill.html first."
-                );
-                return;
-            }
-
-            clearError();
-            analyzeButton.disabled = true;
-            analysisOutput.style.display = "none";
-            analysisStatus.textContent = "Gemini is analyzing the OCR text...";
-
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "text/plain;charset=utf-8"
-                    },
-                    body: JSON.stringify({
-                        action: "analyzeReceipt",
-                        ocrText: ocrText
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error(
-                        `Apps Script returned HTTP ${response.status}.`
-                    );
-                }
-
-                const payload = await response.json();
-
-                if (!payload.ok) {
-                    throw new Error(
-                        payload.error || "Gemini analysis failed."
-                    );
-                }
-
-                renderReceiptAnalysis(payload.receipt);
-                analysisStatus.textContent = "Analysis complete.";
-            } catch (error) {
-                console.error("Gemini analysis error:", error);
-
-                analysisStatus.textContent = "Analysis failed.";
-                showError(
-                    "Gemini could not analyze the receipt: " +
-                    error.message
-                );
-            } finally {
-                analyzeButton.disabled = false;
-            }
-        }
 
         function renderReceiptAnalysis(receipt) {
             receiptSummaryBody.innerHTML = "";
