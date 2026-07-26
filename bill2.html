@@ -738,7 +738,7 @@
             Google Apps Script web app that contains Code_bill2.gs.
         */
         const APPS_SCRIPT_URL =
-            "https://script.google.com/macros/s/AKfycbwYtuO_5d8pEhfnlAArZE1D5YNY2ExQjMoyuC3gNTfOCmdSYXJN30o0opY67ogIFw8/exec";
+            "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
 
 
         let selectedFile = null;
@@ -2061,6 +2061,122 @@
 
                 image.src = temporaryUrl;
             });
+        }
+
+        function renderReceiptAnalysis(receipt) {
+            const safeReceipt = receipt || {};
+            const items = Array.isArray(safeReceipt.items)
+                ? safeReceipt.items
+                : [];
+            const warnings = Array.isArray(safeReceipt.warnings)
+                ? safeReceipt.warnings
+                : [];
+
+            receiptSummaryBody.innerHTML = "";
+            receiptItemsBody.innerHTML = "";
+
+            const summaryRow = document.createElement("tr");
+            [
+                safeReceipt.storeName || "",
+                safeReceipt.date || "",
+                safeReceipt.time || "",
+                formatMoney(safeReceipt.subtotal),
+                formatMoney(safeReceipt.tax),
+                formatMoney(safeReceipt.tip),
+                formatMoney(safeReceipt.grandTotal),
+                formatConfidence(safeReceipt.confidence)
+            ].forEach((value) => {
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                summaryRow.appendChild(cell);
+            });
+
+            receiptSummaryBody.appendChild(summaryRow);
+
+            if (items.length === 0) {
+                const row = document.createElement("tr");
+                const cell = document.createElement("td");
+                cell.colSpan = 5;
+                cell.textContent = "No line items were confidently detected.";
+                row.appendChild(cell);
+                receiptItemsBody.appendChild(row);
+            } else {
+                items.forEach((item, index) => {
+                    const row = document.createElement("tr");
+                    const values = [
+                        index + 1,
+                        item?.name || "",
+                        formatQuantity(item?.quantity),
+                        formatMoney(item?.unitPrice),
+                        formatMoney(item?.lineTotal)
+                    ];
+
+                    values.forEach((value) => {
+                        const cell = document.createElement("td");
+                        cell.textContent = value;
+                        row.appendChild(cell);
+                    });
+
+                    receiptItemsBody.appendChild(row);
+                });
+            }
+
+            const extraWarnings = [];
+
+            if (safeReceipt.address) {
+                extraWarnings.push("Address: " + safeReceipt.address);
+            }
+
+            const allMessages = extraWarnings.concat(warnings);
+
+            if (allMessages.length > 0) {
+                analysisWarnings.innerHTML = "";
+                const heading = document.createElement("strong");
+                heading.textContent = warnings.length > 0
+                    ? "Notes / warnings"
+                    : "Receipt details";
+                analysisWarnings.appendChild(heading);
+
+                const list = document.createElement("ul");
+                allMessages.forEach((message) => {
+                    const item = document.createElement("li");
+                    item.textContent = String(message);
+                    list.appendChild(item);
+                });
+                analysisWarnings.appendChild(list);
+                analysisWarnings.style.display = "block";
+            } else {
+                analysisWarnings.style.display = "none";
+                analysisWarnings.innerHTML = "";
+            }
+
+            analysisOutput.style.display = "block";
+        }
+
+        function formatMoney(value) {
+            if (value === null || value === undefined || value === "") {
+                return "";
+            }
+
+            const number = Number(value);
+
+            if (!Number.isFinite(number)) {
+                return String(value);
+            }
+
+            return new Intl.NumberFormat("en-US", {
+                style: "currency",
+                currency: "USD"
+            }).format(number);
+        }
+
+        function formatQuantity(value) {
+            if (value === null || value === undefined || value === "") {
+                return "";
+            }
+
+            const number = Number(value);
+            return Number.isFinite(number) ? String(number) : String(value);
         }
 
         function formatConfidence(value) {
