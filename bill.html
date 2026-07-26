@@ -190,11 +190,14 @@ function renderParticipantItems(){
     }
 
     card.addEventListener('click',event=>{
+      /*
+        The + and − buttons manage quantity themselves. Clicking anywhere
+        else on the row toggles the whole item on or off.
+      */
       if(event.target.closest('.qty-button')||unavailable)return;
-      if(selectedQuantity===0){
-        selectedQuantity=1;
-        refresh();
-      }
+
+      selectedQuantity = selectedQuantity > 0 ? 0 : 1;
+      refresh();
     });
 
     minus.onclick=event=>{
@@ -272,7 +275,41 @@ $('viewSummaryButton').onclick=openFullSummary;
 $('closeSummaryButton').onclick=()=>$('summaryModal').classList.remove('open');
 $('summaryModal').onclick=e=>{if(e.target===$('summaryModal'))$('summaryModal').classList.remove('open');};
 
-$('saveSelectionButton').onclick=async()=>{const selections=[...document.querySelectorAll('.shareInput')].map(i=>({itemId:i.dataset.itemId,shareAmount:Number(i.value)||0}));try{$('saveSelectionButton').disabled=true;setStatus('Saving your items…');const result=await api({action:'saveSelection',personId:selectedPersonId,selections});appState=result.state;renderParticipantItems();updateParticipantTotals();setStatus('Your items were saved.','success');}catch(e){setStatus(e.message,'error');}finally{$('saveSelectionButton').disabled=false;}};
+$('saveSelectionButton').onclick=async()=>{
+  const selections=[...document.querySelectorAll('.shareInput')].map(i=>({
+    itemId:i.dataset.itemId,
+    shareAmount:Number(i.value)||0
+  }));
+
+  try{
+    $('saveSelectionButton').disabled=true;
+    setStatus('Saving your items…');
+
+    const result=await api({
+      action:'saveSelection',
+      personId:selectedPersonId,
+      selections
+    });
+
+    appState=result.state;
+    renderParticipantItems();
+    updateParticipantTotals();
+    setStatus('Your items were saved.','success');
+
+    /*
+      Use a simple confirmation popup so the success message is visible
+      even when the participant is scrolled near the bottom of the page.
+    */
+    alert('Items saved.');
+
+    /* After OK, open the latest full-bill summary automatically. */
+    await openFullSummary();
+  }catch(e){
+    setStatus(e.message,'error');
+  }finally{
+    $('saveSelectionButton').disabled=false;
+  }
+};
 
 async function waitForCv(timeout=20000){const start=Date.now();while(!(window.cv&&cv.Mat)){if(Date.now()-start>timeout)throw new Error('OpenCV failed to load.');await new Promise(r=>setTimeout(r,100));}}
 async function preprocessImage(file){const image=await loadImage(file),max=2200,scale=Math.min(1,max/Math.max(image.naturalWidth,image.naturalHeight)),w=Math.round(image.naturalWidth*scale),h=Math.round(image.naturalHeight*scale),canvas=$('sourceCanvas');canvas.width=w;canvas.height=h;canvas.getContext('2d',{willReadFrequently:true}).drawImage(image,0,0,w,h);let src,gray,blur,edges,kernel,contours,hierarchy,warped,cleaned;try{src=cv.imread(canvas);gray=new cv.Mat();blur=new cv.Mat();edges=new cv.Mat();cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);cv.GaussianBlur(gray,blur,new cv.Size(5,5),0);cv.Canny(blur,edges,50,150);kernel=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(5,5));cv.morphologyEx(edges,edges,cv.MORPH_CLOSE,kernel);contours=new cv.MatVector();hierarchy=new cv.Mat();cv.findContours(edges,contours,hierarchy,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);const corners=findQuad(contours,src.cols*src.rows);warped=corners?warp(src,corners):src.clone();cleaned=cleanForOcr(warped,analysisMode==='tesseract');cv.imshow($('processedCanvas'),cleaned);}finally{[src,gray,blur,edges,kernel,contours,hierarchy,warped,cleaned].forEach(m=>m&&m.delete());}}
