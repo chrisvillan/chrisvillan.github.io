@@ -232,6 +232,115 @@
             color: #991b1b;
         }
 
+
+        .scanner-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.92);
+        }
+
+        .scanner-modal.open {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .scanner-shell {
+            width: 100%;
+            max-width: 760px;
+            max-height: calc(100vh - 24px);
+            overflow-y: auto;
+            padding: 16px;
+            border-radius: 14px;
+            background: #111827;
+            color: white;
+        }
+
+        .scanner-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .scanner-header h2 {
+            margin: 0;
+            font-size: 20px;
+        }
+
+        #closeScannerButton {
+            padding: 8px 12px;
+            background: #374151;
+            color: white;
+        }
+
+        .scanner-view {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            border-radius: 12px;
+            background: black;
+        }
+
+        #scannerCanvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-height: 70vh;
+            object-fit: contain;
+            background: black;
+        }
+
+        #scannerVideo {
+            display: none;
+        }
+
+        .scanner-guide {
+            position: absolute;
+            inset: 10%;
+            pointer-events: none;
+            border: 2px dashed rgba(255, 255, 255, 0.55);
+            border-radius: 10px;
+        }
+
+        #scannerMessage {
+            margin: 12px 0 0;
+            color: #d1d5db;
+            text-align: center;
+            line-height: 1.4;
+        }
+
+        .scanner-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 14px;
+        }
+
+        #captureScannerButton {
+            flex: 1;
+            background: #2563eb;
+            color: white;
+        }
+
+        #captureScannerButton:disabled {
+            background: #6b7280;
+            cursor: not-allowed;
+        }
+
+        #cancelScannerButton {
+            background: #374151;
+            color: white;
+        }
+
+        #scannerHiddenCanvas,
+        #scannerCaptureCanvas {
+            display: none;
+        }
+
         @media (max-width: 700px) {
             body {
                 padding: 12px;
@@ -252,6 +361,10 @@
 
             .result-header {
                 display: block;
+            }
+
+            .scanner-actions {
+                flex-direction: column;
             }
         }
     </style>
@@ -279,14 +392,6 @@
                     🖼 Choose Existing Photo
                 </button>
             </div>
-
-            <input
-                type="file"
-                id="cameraInput"
-                class="hidden-file-input"
-                accept="image/*"
-                capture="environment"
-            >
 
             <input
                 type="file"
@@ -355,6 +460,54 @@
         </section>
     </main>
 
+    <div
+        id="scannerModal"
+        class="scanner-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="scannerTitle"
+    >
+        <section class="scanner-shell">
+            <div class="scanner-header">
+                <h2 id="scannerTitle">Scan Receipt</h2>
+
+                <button id="closeScannerButton" type="button">
+                    Close
+                </button>
+            </div>
+
+            <div class="scanner-view">
+                <video
+                    id="scannerVideo"
+                    autoplay
+                    muted
+                    playsinline
+                ></video>
+
+                <canvas id="scannerCanvas"></canvas>
+
+                <div class="scanner-guide"></div>
+            </div>
+
+            <p id="scannerMessage">
+                Position the full receipt inside the frame.
+            </p>
+
+            <div class="scanner-actions">
+                <button id="captureScannerButton" type="button" disabled>
+                    Capture Receipt
+                </button>
+
+                <button id="cancelScannerButton" type="button">
+                    Cancel
+                </button>
+            </div>
+
+            <canvas id="scannerHiddenCanvas"></canvas>
+            <canvas id="scannerCaptureCanvas"></canvas>
+        </section>
+    </div>
+
     <!-- Tesseract.js -->
     <script
         src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js">
@@ -373,8 +526,32 @@
         const galleryButton =
             document.getElementById("galleryButton");
 
-        const cameraInput =
-            document.getElementById("cameraInput");
+        const scannerModal =
+            document.getElementById("scannerModal");
+
+        const scannerVideo =
+            document.getElementById("scannerVideo");
+
+        const scannerCanvas =
+            document.getElementById("scannerCanvas");
+
+        const scannerHiddenCanvas =
+            document.getElementById("scannerHiddenCanvas");
+
+        const scannerCaptureCanvas =
+            document.getElementById("scannerCaptureCanvas");
+
+        const scannerMessage =
+            document.getElementById("scannerMessage");
+
+        const captureScannerButton =
+            document.getElementById("captureScannerButton");
+
+        const closeScannerButton =
+            document.getElementById("closeScannerButton");
+
+        const cancelScannerButton =
+            document.getElementById("cancelScannerButton");
 
         const galleryInput =
             document.getElementById("galleryInput");
@@ -428,25 +605,487 @@
         let previewUrl = null;
         let worker = null;
 
-        cameraButton.addEventListener("click", () => {
-            cameraInput.click();
-        });
+        let scannerStream = null;
+        let scannerAnimationFrame = null;
+        let scannerDetectionTimer = 0;
+        let scannerCorners = null;
+        let scannerFrameWidth = 0;
+        let scannerFrameHeight = 0;
+
+        cameraButton.addEventListener("click", openDocumentScanner);
 
         galleryButton.addEventListener("click", () => {
             galleryInput.click();
         });
 
-        cameraInput.addEventListener("change", handleImageSelection);
         galleryInput.addEventListener("change", handleImageSelection);
         scanButton.addEventListener("click", scanReceipt);
         clearButton.addEventListener("click", clearPage);
 
-        function handleImageSelection(event) {
-            const file = event.target.files[0];
+        captureScannerButton.addEventListener(
+            "click",
+            captureScannedReceipt
+        );
 
+        closeScannerButton.addEventListener(
+            "click",
+            closeDocumentScanner
+        );
+
+        cancelScannerButton.addEventListener(
+            "click",
+            closeDocumentScanner
+        );
+
+
+        async function openDocumentScanner() {
+            clearError();
+
+            if (
+                !navigator.mediaDevices ||
+                !navigator.mediaDevices.getUserMedia
+            ) {
+                showError(
+                    "This browser does not support the live document scanner."
+                );
+
+                return;
+            }
+
+            scannerModal.classList.add("open");
+            scannerMessage.textContent =
+                "Starting camera and loading edge detection...";
+
+            captureScannerButton.disabled = true;
+            scannerCorners = null;
+
+            try {
+                await waitForOpenCv();
+
+                scannerStream =
+                    await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            facingMode: {
+                                ideal: "environment"
+                            },
+
+                            width: {
+                                ideal: 1920
+                            },
+
+                            height: {
+                                ideal: 1080
+                            }
+                        },
+
+                        audio: false
+                    });
+
+                scannerVideo.srcObject = scannerStream;
+
+                await new Promise((resolve) => {
+                    scannerVideo.onloadedmetadata = resolve;
+                });
+
+                await scannerVideo.play();
+
+                scannerFrameWidth = scannerVideo.videoWidth;
+                scannerFrameHeight = scannerVideo.videoHeight;
+
+                scannerCanvas.width = scannerFrameWidth;
+                scannerCanvas.height = scannerFrameHeight;
+
+                scannerHiddenCanvas.width = scannerFrameWidth;
+                scannerHiddenCanvas.height = scannerFrameHeight;
+
+                captureScannerButton.disabled = false;
+
+                scannerMessage.textContent =
+                    "Move the phone until all four receipt edges are visible.";
+
+                renderScannerFrame();
+            } catch (error) {
+                console.error("Scanner camera error:", error);
+
+                scannerMessage.textContent =
+                    "The camera could not be opened. Check camera permission and try again.";
+
+                showError(
+                    "Unable to open the camera. GitHub Pages must use HTTPS and the browser must have camera permission."
+                );
+            }
+        }
+
+        function renderScannerFrame(timestamp = 0) {
+            if (!scannerStream) {
+                return;
+            }
+
+            const context =
+                scannerCanvas.getContext("2d", {
+                    willReadFrequently: true
+                });
+
+            context.drawImage(
+                scannerVideo,
+                0,
+                0,
+                scannerCanvas.width,
+                scannerCanvas.height
+            );
+
+            /*
+                Detect corners several times per second rather than on
+                every frame, which keeps phone CPU usage reasonable.
+            */
+            if (timestamp - scannerDetectionTimer > 250) {
+                scannerDetectionTimer = timestamp;
+                scannerCorners = detectScannerCorners();
+            }
+
+            if (scannerCorners) {
+                drawDetectedCorners(
+                    context,
+                    scannerCorners
+                );
+
+                scannerMessage.textContent =
+                    "Receipt detected. Hold steady, then tap Capture Receipt.";
+            } else {
+                scannerMessage.textContent =
+                    "Looking for all four receipt corners. Move closer and avoid glare.";
+            }
+
+            scannerAnimationFrame =
+                requestAnimationFrame(renderScannerFrame);
+        }
+
+        function detectScannerCorners() {
+            /*
+                Analyze a smaller copy for speed, then scale the detected
+                coordinates back to the full camera frame.
+            */
+            const detectionWidth = 720;
+            const scale =
+                detectionWidth / scannerCanvas.width;
+
+            const detectionHeight = Math.max(
+                1,
+                Math.round(scannerCanvas.height * scale)
+            );
+
+            scannerHiddenCanvas.width = detectionWidth;
+            scannerHiddenCanvas.height = detectionHeight;
+
+            const hiddenContext =
+                scannerHiddenCanvas.getContext("2d", {
+                    willReadFrequently: true
+                });
+
+            hiddenContext.drawImage(
+                scannerVideo,
+                0,
+                0,
+                detectionWidth,
+                detectionHeight
+            );
+
+            let source = null;
+            let gray = null;
+            let blurred = null;
+            let edges = null;
+            let kernel = null;
+            let contours = null;
+            let hierarchy = null;
+
+            try {
+                source = cv.imread(scannerHiddenCanvas);
+                gray = new cv.Mat();
+                blurred = new cv.Mat();
+                edges = new cv.Mat();
+
+                cv.cvtColor(
+                    source,
+                    gray,
+                    cv.COLOR_RGBA2GRAY
+                );
+
+                cv.GaussianBlur(
+                    gray,
+                    blurred,
+                    new cv.Size(5, 5),
+                    0
+                );
+
+                cv.Canny(
+                    blurred,
+                    edges,
+                    45,
+                    140
+                );
+
+                kernel = cv.getStructuringElement(
+                    cv.MORPH_RECT,
+                    new cv.Size(7, 7)
+                );
+
+                cv.morphologyEx(
+                    edges,
+                    edges,
+                    cv.MORPH_CLOSE,
+                    kernel
+                );
+
+                contours = new cv.MatVector();
+                hierarchy = new cv.Mat();
+
+                cv.findContours(
+                    edges,
+                    contours,
+                    hierarchy,
+                    cv.RETR_LIST,
+                    cv.CHAIN_APPROX_SIMPLE
+                );
+
+                const corners =
+                    findLargestReceiptQuadrilateral(
+                        contours,
+                        source.cols * source.rows,
+                        0.08
+                    );
+
+                if (!corners) {
+                    return null;
+                }
+
+                const inverseScale = 1 / scale;
+
+                return corners.map((point) => ({
+                    x: point.x * inverseScale,
+                    y: point.y * inverseScale
+                }));
+            } catch (error) {
+                console.warn(
+                    "Live receipt detection failed:",
+                    error
+                );
+
+                return null;
+            } finally {
+                [
+                    source,
+                    gray,
+                    blurred,
+                    edges,
+                    kernel,
+                    contours,
+                    hierarchy
+                ].forEach((matrix) => {
+                    if (matrix) {
+                        matrix.delete();
+                    }
+                });
+            }
+        }
+
+        function drawDetectedCorners(context, corners) {
+            context.save();
+
+            context.lineWidth = Math.max(
+                4,
+                scannerCanvas.width / 250
+            );
+
+            context.strokeStyle = "#22c55e";
+            context.fillStyle = "#22c55e";
+
+            context.beginPath();
+            context.moveTo(corners[0].x, corners[0].y);
+
+            for (let index = 1; index < corners.length; index++) {
+                context.lineTo(
+                    corners[index].x,
+                    corners[index].y
+                );
+            }
+
+            context.closePath();
+            context.stroke();
+
+            const markerRadius = Math.max(
+                8,
+                scannerCanvas.width / 120
+            );
+
+            corners.forEach((point) => {
+                context.beginPath();
+
+                context.arc(
+                    point.x,
+                    point.y,
+                    markerRadius,
+                    0,
+                    Math.PI * 2
+                );
+
+                context.fill();
+            });
+
+            context.restore();
+        }
+
+        async function captureScannedReceipt() {
+            if (!scannerStream) {
+                return;
+            }
+
+            captureScannerButton.disabled = true;
+            scannerMessage.textContent =
+                "Creating a flat document scan...";
+
+            /*
+                Capture a clean video frame without the green overlay.
+            */
+            const captureContext =
+                scannerHiddenCanvas.getContext("2d", {
+                    willReadFrequently: true
+                });
+
+            scannerHiddenCanvas.width = scannerFrameWidth;
+            scannerHiddenCanvas.height = scannerFrameHeight;
+
+            captureContext.drawImage(
+                scannerVideo,
+                0,
+                0,
+                scannerFrameWidth,
+                scannerFrameHeight
+            );
+
+            let source = null;
+            let output = null;
+
+            try {
+                source = cv.imread(scannerHiddenCanvas);
+
+                if (scannerCorners) {
+                    output = warpReceipt(
+                        source,
+                        scannerCorners
+                    );
+                } else {
+                    output = source.clone();
+                }
+
+                cv.imshow(scannerCaptureCanvas, output);
+
+                const blob = await canvasToBlob(
+                    scannerCaptureCanvas,
+                    "image/jpeg",
+                    0.95
+                );
+
+                selectedFile = new File(
+                    [blob],
+                    `receipt-scan-${Date.now()}.jpg`,
+                    {
+                        type: "image/jpeg"
+                    }
+                );
+
+                displaySelectedFile(selectedFile);
+
+                closeDocumentScanner();
+
+                processingNote.textContent =
+                    scannerCorners
+                        ? "The live scanner detected four corners and created a perspective-corrected image."
+                        : "Four corners were not detected, so the captured camera frame was used.";
+
+                processingNote.style.display = "block";
+            } catch (error) {
+                console.error("Capture processing error:", error);
+
+                scannerMessage.textContent =
+                    "The image could not be captured. Please try again.";
+
+                captureScannerButton.disabled = false;
+            } finally {
+                if (source) {
+                    source.delete();
+                }
+
+                if (output) {
+                    output.delete();
+                }
+            }
+        }
+
+        function canvasToBlob(
+            canvas,
+            mimeType,
+            quality
+        ) {
+            return new Promise((resolve, reject) => {
+                canvas.toBlob(
+                    (blob) => {
+                        if (blob) {
+                            resolve(blob);
+                        } else {
+                            reject(
+                                new Error(
+                                    "The scanner could not create an image."
+                                )
+                            );
+                        }
+                    },
+                    mimeType,
+                    quality
+                );
+            });
+        }
+
+        function displaySelectedFile(file) {
             clearError();
             resetResults();
             clearProcessedPreview();
+
+            selectedFile = file;
+
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+
+            previewUrl = URL.createObjectURL(file);
+            imagePreview.src = previewUrl;
+
+            imageSection.style.display = "block";
+            scanButton.disabled = false;
+        }
+
+        function closeDocumentScanner() {
+            if (scannerAnimationFrame) {
+                cancelAnimationFrame(scannerAnimationFrame);
+                scannerAnimationFrame = null;
+            }
+
+            if (scannerStream) {
+                scannerStream
+                    .getTracks()
+                    .forEach((track) => track.stop());
+
+                scannerStream = null;
+            }
+
+            scannerVideo.srcObject = null;
+            scannerCorners = null;
+            captureScannerButton.disabled = true;
+
+            scannerModal.classList.remove("open");
+        }
+
+        function handleImageSelection(event) {
+            const file = event.target.files[0];
 
             if (!file) {
                 return;
@@ -458,27 +1097,8 @@
                 return;
             }
 
-            selectedFile = file;
-
-            /*
-                Clear the other input so selecting the same image again
-                will still trigger its change event.
-            */
-            if (event.target === cameraInput) {
-                galleryInput.value = "";
-            } else {
-                cameraInput.value = "";
-            }
-
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-            }
-
-            previewUrl = URL.createObjectURL(file);
-            imagePreview.src = previewUrl;
-
-            imageSection.style.display = "block";
-            scanButton.disabled = false;
+            galleryInput.value = "";
+            displaySelectedFile(file);
         }
 
         async function scanReceipt() {
@@ -761,7 +1381,8 @@
 
         function findLargestReceiptQuadrilateral(
             contours,
-            imageArea
+            imageArea,
+            minimumAreaRatio = 0.15
         ) {
             let bestCorners = null;
             let bestArea = 0;
@@ -770,7 +1391,8 @@
                 Ignore tiny rectangles such as logos and text boxes.
                 The detected receipt should cover at least 15% of the image.
             */
-            const minimumArea = imageArea * 0.15;
+            const minimumArea =
+                imageArea * minimumAreaRatio;
 
             for (
                 let index = 0;
@@ -1352,7 +1974,6 @@
         function clearPage() {
             selectedFile = null;
 
-            cameraInput.value = "";
             galleryInput.value = "";
 
             imagePreview.removeAttribute("src");
@@ -1380,6 +2001,8 @@
         }
 
         window.addEventListener("beforeunload", () => {
+            closeDocumentScanner();
+
             if (worker) {
                 worker.terminate();
             }
