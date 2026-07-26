@@ -149,14 +149,18 @@ function renderParticipantItems(){
     card.className='pick-card'+(selected?' selected':'')+(unavailable?' unavailable':'');
 
     const priceLabel=totalQuantity>1
-      ? `${money(unitPrice)} × ${totalQuantity}`
+      ? `${money(unitPrice)} each`
       : money(unitPrice);
+
+    const availabilityLabel=availableQuantity===1
+      ? '1 available'
+      : `${availableQuantity} available`;
 
     card.innerHTML=`
       <span class="pick-check">${selected?'✓':''}</span>
       <span class="pick-main">
         <strong class="pick-name">${escapeHtml(item.name)}</strong>
-        <span class="pick-unit-note">${totalQuantity>1?`${money(unitPrice)} each · ${totalQuantity} available`:'Single item'}</span>
+        <span class="pick-unit-note">${unavailable?'No quantities available':availabilityLabel}</span>
         <span class="pick-state">${selected?`${selectedQuantity} selected`:unavailable?'Already claimed':'Tap to select'}</span>
         <span class="qty-stepper">
           <button type="button" class="qty-button qty-minus" aria-label="Remove one">−</button>
