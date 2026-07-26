@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Receipt OCR</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: #f3f4f6;
+            color: #1f2937;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            padding: 24px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            margin-top: 0;
+            margin-bottom: 8px;
+        }
+
+        .description {
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: #6b7280;
+            line-height: 1.5;
+        }
+
+        .upload-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: white;
+        }
+
+        .image-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        .image-container h2,
+        .result-container h2 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        #imagePreview {
+            display: block;
+            width: 100%;
+            max-height: 500px;
+            object-fit: contain;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background: #f9fafb;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        #scanButton {
+            flex: 1;
+            background: #2563eb;
+            color: white;
+        }
+
+        #scanButton:hover {
+            background: #1d4ed8;
+        }
+
+        #scanButton:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        #clearButton {
+            background: #e5e7eb;
+            color: #1f2937;
+        }
+
+        #clearButton:hover {
+            background: #d1d5db;
+        }
+
+        .status-container {
+            display: none;
+            margin-top: 20px;
+        }
+
+        #statusText {
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .progress-background {
+            width: 100%;
+            height: 16px;
+            overflow: hidden;
+            background: #e5e7eb;
+            border-radius: 999px;
+        }
+
+        #progressBar {
+            width: 0%;
+            height: 100%;
+            background: #2563eb;
+            transition: width 0.2s ease;
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 24px;
+        }
+
+        .result-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        #confidenceText {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        #recognizedText {
+            width: 100%;
+            min-height: 300px;
+            padding: 14px;
+            resize: vertical;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-family: Consolas, Monaco, monospace;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+
+        #errorMessage {
+            display: none;
+            margin-top: 18px;
+            padding: 12px;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .button-row {
+                flex-direction: column;
+            }
+
+            .result-header {
+                display: block;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+        <section class="card">
+            <h1>Receipt OCR</h1>
+
+            <p class="description">
+                Upload or take a picture of a receipt. The page will scan
+                the image and display the text it recognizes.
+            </p>
+
+            <label class="upload-label" for="receiptImage">
+                Select receipt image
+            </label>
+
+            <input
+                type="file"
+                id="receiptImage"
+                accept="image/png, image/jpeg, image/webp"
+                capture="environment"
+            >
+
+            <div id="imageContainer" class="image-container">
+                <h2>Image preview</h2>
+
+                <img
+                    id="imagePreview"
+                    alt="Selected receipt preview"
+                >
+            </div>
+
+            <div class="button-row">
+                <button id="scanButton" type="button" disabled>
+                    Scan Receipt
+                </button>
+
+                <button id="clearButton" type="button">
+                    Clear
+                </button>
+            </div>
+
+            <div id="statusContainer" class="status-container">
+                <div id="statusText">Preparing OCR...</div>
+
+                <div class="progress-background">
+                    <div id="progressBar"></div>
+                </div>
+            </div>
+
+            <div id="errorMessage"></div>
+
+            <div id="resultContainer" class="result-container">
+                <div class="result-header">
+                    <h2>Recognized text</h2>
+                    <span id="confidenceText"></span>
+                </div>
+
+                <textarea
+                    id="recognizedText"
+                    placeholder="Recognized text will appear here..."
+                ></textarea>
+            </div>
+        </section>
+    </main>
+
+    <!-- Tesseract.js -->
+    <script
+        src="https://cdn.jsdelivr.net/npm/tesseract.js@6/dist/tesseract.min.js">
+    </script>
+
+    <script>
+        const receiptImageInput =
+            document.getElementById("receiptImage");
+
+        const imageContainer =
+            document.getElementById("imageContainer");
+
+        const imagePreview =
+            document.getElementById("imagePreview");
+
+        const scanButton =
+            document.getElementById("scanButton");
+
+        const clearButton =
+            document.getElementById("clearButton");
+
+        const statusContainer =
+            document.getElementById("statusContainer");
+
+        const statusText =
+            document.getElementById("statusText");
+
+        const progressBar =
+            document.getElementById("progressBar");
+
+        const resultContainer =
+            document.getElementById("resultContainer");
+
+        const recognizedText =
+            document.getElementById("recognizedText");
+
+        const confidenceText =
+            document.getElementById("confidenceText");
+
+        const errorMessage =
+            document.getElementById("errorMessage");
+
+        let selectedFile = null;
+        let previewUrl = null;
+        let worker = null;
+
+        receiptImageInput.addEventListener("change", handleImageSelection);
+        scanButton.addEventListener("click", scanReceipt);
+        clearButton.addEventListener("click", clearPage);
+
+        function handleImageSelection(event) {
+            const file = event.target.files[0];
+
+            clearError();
+            resetResults();
+
+            if (!file) {
+                selectedFile = null;
+                scanButton.disabled = true;
+                imageContainer.style.display = "none";
+                return;
+            }
+
+            if (!file.type.startsWith("image/")) {
+                showError("Please select a valid image file.");
+                receiptImageInput.value = "";
+                selectedFile = null;
+                scanButton.disabled = true;
+                return;
+            }
+
+            selectedFile = file;
+
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+            }
+
+            previewUrl = URL.createObjectURL(file);
+
+            imagePreview.src = previewUrl;
+            imageContainer.style.display = "block";
+            scanButton.disabled = false;
+        }
+
+        async function scanReceipt() {
+            if (!selectedFile) {
+                showError("Please select a receipt image first.");
+                return;
+            }
+
+            clearError();
+            resetResults();
+
+            scanButton.disabled = true;
+            receiptImageInput.disabled = true;
+
+            statusContainer.style.display = "block";
+            statusText.textContent = "Loading OCR...";
+            progressBar.style.width = "0%";
+
+            try {
+                /*
+                    A worker performs the OCR in a separate browser thread.
+
+                    The worker is created once and reused if the user scans
+                    another receipt.
+                */
+                if (!worker) {
+                    worker = await Tesseract.createWorker("eng", 1, {
+                        logger: updateOcrProgress
+                    });
+                }
+
+                statusText.textContent = "Recognizing receipt text...";
+
+                const result = await worker.recognize(selectedFile);
+
+                const text = result.data.text.trim();
+                const confidence = Math.round(
+                    result.data.confidence || 0
+                );
+
+                recognizedText.value =
+                    text || "No readable text was found.";
+
+                confidenceText.textContent =
+                    `OCR confidence: ${confidence}%`;
+
+                resultContainer.style.display = "block";
+
+                statusText.textContent = "OCR complete";
+                progressBar.style.width = "100%";
+            } catch (error) {
+                console.error("OCR error:", error);
+
+                showError(
+                    "The receipt could not be scanned. " +
+                    "Try another image with better lighting and focus."
+                );
+
+                statusContainer.style.display = "none";
+            } finally {
+                scanButton.disabled = false;
+                receiptImageInput.disabled = false;
+            }
+        }
+
+        function updateOcrProgress(message) {
+            console.log(message);
+
+            const readableStatus = formatStatus(message.status);
+
+            if (readableStatus) {
+                statusText.textContent = readableStatus;
+            }
+
+            if (typeof message.progress === "number") {
+                const percentage = Math.round(
+                    message.progress * 100
+                );
+
+                progressBar.style.width = `${percentage}%`;
+
+                if (message.status === "recognizing text") {
+                    statusText.textContent =
+                        `Recognizing text: ${percentage}%`;
+                }
+            }
+        }
+
+        function formatStatus(status) {
+            const statusLabels = {
+                "loading tesseract core": "Loading OCR engine...",
+                "initializing tesseract": "Initializing OCR...",
+                "loading language traineddata":
+                    "Loading English language data...",
+                "initializing api": "Preparing text recognition...",
+                "recognizing text": "Recognizing receipt text..."
+            };
+
+            return statusLabels[status] || status || "";
+        }
+
+        function resetResults() {
+            recognizedText.value = "";
+            confidenceText.textContent = "";
+            resultContainer.style.display = "none";
+            statusContainer.style.display = "none";
+            progressBar.style.width = "0%";
+        }
+
+        function clearPage() {
+            selectedFile = null;
+
+            receiptImageInput.value = "";
+            receiptImageInput.disabled = false;
+
+            scanButton.disabled = true;
+
+            imagePreview.removeAttribute("src");
+            imageContainer.style.display = "none";
+
+            if (previewUrl) {
+                URL.revokeObjectURL(previewUrl);
+                previewUrl = null;
+            }
+
+            resetResults();
+            clearError();
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = "block";
+        }
+
+        function clearError() {
+            errorMessage.textContent = "";
+            errorMessage.style.display = "none";
+        }
+
+        /*
+            Clean up the OCR worker if the user leaves the page.
+        */
+        window.addEventListener("beforeunload", () => {
+            if (worker) {
+                worker.terminate();
+            }
+        });
+    </script>
+</body>
+</html>
