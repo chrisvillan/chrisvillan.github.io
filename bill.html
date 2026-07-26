@@ -51,17 +51,30 @@
 
         .upload-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             font-weight: bold;
         }
 
-        input[type="file"] {
-            display: block;
+        .upload-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .upload-button {
             width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            background: white;
+            min-height: 52px;
+            background: #eef2ff;
+            color: #1e3a8a;
+            border: 1px solid #c7d2fe;
+        }
+
+        .upload-button:hover {
+            background: #e0e7ff;
+        }
+
+        .hidden-file-input {
+            display: none;
         }
 
         .image-container {
@@ -197,6 +210,10 @@
                 padding: 18px;
             }
 
+            .upload-options {
+                grid-template-columns: 1fr;
+            }
+
             .button-row {
                 flex-direction: column;
             }
@@ -218,15 +235,31 @@
                 the image and display the text it recognizes.
             </p>
 
-            <label class="upload-label" for="receiptImage">
-                Select receipt image
-            </label>
+            <div class="upload-label">Select receipt image</div>
+
+            <div class="upload-options">
+                <button id="cameraButton" class="upload-button" type="button">
+                    📷 Take Photo
+                </button>
+
+                <button id="galleryButton" class="upload-button" type="button">
+                    🖼 Choose Existing Photo
+                </button>
+            </div>
 
             <input
                 type="file"
-                id="receiptImage"
-                accept="image/png, image/jpeg, image/webp"
+                id="cameraInput"
+                class="hidden-file-input"
+                accept="image/*"
                 capture="environment"
+            >
+
+            <input
+                type="file"
+                id="galleryInput"
+                class="hidden-file-input"
+                accept="image/*"
             >
 
             <div id="imageContainer" class="image-container">
@@ -278,8 +311,17 @@
     </script>
 
     <script>
-        const receiptImageInput =
-            document.getElementById("receiptImage");
+        const cameraButton =
+            document.getElementById("cameraButton");
+
+        const galleryButton =
+            document.getElementById("galleryButton");
+
+        const cameraInput =
+            document.getElementById("cameraInput");
+
+        const galleryInput =
+            document.getElementById("galleryInput");
 
         const imageContainer =
             document.getElementById("imageContainer");
@@ -318,7 +360,16 @@
         let previewUrl = null;
         let worker = null;
 
-        receiptImageInput.addEventListener("change", handleImageSelection);
+        cameraButton.addEventListener("click", () => {
+            cameraInput.click();
+        });
+
+        galleryButton.addEventListener("click", () => {
+            galleryInput.click();
+        });
+
+        cameraInput.addEventListener("change", handleImageSelection);
+        galleryInput.addEventListener("change", handleImageSelection);
         scanButton.addEventListener("click", scanReceipt);
         clearButton.addEventListener("click", clearPage);
 
@@ -337,7 +388,7 @@
 
             if (!file.type.startsWith("image/")) {
                 showError("Please select a valid image file.");
-                receiptImageInput.value = "";
+                event.target.value = "";
                 selectedFile = null;
                 scanButton.disabled = true;
                 return;
@@ -366,7 +417,8 @@
             resetResults();
 
             scanButton.disabled = true;
-            receiptImageInput.disabled = true;
+            cameraButton.disabled = true;
+            galleryButton.disabled = true;
 
             statusContainer.style.display = "block";
             statusText.textContent = "Loading OCR...";
@@ -415,7 +467,8 @@
                 statusContainer.style.display = "none";
             } finally {
                 scanButton.disabled = false;
-                receiptImageInput.disabled = false;
+                cameraButton.disabled = false;
+                galleryButton.disabled = false;
             }
         }
 
@@ -466,8 +519,10 @@
         function clearPage() {
             selectedFile = null;
 
-            receiptImageInput.value = "";
-            receiptImageInput.disabled = false;
+            cameraInput.value = "";
+            galleryInput.value = "";
+            cameraButton.disabled = false;
+            galleryButton.disabled = false;
 
             scanButton.disabled = true;
 
