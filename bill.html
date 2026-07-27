@@ -119,7 +119,7 @@
     <div class="toolbar">
       <div>
         <h2 style="margin:0">Choose your color</h2>
-        <p class="subtle" style="margin:6px 0 0;color:#d1d5db">Only colors that no one else is using can be selected.</p>
+        <p class="subtle" style="margin:6px 0 0;color:#d1d5db">Choose a named color. Colors already used by someone else are unavailable.</p>
       </div>
       <button id="closeColorButton" class="secondary right">Close</button>
     </div>
@@ -143,10 +143,22 @@ const PERSON_COLORS = {
   purple:{label:'Purple',accent:'#7c3aed',soft:'#f5f3ff',border:'#c4b5fd',text:'#6d28d9',darkSoft:'#2e1065',darkText:'#ddd6fe'},
   rose:{label:'Rose',accent:'#e11d48',soft:'#fff1f2',border:'#fda4af',text:'#be123c',darkSoft:'#4c0519',darkText:'#fecdd3'},
   orange:{label:'Orange',accent:'#ea580c',soft:'#fff7ed',border:'#fdba74',text:'#c2410c',darkSoft:'#431407',darkText:'#fed7aa'},
-  teal:{label:'Teal',accent:'#0d9488',soft:'#f0fdfa',border:'#5eead4',text:'#0f766e',darkSoft:'#042f2e',darkText:'#99f6e4'},
+  emerald:{label:'Emerald',accent:'#10b981',soft:'#ecfdf5',border:'#6ee7b7',text:'#047857',darkSoft:'#022c22',darkText:'#a7f3d0'},
   cyan:{label:'Cyan',accent:'#0891b2',soft:'#ecfeff',border:'#67e8f9',text:'#0e7490',darkSoft:'#083344',darkText:'#a5f3fc'},
+  amber:{label:'Amber',accent:'#d97706',soft:'#fffbeb',border:'#fcd34d',text:'#b45309',darkSoft:'#451a03',darkText:'#fde68a'},
   lime:{label:'Lime',accent:'#65a30d',soft:'#f7fee7',border:'#bef264',text:'#4d7c0f',darkSoft:'#1a2e05',darkText:'#d9f99d'},
-  amber:{label:'Amber',accent:'#d97706',soft:'#fffbeb',border:'#fcd34d',text:'#b45309',darkSoft:'#451a03',darkText:'#fde68a'}
+  red:{label:'Red',accent:'#dc2626',soft:'#fef2f2',border:'#fca5a5',text:'#b91c1c',darkSoft:'#450a0a',darkText:'#fecaca'},
+  brown:{label:'Brown',accent:'#92400e',soft:'#fefce8',border:'#d6d3a8',text:'#78350f',darkSoft:'#2b1607',darkText:'#fde68a'},
+  pink:{label:'Pink',accent:'#db2777',soft:'#fdf2f8',border:'#f9a8d4',text:'#be185d',darkSoft:'#500724',darkText:'#fbcfe8'},
+  violet:{label:'Violet',accent:'#8b5cf6',soft:'#f5f3ff',border:'#c4b5fd',text:'#7c3aed',darkSoft:'#2e1065',darkText:'#ddd6fe'},
+  indigo:{label:'Indigo',accent:'#4f46e5',soft:'#eef2ff',border:'#a5b4fc',text:'#4338ca',darkSoft:'#1e1b4b',darkText:'#c7d2fe'},
+  green:{label:'Green',accent:'#16a34a',soft:'#f0fdf4',border:'#86efac',text:'#15803d',darkSoft:'#052e16',darkText:'#bbf7d0'},
+  yellow:{label:'Yellow',accent:'#ca8a04',soft:'#fefce8',border:'#fde047',text:'#a16207',darkSoft:'#422006',darkText:'#fef08a'},
+  sky:{label:'Sky',accent:'#0284c7',soft:'#f0f9ff',border:'#7dd3fc',text:'#0369a1',darkSoft:'#082f49',darkText:'#bae6fd'},
+  mint:{label:'Mint',accent:'#059669',soft:'#ecfdf5',border:'#6ee7b7',text:'#047857',darkSoft:'#022c22',darkText:'#a7f3d0'},
+  coral:{label:'Coral',accent:'#f97316',soft:'#fff7ed',border:'#fdba74',text:'#c2410c',darkSoft:'#431407',darkText:'#fed7aa'},
+  slate:{label:'Slate',accent:'#475569',soft:'#f8fafc',border:'#cbd5e1',text:'#334155',darkSoft:'#0f172a',darkText:'#cbd5e1'},
+  gray:{label:'Gray',accent:'#6b7280',soft:'#f9fafb',border:'#d1d5db',text:'#4b5563',darkSoft:'#111827',darkText:'#d1d5db'}
 };
 const PERSON_COLOR_ORDER=Object.keys(PERSON_COLORS);
 
