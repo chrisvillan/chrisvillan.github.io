@@ -10,6 +10,29 @@
 
     .header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.theme-toggle{width:42px;height:42px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:19px;background:#f3f4f6;color:#111827;border:1px solid #d1d5db}.live-badge{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 9px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:12px;font-weight:700}.live-dot{width:7px;height:7px;border-radius:50%;background:#10b981}.summary-item-list{display:grid;gap:12px}.summary-item-card{border:1px solid #d1d5db;border-radius:12px;padding:14px;background:#fff}.summary-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}.summary-item-name{font-size:17px;font-weight:700}.summary-item-total{text-align:right;font-size:17px;font-weight:700;white-space:nowrap}.summary-item-meta{margin-top:3px;color:#6b7280;font-size:13px}.summary-claims{display:grid;gap:7px;margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb}.summary-claim-row{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:8px 10px;border-radius:9px;background:#f0fdf4;color:#065f46}.summary-claim-name{font-weight:700}.summary-empty{color:#6b7280}.summary-person-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.summary-person-card{border:1px solid #d1d5db;border-radius:12px;padding:14px;background:#fff}.summary-person-card h4{margin:0 0 10px;font-size:17px}.summary-person-line{display:flex;justify-content:space-between;gap:12px;margin-top:7px}.summary-person-line.total{margin-top:11px;padding-top:10px;border-top:1px solid #e5e7eb;font-weight:700;font-size:17px;align-items:center}.summary-total-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px}.copy-total-button{padding:6px 10px;font-size:12px;line-height:1;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:7px;white-space:nowrap}.copy-total-button.copied{background:#ecfdf5;color:#047857;border-color:#a7f3d0}.summary-receipt-total{margin-top:14px;padding:14px;border-radius:12px;background:#111827;color:#fff;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.summary-receipt-total span{display:block;color:#d1d5db;font-size:12px}.summary-receipt-total strong{display:block;margin-top:4px;font-size:18px}
     html[data-theme="dark"] body{background:#0f172a;color:#f8fafc}html[data-theme="dark"] .card,html[data-theme="dark"] .summary-item-card,html[data-theme="dark"] .summary-person-card,html[data-theme="dark"] .history-card{background:#1e293b;border-color:#334155;box-shadow:0 5px 18px rgba(0,0,0,.28)}html[data-theme="dark"] .subtle,html[data-theme="dark"] .pick-state,html[data-theme="dark"] .pick-availability,html[data-theme="dark"] .pick-unit-note,html[data-theme="dark"] .remaining-note,html[data-theme="dark"] .summary-item-meta,html[data-theme="dark"] .summary-empty,html[data-theme="dark"] .history-meta{color:#94a3b8}html[data-theme="dark"] input,html[data-theme="dark"] select,html[data-theme="dark"] textarea{background:#0f172a;color:#f8fafc;border-color:#475569}html[data-theme="dark"] .secondary,html[data-theme="dark"] .theme-toggle{background:#334155;color:#f8fafc;border-color:#475569}html[data-theme="dark"] .ghost{background:#172554;color:#bfdbfe;border-color:#1d4ed8}html[data-theme="dark"] .section{border-color:#334155}html[data-theme="dark"] .metric{background:#0f172a;border-color:#334155}html[data-theme="dark"] .pick-card{background:#1e293b;border-color:#475569;color:#f8fafc}html[data-theme="dark"] .pick-card:hover{background:#172554;border-color:#3b82f6}html[data-theme="dark"] .pick-card.selected{background:#052e2b;border-color:#10b981}html[data-theme="dark"] .pick-card.unremaining{background:#111827}html[data-theme="dark"] .table-wrap{border-color:#475569}html[data-theme="dark"] .table th{background:#0f172a}html[data-theme="dark"] .table th,html[data-theme="dark"] .table td{border-color:#475569}html[data-theme="dark"] .modal-box[style*="background:#fff"]{background:#1e293b!important;color:#f8fafc!important}html[data-theme="dark"] .summary-claims{border-color:#334155}html[data-theme="dark"] .summary-claim-row{background:#052e2b;color:#a7f3d0}html[data-theme="dark"] .summary-person-line.total{border-color:#334155}html[data-theme="dark"] .copy-total-button{background:#172554;color:#bfdbfe;border-color:#1d4ed8}html[data-theme="dark"] .copy-total-button.copied{background:#052e2b;color:#a7f3d0;border-color:#065f46}html[data-theme="dark"] .archive-note{background:#422006;border-color:#854d0e;color:#fde68a}html[data-theme="dark"] .status{background:#172554;color:#bfdbfe}html[data-theme="dark"] .error{background:#450a0a;color:#fecaca;border-color:#7f1d1d}html[data-theme="dark"] .successbox{background:#052e2b;color:#a7f3d0;border-color:#065f46}@media(max-width:720px){.header-actions{justify-content:flex-end}.summary-receipt-total{grid-template-columns:1fr 1fr}}
+  
+    .person-color-button{display:inline-flex;align-items:center;gap:8px}
+    .person-color-dot{width:13px;height:13px;border-radius:50%;background:var(--person-accent,#2563eb);box-shadow:0 0 0 2px var(--person-soft,#dbeafe)}
+    .color-choice-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:16px}
+    .color-choice{display:flex;flex-direction:column;align-items:center;gap:8px;padding:13px 8px;background:#fff;color:#111827;border:2px solid transparent}
+    .color-choice:hover:not(:disabled){border-color:var(--person-accent)}
+    .color-choice.selected{border-color:var(--person-accent);background:var(--person-soft)}
+    .color-choice:disabled{opacity:.4;cursor:not-allowed}
+    .color-swatch{width:34px;height:34px;border-radius:50%;background:var(--person-accent);box-shadow:0 0 0 5px var(--person-soft)}
+    .person-choice{border-color:var(--person-border)!important;background:var(--person-soft)!important;color:var(--person-text)!important}
+    .person-choice:hover{filter:brightness(.98)}
+    .pick-card.selected{border-color:var(--person-accent,#059669);background:var(--person-soft,#ecfdf5)}
+    .pick-card.selected .pick-check{border-color:var(--person-accent,#059669);background:var(--person-accent,#059669)}
+    .qty-button{background:var(--person-soft,#d1fae5);color:var(--person-text,#047857)}
+    .participant-total{border-top:4px solid var(--person-accent,#10b981)}
+    .summary-claim-row{background:var(--person-soft,#f0fdf4);color:var(--person-text,#065f46);border-left:4px solid var(--person-accent,#10b981)}
+    .summary-person-card{border-top:5px solid var(--person-accent,#2563eb);background:linear-gradient(180deg,var(--person-soft,#eff6ff),#fff 42%)}
+    html[data-theme="dark"] .summary-person-card{background:linear-gradient(180deg,var(--person-dark-soft,#172554),#1e293b 45%)}
+    html[data-theme="dark"] .color-choice{background:#1e293b;color:#f8fafc}
+    html[data-theme="dark"] .color-choice.selected{background:var(--person-dark-soft)}
+    html[data-theme="dark"] .person-choice{background:var(--person-dark-soft)!important;color:var(--person-dark-text)!important;border-color:var(--person-accent)!important}
+    @media(max-width:520px){.color-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
   </style>
 </head>
 <body>
@@ -20,6 +43,7 @@
       <div class="header-actions">
         <button id="themeToggle" class="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme">🌙</button>
         <button id="headerAdminButton" class="primary small">Admin</button>
+        <button id="personColorButton" class="ghost small person-color-button hidden" type="button"><span class="person-color-dot"></span>My color</button>
         <button id="homeButton" class="secondary small hidden">Change person</button>
       </div>
     </div>
@@ -89,6 +113,21 @@
 
 <div id="assignmentModal" class="modal" style="z-index:1300"><div class="modal-box" style="max-width:620px"><div class="toolbar"><div><h2 id="assignmentTitle" style="margin:0">Pre-assign item</h2><p id="assignmentSubtitle" class="assignment-help" style="margin:6px 0 0">Select people. The item total will be split equally, or you can edit each amount.</p></div><button id="closeAssignmentButton" class="secondary right">Close</button></div><div class="toolbar" style="margin-top:14px"><button id="selectAllAssignmentButton" class="ghost small">Select everyone</button><button id="clearAssignmentButton" class="secondary small">Clear</button><button id="splitAssignmentButton" class="ghost small">Split equally</button></div><div id="assignmentEditorList" class="assignment-editor-list"></div><div id="assignmentTotal" class="assignment-total"></div><div class="toolbar" style="justify-content:flex-end;margin-top:14px"><button id="saveAssignmentButton" class="success">Apply assignments</button><button id="cancelAssignmentButton" class="secondary">Cancel</button></div></div></div>
 
+
+<div id="colorModal" class="modal" style="z-index:1400">
+  <div class="modal-box" style="max-width:520px">
+    <div class="toolbar">
+      <div>
+        <h2 style="margin:0">Choose your color</h2>
+        <p class="subtle" style="margin:6px 0 0;color:#d1d5db">Only colors that no one else is using can be selected.</p>
+      </div>
+      <button id="closeColorButton" class="secondary right">Close</button>
+    </div>
+    <div id="colorChoiceGrid" class="color-choice-grid"></div>
+    <div id="colorStatus" class="status" style="margin-top:14px"></div>
+  </div>
+</div>
+
 <div id="modeModal" class="modal"><div class="modal-box"><h2>Analysis mode</h2><p class="subtle">Gemini Vision reads the processed image directly. Tesseract first reads the text, then Gemini structures it.</p><div class="grid two"><button class="success modeChoice" data-mode="vision">Gemini Vision (default)</button><button class="ghost modeChoice" data-mode="tesseract">Tesseract + Gemini text</button></div><button id="closeModeButton" class="secondary" style="margin-top:12px">Cancel</button></div></div>
 
 <div id="cameraModal" class="modal"><div class="modal-box"><div class="toolbar"><h2 style="margin:0">Scan receipt</h2><button id="closeCameraButton" class="secondary right">Close</button></div><div class="camera-wrap" style="margin-top:12px"><video id="cameraVideo" autoplay muted playsinline></video><div class="camera-guide"></div></div><p id="cameraMessage" class="subtle">Keep the complete receipt inside the guide.</p><div class="toolbar"><button id="captureButton" class="primary">Capture receipt</button></div><canvas id="captureCanvas" hidden></canvas></div></div>
@@ -98,11 +137,41 @@
 <script>
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwZ-V96GpzWodkhqh-Gcqm-VYEAZERoN-8bZEb-rl6jrWRxOOKy26h4YGTQfQLMFEzT/exec";
 const $ = id => document.getElementById(id);
+
+const PERSON_COLORS = {
+  blue:{label:'Blue',accent:'#2563eb',soft:'#eff6ff',border:'#93c5fd',text:'#1d4ed8',darkSoft:'#172554',darkText:'#bfdbfe'},
+  purple:{label:'Purple',accent:'#7c3aed',soft:'#f5f3ff',border:'#c4b5fd',text:'#6d28d9',darkSoft:'#2e1065',darkText:'#ddd6fe'},
+  rose:{label:'Rose',accent:'#e11d48',soft:'#fff1f2',border:'#fda4af',text:'#be123c',darkSoft:'#4c0519',darkText:'#fecdd3'},
+  orange:{label:'Orange',accent:'#ea580c',soft:'#fff7ed',border:'#fdba74',text:'#c2410c',darkSoft:'#431407',darkText:'#fed7aa'},
+  teal:{label:'Teal',accent:'#0d9488',soft:'#f0fdfa',border:'#5eead4',text:'#0f766e',darkSoft:'#042f2e',darkText:'#99f6e4'},
+  cyan:{label:'Cyan',accent:'#0891b2',soft:'#ecfeff',border:'#67e8f9',text:'#0e7490',darkSoft:'#083344',darkText:'#a5f3fc'},
+  lime:{label:'Lime',accent:'#65a30d',soft:'#f7fee7',border:'#bef264',text:'#4d7c0f',darkSoft:'#1a2e05',darkText:'#d9f99d'},
+  amber:{label:'Amber',accent:'#d97706',soft:'#fffbeb',border:'#fcd34d',text:'#b45309',darkSoft:'#451a03',darkText:'#fde68a'}
+};
+const PERSON_COLOR_ORDER=Object.keys(PERSON_COLORS);
+
+function personColorKey(person,index=0){
+  const key=String(person?.color||'').toLowerCase();
+  return PERSON_COLORS[key]?key:PERSON_COLOR_ORDER[index%PERSON_COLOR_ORDER.length];
+}
+function applyPersonColorVars(element,key){
+  const color=PERSON_COLORS[key]||PERSON_COLORS.blue;
+  element.style.setProperty('--person-accent',color.accent);
+  element.style.setProperty('--person-soft',color.soft);
+  element.style.setProperty('--person-border',color.border);
+  element.style.setProperty('--person-text',color.text);
+  element.style.setProperty('--person-dark-soft',color.darkSoft);
+  element.style.setProperty('--person-dark-text',color.darkText);
+}
+function selectedPerson(){
+  return (appState.people||[]).find(person=>person.personId===selectedPersonId)||null;
+}
+
 let appState={hasActiveBill:false},adminPin='',selectedPersonId='',selectedFile=null,previewUrl=null,analysisMode=localStorage.getItem('billAnalysisMode')||'vision',worker=null,cameraStream=null,adminItems=[],adminPeople=[],historyState=null,assignmentItemIndex=null;
 const assignmentModal=$('assignmentModal'),assignmentTitle=$('assignmentTitle'),assignmentSubtitle=$('assignmentSubtitle'),assignmentEditorList=$('assignmentEditorList'),assignmentTotal=$('assignmentTotal'),saveAssignmentButton=$('saveAssignmentButton'),closeAssignmentButton=$('closeAssignmentButton'),cancelAssignmentButton=$('cancelAssignmentButton'),selectAllAssignmentButton=$('selectAllAssignmentButton'),clearAssignmentButton=$('clearAssignmentButton'),splitAssignmentButton=$('splitAssignmentButton');
 
 const screens=['landingScreen','adminLoginScreen','adminScreen','participantScreen'];
-function showScreen(id){screens.forEach(x=>$(x).classList.toggle('active',x===id));$('homeButton').classList.toggle('hidden',id==='landingScreen');$('headerAdminButton').classList.toggle('hidden',id!=='landingScreen');clearStatus();}
+function showScreen(id){screens.forEach(x=>$(x).classList.toggle('active',x===id));$('homeButton').classList.toggle('hidden',id==='landingScreen');$('headerAdminButton').classList.toggle('hidden',id!=='landingScreen');$('personColorButton').classList.toggle('hidden',id!=='participantScreen');clearStatus();}
 $('headerAdminButton').onclick=()=>showScreen('adminLoginScreen');
 function applyTheme(theme){document.documentElement.dataset.theme=theme;localStorage.setItem('billTheme',theme);$('themeToggle').textContent=theme==='dark'?'☀️':'🌙';$('themeToggle').title=theme==='dark'?'Use light mode':'Use dark mode';}
 $('themeToggle').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
@@ -112,14 +181,14 @@ function setStatus(message,type='info'){const el=$('globalStatus');el.textConten
 function clearStatus(){$('globalStatus').style.display='none';$('globalStatus').textContent='';}
 async function api(payload){const response=await fetch(APPS_SCRIPT_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});if(!response.ok)throw new Error('Server returned HTTP '+response.status);const data=await response.json();if(!data.ok)throw new Error(data.error||'Request failed');return data;}
 async function loadState(){setStatus('Loading bill…');try{const data=await api({action:'getAppState'});appState=data.state;renderLanding();clearStatus();}catch(e){setStatus(e.message,'error');}}
-function renderLanding(){const box=$('identityChoices');box.innerHTML='';$('liveBadge').classList.toggle('hidden',!appState.hasActiveBill);if(appState.hasActiveBill){$('billSubtitle').textContent=(appState.bill.billName||'Shared Bill')+(appState.bill.storeName?' · '+appState.bill.storeName:'');appState.people.forEach(person=>{const b=document.createElement('button');b.className='choice ghost';b.textContent=person.name;b.onclick=()=>openParticipant(person.personId);box.appendChild(b);});}else{$('billSubtitle').textContent='No active bill has been published yet.';const p=document.createElement('p');p.className='subtle';p.textContent='The admin can create the first bill.';box.appendChild(p);}}
+function renderLanding(){const box=$('identityChoices');box.innerHTML='';$('liveBadge').classList.toggle('hidden',!appState.hasActiveBill);if(appState.hasActiveBill){$('billSubtitle').textContent=(appState.bill.billName||'Shared Bill')+(appState.bill.storeName?' · '+appState.bill.storeName:'');appState.people.forEach((person,index)=>{const b=document.createElement('button');b.className='choice ghost person-choice';b.textContent=person.name;applyPersonColorVars(b,personColorKey(person,index));b.onclick=()=>openParticipant(person.personId);box.appendChild(b);});}else{$('billSubtitle').textContent='No active bill has been published yet.';const p=document.createElement('p');p.className='subtle';p.textContent='The admin can create the first bill.';box.appendChild(p);}}
 
 $('homeButton').onclick=()=>{selectedPersonId='';showScreen('landingScreen');renderLanding();};document.querySelectorAll('.backLanding').forEach(b=>b.onclick=()=>showScreen('landingScreen'));
 $('adminLoginButton').onclick=async()=>{const pin=$('adminPinInput').value.trim();if(!pin)return setStatus('Enter the admin PIN.','error');try{setStatus('Checking PIN…');await api({action:'verifyAdmin',adminPin:pin});adminPin=pin;openAdmin();}catch(e){setStatus(e.message,'error');}};
-function openAdmin(){showScreen('adminScreen');renderMode();adminPeople=appState.hasActiveBill?appState.people.map(p=>({personId:p.personId,name:p.name})):[];renderPeopleEditor();if(appState.hasActiveBill){populateReview(appState.bill,appState.items);$('reviewSection').classList.remove('hidden');$('reviewHeading').textContent='3. Review and save changes';$('publishButton').textContent='Save changes';$('archiveBillButton').classList.remove('hidden');}else{$('reviewSection').classList.add('hidden');adminItems=[];$('reviewHeading').textContent='3. Review and publish';$('publishButton').textContent='Publish new bill';$('archiveBillButton').classList.add('hidden');}clearStatus();}
+function openAdmin(){showScreen('adminScreen');renderMode();adminPeople=appState.hasActiveBill?appState.people.map(p=>({personId:p.personId,name:p.name,color:p.color})):[];renderPeopleEditor();if(appState.hasActiveBill){populateReview(appState.bill,appState.items);$('reviewSection').classList.remove('hidden');$('reviewHeading').textContent='3. Review and save changes';$('publishButton').textContent='Save changes';$('archiveBillButton').classList.remove('hidden');}else{$('reviewSection').classList.add('hidden');adminItems=[];$('reviewHeading').textContent='3. Review and publish';$('publishButton').textContent='Publish new bill';$('archiveBillButton').classList.add('hidden');}clearStatus();}
 function renderPeopleEditor(){const box=$('peopleEditor');box.innerHTML='';(adminPeople.length?adminPeople:[{personId:'',name:''}]).forEach((person,index)=>addPersonRow(person,index));}
-function addPersonRow(person={personId:'',name:''},index=adminPeople.length){if(index===adminPeople.length)adminPeople.push(person);const row=document.createElement('div');row.className='person-row';row.dataset.personId=person.personId||'';const input=document.createElement('input');input.value=person.name||'';input.placeholder='Participant name';input.oninput=()=>adminPeople[index].name=input.value;const remove=document.createElement('button');remove.className='secondary small';remove.textContent='Remove';remove.onclick=()=>{adminPeople.splice(index,1);renderPeopleEditor();};row.append(input,remove);$('peopleEditor').appendChild(row);}
-$('addPersonButton').onclick=()=>{adminPeople.push({personId:'',name:''});renderPeopleEditor();};
+function addPersonRow(person={personId:'',name:'',color:''},index=adminPeople.length){if(index===adminPeople.length)adminPeople.push(person);const row=document.createElement('div');row.className='person-row';row.dataset.personId=person.personId||'';const input=document.createElement('input');input.value=person.name||'';input.placeholder='Participant name';input.oninput=()=>adminPeople[index].name=input.value;const remove=document.createElement('button');remove.className='secondary small';remove.textContent='Remove';remove.onclick=()=>{adminPeople.splice(index,1);renderPeopleEditor();};row.append(input,remove);$('peopleEditor').appendChild(row);}
+$('addPersonButton').onclick=()=>{const used=new Set(adminPeople.map(p=>p.color).filter(Boolean));const color=PERSON_COLOR_ORDER.find(key=>!used.has(key))||PERSON_COLOR_ORDER[adminPeople.length%PERSON_COLOR_ORDER.length];adminPeople.push({personId:'',name:'',color});renderPeopleEditor();};
 
 function renderMode(){$('analysisModeLabel').textContent=analysisMode==='vision'?'Gemini Vision':'Tesseract + Gemini text';$('ocrArea').classList.toggle('hidden',analysisMode!=='tesseract');}
 $('modeButton').onclick=()=>$('modeModal').classList.add('open');$('closeModeButton').onclick=()=>$('modeModal').classList.remove('open');document.querySelectorAll('.modeChoice').forEach(btn=>btn.onclick=()=>{analysisMode=btn.dataset.mode;localStorage.setItem('billAnalysisMode',analysisMode);renderMode();$('modeModal').classList.remove('open');});
@@ -149,7 +218,7 @@ splitAssignmentButton.onclick=splitAssignmentsEqually;
 closeAssignmentButton.onclick=closeAssignmentEditor;cancelAssignmentButton.onclick=closeAssignmentEditor;
 assignmentModal.onclick=e=>{if(e.target===assignmentModal)closeAssignmentEditor();};
 saveAssignmentButton.onclick=()=>{if(assignmentItemIndex===null)return;const rows=getAssignmentRows();const assignments=rows.filter(x=>x.check.checked&&Number(x.amount.value)>0).map(x=>({personId:x.person.personId||'',name:String(x.person.name||'').trim(),shareAmount:roundMoney(Number(x.amount.value))}));const total=roundMoney(assignments.reduce((s,a)=>s+a.shareAmount,0)),lineTotal=roundMoney(Number(adminItems[assignmentItemIndex].lineTotal||0));if(total>lineTotal+.01){refreshAssignmentTotal();return;}adminItems[assignmentItemIndex].assignments=assignments;adminItems[assignmentItemIndex].assignmentsTouched=true;closeAssignmentEditor();renderAdminItems();};
-$('publishButton').onclick=async()=>{const wasEditing=appState.hasActiveBill;const people=adminPeople.map(p=>({personId:p.personId||'',name:String(p.name||'').trim()})).filter(p=>p.name);const bill={billId:wasEditing?appState.bill.billId:'',billName:$('billNameInput').value.trim(),storeName:$('storeInput').value.trim(),address:$('addressInput').value.trim(),date:$('dateInput').value,time:$('timeInput').value,subtotal:Number($('subtotalInput').value),tax:Number($('taxInput').value),tip:Number($('tipInput').value),grandTotal:Number($('grandTotalInput').value),people,items:adminItems.map(i=>({itemId:i.itemId||'',name:i.name,quantity:toNullableNumber(i.quantity),unitPrice:toNullableNumber(i.unitPrice),lineTotal:Number(i.lineTotal),assignments:(i.assignments||[]).map(a=>({personId:a.personId||'',name:a.name||'',shareAmount:Number(a.shareAmount||0)})),assignmentsTouched:Boolean(i.assignmentsTouched)}))};const modal=$('adminSaveModal');$('adminSaveTitle').textContent=wasEditing?'Saving changes…':'Publishing bill…';$('adminSaveMessage').textContent=wasEditing?'Updating the current bill and preserving everyone’s saved selections…':'Creating the shared bill and preparing the person selection page…';$('adminSaveProgress').style.width='35%';$('closeAdminSaveButton').classList.add('hidden');modal.classList.add('open');$('publishButton').disabled=true;try{const result=await api({action:'saveBill',adminPin,bill});$('adminSaveProgress').style.width='100%';appState=result.state;adminPeople=appState.people.map(p=>({personId:p.personId,name:p.name}));adminItems=appState.items.map(i=>({...i,assignments:appState.selections.filter(s=>s.itemId===i.itemId).map(s=>({personId:s.personId,name:appState.people.find(p=>p.personId===s.personId)?.name||'',shareAmount:Number(s.shareAmount)})),assignmentsTouched:false}));renderLanding();$('adminSaveTitle').textContent=wasEditing?'Changes saved':'Bill published';$('adminSaveMessage').textContent=wasEditing?'Everyone’s existing selections were preserved. Redirecting to the person selection page…':'The bill is ready. Redirecting to the person selection page…';await new Promise(resolve=>setTimeout(resolve,750));modal.classList.remove('open');showScreen('landingScreen');renderLanding();}catch(e){$('adminSaveTitle').textContent='Could not save bill';$('adminSaveMessage').textContent=e.message;$('adminSaveProgress').style.width='0%';$('closeAdminSaveButton').classList.remove('hidden');}finally{$('publishButton').disabled=false;}};
+$('publishButton').onclick=async()=>{const wasEditing=appState.hasActiveBill;const people=adminPeople.map((p,index)=>({personId:p.personId||'',name:String(p.name||'').trim(),color:p.color||PERSON_COLOR_ORDER[index%PERSON_COLOR_ORDER.length]})).filter(p=>p.name);const bill={billId:wasEditing?appState.bill.billId:'',billName:$('billNameInput').value.trim(),storeName:$('storeInput').value.trim(),address:$('addressInput').value.trim(),date:$('dateInput').value,time:$('timeInput').value,subtotal:Number($('subtotalInput').value),tax:Number($('taxInput').value),tip:Number($('tipInput').value),grandTotal:Number($('grandTotalInput').value),people,items:adminItems.map(i=>({itemId:i.itemId||'',name:i.name,quantity:toNullableNumber(i.quantity),unitPrice:toNullableNumber(i.unitPrice),lineTotal:Number(i.lineTotal),assignments:(i.assignments||[]).map(a=>({personId:a.personId||'',name:a.name||'',shareAmount:Number(a.shareAmount||0)})),assignmentsTouched:Boolean(i.assignmentsTouched)}))};const modal=$('adminSaveModal');$('adminSaveTitle').textContent=wasEditing?'Saving changes…':'Publishing bill…';$('adminSaveMessage').textContent=wasEditing?'Updating the current bill and preserving everyone’s saved selections…':'Creating the shared bill and preparing the person selection page…';$('adminSaveProgress').style.width='35%';$('closeAdminSaveButton').classList.add('hidden');modal.classList.add('open');$('publishButton').disabled=true;try{const result=await api({action:'saveBill',adminPin,bill});$('adminSaveProgress').style.width='100%';appState=result.state;adminPeople=appState.people.map(p=>({personId:p.personId,name:p.name,color:p.color}));adminItems=appState.items.map(i=>({...i,assignments:appState.selections.filter(s=>s.itemId===i.itemId).map(s=>({personId:s.personId,name:appState.people.find(p=>p.personId===s.personId)?.name||'',shareAmount:Number(s.shareAmount)})),assignmentsTouched:false}));renderLanding();$('adminSaveTitle').textContent=wasEditing?'Changes saved':'Bill published';$('adminSaveMessage').textContent=wasEditing?'Everyone’s existing selections were preserved. Redirecting to the person selection page…':'The bill is ready. Redirecting to the person selection page…';await new Promise(resolve=>setTimeout(resolve,750));modal.classList.remove('open');showScreen('landingScreen');renderLanding();}catch(e){$('adminSaveTitle').textContent='Could not save bill';$('adminSaveMessage').textContent=e.message;$('adminSaveProgress').style.width='0%';$('closeAdminSaveButton').classList.remove('hidden');}finally{$('publishButton').disabled=false;}};
 $('closeAdminSaveButton').onclick=()=>{$('adminSaveModal').classList.remove('open');};
 let pendingAdminAction=null;
 function escapePlain(value){return String(value??'').replace(/[<>]/g,'');}
@@ -167,11 +236,11 @@ $('historyModal').onclick=e=>{if(e.target===$('historyModal'))$('historyModal').
 async function openBillHistory(){$('historyModal').classList.add('open');$('historyList').classList.remove('hidden');$('historyDetail').classList.add('hidden');$('historyLoading').textContent='Loading archived bills…';$('historyLoading').className='status';$('historyLoading').style.display='block';try{const result=await api({action:'getBillHistory',adminPin});renderBillHistory(result.bills||[]);$('historyLoading').style.display='none';}catch(e){$('historyLoading').textContent=e.message;$('historyLoading').className='status error';}}
 function renderBillHistory(bills){const box=$('historyList');box.innerHTML='';if(!bills.length){box.innerHTML='<p class="subtle">No bills have been archived yet.</p>';return;}bills.forEach(bill=>{const card=document.createElement('div');card.className='history-card';const when=bill.date||new Date(bill.updatedAt||Date.now()).toLocaleDateString();card.innerHTML='<h3>'+escapeHtml(bill.billName||'Shared Bill')+'</h3><div class="history-meta">'+escapeHtml(bill.storeName||'No store')+' · '+escapeHtml(when)+'<br>'+bill.peopleCount+' people · '+bill.itemCount+' items · <strong>'+money(bill.grandTotal)+'</strong></div><div class="history-actions"><button class="ghost small viewArchived">View details</button><button class="primary small restoreArchived">Restore</button><button class="danger small deleteArchived">Delete</button></div>';card.querySelector('.viewArchived').onclick=()=>viewArchivedBill(bill.billId);card.querySelector('.restoreArchived').onclick=()=>restoreArchivedBill(bill.billId,bill.billName);card.querySelector('.deleteArchived').onclick=()=>deleteArchivedBill(bill.billId,bill.billName);box.appendChild(card);});}
 async function viewArchivedBill(billId){$('historyLoading').textContent='Loading bill details…';$('historyLoading').className='status';$('historyLoading').style.display='block';try{const result=await api({action:'getArchivedBill',adminPin,billId});historyState=result.state;renderHistoryDetail(historyState);$('historyList').classList.add('hidden');$('historyDetail').classList.remove('hidden');$('historyLoading').style.display='none';}catch(e){$('historyLoading').textContent=e.message;$('historyLoading').className='status error';}}
-function renderHistoryDetail(state){$('historyDetailTitle').textContent=state.bill.billName||'Shared Bill';$('historyDetailMeta').textContent=(state.bill.storeName||'')+(state.bill.date?' · '+state.bill.date:'')+' · '+money(state.bill.grandTotal);const personMap=Object.fromEntries(state.people.map(p=>[p.personId,p]));const itemsBody=$('historyItemsBody');itemsBody.innerHTML='';state.items.forEach((item,index)=>{const assignments=state.selections.filter(s=>s.itemId===item.itemId&&Number(s.shareAmount)>0);const assigned=roundMoney(assignments.reduce((sum,s)=>sum+Number(s.shareAmount||0),0));const remaining=Math.max(0,roundMoney(Number(item.lineTotal||0)-assigned));const row=document.createElement('tr');const chips=assignments.length?assignments.map(s=>'<span class="assignment-chip">'+escapeHtml(personMap[s.personId]?.name||'Unknown')+' · '+money(s.shareAmount)+'</span>').join(''):'<span class="subtle">Nobody</span>';row.innerHTML='<td>'+(index+1)+'</td><td><strong>'+escapeHtml(item.name)+'</strong></td><td class="money">'+money(item.lineTotal)+'</td><td>'+chips+'</td><td class="money">'+money(remaining)+'</td>';itemsBody.appendChild(row);});const taxRate=state.bill.subtotal?state.bill.tax/state.bill.subtotal:0,tipRate=state.bill.subtotal?state.bill.tip/state.bill.subtotal:0;$('historyTaxHeader').textContent='Tax ('+formatPercent(taxRate)+')';$('historyTipHeader').textContent='Tip ('+formatPercent(tipRate)+')';const peopleBody=$('historyPeopleBody');peopleBody.innerHTML='';state.people.forEach(person=>{const subtotal=roundMoney(state.selections.filter(s=>s.personId===person.personId).reduce((sum,s)=>sum+Number(s.shareAmount||0),0)),tax=roundMoney(subtotal*taxRate),tip=roundMoney(subtotal*tipRate),total=roundMoney(subtotal+tax+tip);const row=document.createElement('tr');row.innerHTML='<td><strong>'+escapeHtml(person.name)+'</strong></td><td class="money">'+money(subtotal)+'</td><td class="money">'+money(tax)+'</td><td class="money">'+money(tip)+'</td><td class="money"><strong>'+money(total)+'</strong></td>';peopleBody.appendChild(row);});$('restoreHistoryButton').onclick=()=>restoreArchivedBill(state.bill.billId,state.bill.billName);$('deleteHistoryButton').onclick=()=>deleteArchivedBill(state.bill.billId,state.bill.billName);}
+function renderHistoryDetail(state){$('historyDetailTitle').textContent=state.bill.billName||'Shared Bill';$('historyDetailMeta').textContent=(state.bill.storeName||'')+(state.bill.date?' · '+state.bill.date:'')+' · '+money(state.bill.grandTotal);const personMap=Object.fromEntries(state.people.map(p=>[p.personId,p]));const itemsBody=$('historyItemsBody');itemsBody.innerHTML='';state.items.forEach((item,index)=>{const assignments=state.selections.filter(s=>s.itemId===item.itemId&&Number(s.shareAmount)>0);const assigned=roundMoney(assignments.reduce((sum,s)=>sum+Number(s.shareAmount||0),0));const remaining=Math.max(0,roundMoney(Number(item.lineTotal||0)-assigned));const row=document.createElement('tr');const chips=assignments.length?assignments.map(s=>{const person=personMap[s.personId]||{name:'Unknown',color:'blue'};const c=PERSON_COLORS[personColorKey(person,(state.people||[]).indexOf(person))];return '<span class="assignment-chip" style="background:'+c.soft+';color:'+c.text+';border:1px solid '+c.border+'">'+escapeHtml(person.name||'Unknown')+' · '+money(s.shareAmount)+'</span>';}).join(''):'<span class="subtle">Nobody</span>';row.innerHTML='<td>'+(index+1)+'</td><td><strong>'+escapeHtml(item.name)+'</strong></td><td class="money">'+money(item.lineTotal)+'</td><td>'+chips+'</td><td class="money">'+money(remaining)+'</td>';itemsBody.appendChild(row);});const taxRate=state.bill.subtotal?state.bill.tax/state.bill.subtotal:0,tipRate=state.bill.subtotal?state.bill.tip/state.bill.subtotal:0;$('historyTaxHeader').textContent='Tax ('+formatPercent(taxRate)+')';$('historyTipHeader').textContent='Tip ('+formatPercent(tipRate)+')';const peopleBody=$('historyPeopleBody');peopleBody.innerHTML='';state.people.forEach(person=>{const subtotal=roundMoney(state.selections.filter(s=>s.personId===person.personId).reduce((sum,s)=>sum+Number(s.shareAmount||0),0)),tax=roundMoney(subtotal*taxRate),tip=roundMoney(subtotal*tipRate),total=roundMoney(subtotal+tax+tip);const row=document.createElement('tr');row.innerHTML='<td><strong>'+escapeHtml(person.name)+'</strong></td><td class="money">'+money(subtotal)+'</td><td class="money">'+money(tax)+'</td><td class="money">'+money(tip)+'</td><td class="money"><strong>'+money(total)+'</strong></td>';peopleBody.appendChild(row);});$('restoreHistoryButton').onclick=()=>restoreArchivedBill(state.bill.billId,state.bill.billName);$('deleteHistoryButton').onclick=()=>deleteArchivedBill(state.bill.billId,state.bill.billName);}
 async function restoreArchivedBill(billId,billName){openAdminAction({title:'Restore '+escapePlain(billName||'this bill')+'?',message:'This archived bill and all saved selections will become active. Any currently active bill will be archived automatically.',confirmText:'Restore bill',confirmClass:'primary',workingTitle:'Restoring bill…',workingMessage:'Restoring the receipt, participants, and everyone’s saved selections…',successTitle:'Bill restored',successMessage:'The bill and all saved selections were restored. Redirecting to the person selection page…',action:async()=>{const result=await api({action:'restoreBill',adminPin,billId});appState=result.state;$('historyModal').classList.remove('open');renderLanding();},afterSuccess:async()=>{closeAdminAction();showScreen('landingScreen');renderLanding();}});}
 
 
-function openParticipant(personId){selectedPersonId=personId;const person=appState.people.find(p=>p.personId===personId);showScreen('participantScreen');$('participantHeading').textContent='Hi '+person.name+' — what did you get?';$('participantDescription').textContent='Tap each item you ordered. For items with multiple quantities, use − and + to choose how many.';renderParticipantItems();updateParticipantTotals();}
+function openParticipant(personId){selectedPersonId=personId;const person=appState.people.find(p=>p.personId===personId);showScreen('participantScreen');$('participantHeading').textContent='Hi '+person.name+' — what did you get?';$('participantDescription').textContent='Tap each item you ordered. For items with multiple quantities, use − and + to choose how many.';const colorKey=personColorKey(person,appState.people.indexOf(person));applyPersonColorVars($('participantScreen'),colorKey);applyPersonColorVars($('personColorButton'),colorKey);renderParticipantItems();updateParticipantTotals();}
 function renderParticipantItems(){
   const box=$('participantItems');
   box.innerHTML='';
@@ -347,6 +416,61 @@ async function copyAmountToClipboard(value,button){
   }
 }
 
+
+function openColorPicker(){
+  const person=selectedPerson();
+  if(!person)return;
+  const grid=$('colorChoiceGrid');
+  const status=$('colorStatus');
+  status.style.display='none';
+  status.textContent='';
+  grid.innerHTML='';
+  const claimed=new Map(
+    (appState.people||[])
+      .filter(candidate=>candidate.personId!==person.personId)
+      .map(candidate=>[personColorKey(candidate,(appState.people||[]).indexOf(candidate)),candidate.name])
+  );
+  const current=personColorKey(person,(appState.people||[]).indexOf(person));
+
+  PERSON_COLOR_ORDER.forEach(key=>{
+    const color=PERSON_COLORS[key];
+    const button=document.createElement('button');
+    button.type='button';
+    button.className='color-choice'+(key===current?' selected':'');
+    applyPersonColorVars(button,key);
+    const owner=claimed.get(key);
+    button.disabled=Boolean(owner);
+    button.innerHTML='<span class="color-swatch"></span><strong>'+color.label+'</strong><span class="subtle" style="font-size:12px">'+(owner?'Used by '+escapeHtml(owner):(key===current?'Your color':'Available'))+'</span>';
+    button.onclick=()=>savePersonColor(key);
+    grid.appendChild(button);
+  });
+  $('colorModal').classList.add('open');
+}
+async function savePersonColor(color){
+  const status=$('colorStatus');
+  status.className='status';
+  status.textContent='Saving your color…';
+  status.style.display='block';
+  try{
+    const result=await api({action:'updatePersonColor',personId:selectedPersonId,color});
+    appState=result.state;
+    const person=selectedPerson();
+    const key=personColorKey(person,(appState.people||[]).indexOf(person));
+    applyPersonColorVars($('participantScreen'),key);
+    applyPersonColorVars($('personColorButton'),key);
+    renderLanding();
+    status.classList.add('successbox');
+    status.textContent='Color saved.';
+    setTimeout(()=>{$('colorModal').classList.remove('open');},450);
+  }catch(error){
+    status.classList.add('error');
+    status.textContent=error.message;
+  }
+}
+$('personColorButton').onclick=openColorPicker;
+$('closeColorButton').onclick=()=>$('colorModal').classList.remove('open');
+$('colorModal').onclick=event=>{if(event.target===$('colorModal'))$('colorModal').classList.remove('open');};
+
 function renderFullSummary(){
   const itemsBody=$('summaryItemsBody'),peopleBody=$('summaryPeopleBody');
   itemsBody.innerHTML='';peopleBody.innerHTML='';
@@ -358,7 +482,7 @@ function renderFullSummary(){
     const card=document.createElement('article');
     card.className='summary-item-card';
     const claims=assignments.length
-      ? assignments.map(s=>'<div class="summary-claim-row"><span class="summary-claim-name">'+escapeHtml(personMap[s.personId]?.name||'Unknown')+'</span><strong>'+money(s.shareAmount)+'</strong></div>').join('')
+      ? assignments.map(s=>{const person=personMap[s.personId]||{name:'Unknown',color:'blue'};const key=personColorKey(person,(appState.people||[]).indexOf(person));const c=PERSON_COLORS[key];return '<div class="summary-claim-row" style="--person-accent:'+c.accent+';--person-soft:'+c.soft+';--person-text:'+c.text+';--person-dark-soft:'+c.darkSoft+';--person-dark-text:'+c.darkText+'"><span class="summary-claim-name">'+escapeHtml(person.name||'Unknown')+'</span><strong>'+money(s.shareAmount)+'</strong></div>';}).join('')
       : '<div class="summary-empty">Nobody yet</div>';
     const partialNote=assigned>0&&remaining>0?'<div class="remaining-note">'+money(remaining)+' remaining</div>':'';
     card.innerHTML='<div class="summary-item-top"><div><div class="summary-item-name">'+(index+1)+'. '+escapeHtml(item.name)+'</div>'+(item.quantity?'<div class="summary-item-meta">Quantity '+escapeHtml(item.quantity)+'</div>':'')+'</div><div class="summary-item-total">'+money(item.lineTotal)+partialNote+'</div></div><div class="summary-claims">'+claims+'</div>';
@@ -373,6 +497,7 @@ function renderFullSummary(){
     const tax=roundMoney(subtotal*taxRate),tip=roundMoney(subtotal*tipRate),total=roundMoney(subtotal+tax+tip);
     const card=document.createElement('article');
     card.className='summary-person-card';
+    applyPersonColorVars(card,personColorKey(person,(appState.people||[]).indexOf(person)));
     card.innerHTML='<h4>'+escapeHtml(person.name)+'</h4><div class="summary-person-line"><span>Items</span><strong>'+money(subtotal)+'</strong></div><div class="summary-person-line"><span>Tax ('+formatPercent(taxRate)+')</span><strong>'+money(tax)+'</strong></div><div class="summary-person-line"><span>Tip ('+formatPercent(tipRate)+')</span><strong>'+money(tip)+'</strong></div><div class="summary-person-line total"><span>Total</span><span class="summary-total-actions"><strong>'+money(total)+'</strong><button type="button" class="copy-total-button" aria-label="Copy '+escapeHtml(person.name)+' total">Copy</button></span></div>';
     const copyButton=card.querySelector('.copy-total-button');
     copyButton.addEventListener('click',async()=>{
@@ -415,6 +540,12 @@ $('saveSelectionButton').onclick=async()=>{
     });
 
     appState=result.state;
+    const currentPerson=selectedPerson();
+    if(currentPerson){
+      const currentColor=personColorKey(currentPerson,(appState.people||[]).indexOf(currentPerson));
+      applyPersonColorVars($('participantScreen'),currentColor);
+      applyPersonColorVars($('personColorButton'),currentColor);
+    }
     renderParticipantItems();
     updateParticipantTotals();
 
