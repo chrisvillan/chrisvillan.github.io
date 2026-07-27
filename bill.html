@@ -33,6 +33,46 @@
     html[data-theme="dark"] .person-choice{background:var(--person-dark-soft)!important;color:var(--person-dark-text)!important;border-color:var(--person-accent)!important}
     @media(max-width:520px){.color-choice-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+  
+    .summary-claim-details{
+      display:flex;
+      align-items:center;
+      justify-content:flex-end;
+      gap:10px;
+      min-width:0;
+    }
+
+    .summary-claim-badge{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-width:58px;
+      padding:3px 8px;
+      border:1px solid var(--person-border,#cbd5e1);
+      border-radius:999px;
+      background:rgba(255,255,255,.68);
+      color:var(--person-text,#334155);
+      font-size:12px;
+      font-weight:700;
+      line-height:1.2;
+      white-space:nowrap;
+    }
+
+    html[data-theme="dark"] .summary-claim-badge{
+      background:rgba(15,23,42,.55);
+      color:var(--person-dark-text,#e2e8f0);
+      border-color:var(--person-accent,#64748b);
+    }
+
+    @media(max-width:480px){
+      .summary-claim-details{gap:7px}
+      .summary-claim-badge{
+        min-width:auto;
+        padding:3px 7px;
+        font-size:11px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -493,8 +533,80 @@ function renderFullSummary(){
     const remaining=Math.max(0,roundMoney(Number(item.lineTotal||0)-assigned));
     const card=document.createElement('article');
     card.className='summary-item-card';
+    const itemQuantity=Number(item.quantity||0);
+    const itemUnitPrice=Number(item.unitPrice||0);
+    const quantityClaims=assignments.map(selection=>{
+      if(!(itemQuantity>1&&itemUnitPrice>0)){
+        return null;
+      }
+
+      const calculatedQuantity=
+        Number(selection.shareAmount||0)/itemUnitPrice;
+
+      const roundedQuantity=Math.round(calculatedQuantity);
+
+      return Math.abs(calculatedQuantity-roundedQuantity)<=0.02&&
+        roundedQuantity>0
+          ? roundedQuantity
+          : null;
+    });
+
+    const isSharedSingleItem=
+      itemQuantity===1&&assignments.length>1;
+
+    const hasUnevenMultiQuantity=
+      itemQuantity>1&&
+      quantityClaims.some(quantity=>quantity!==null&&quantity>1);
+
     const claims=assignments.length
-      ? assignments.map(s=>{const person=personMap[s.personId]||{name:'Unknown',color:'blue'};const key=personColorKey(person,(appState.people||[]).indexOf(person));const c=PERSON_COLORS[key];return '<div class="summary-claim-row" style="--person-accent:'+c.accent+';--person-soft:'+c.soft+';--person-text:'+c.text+';--person-dark-soft:'+c.darkSoft+';--person-dark-text:'+c.darkText+'"><span class="summary-claim-name">'+escapeHtml(person.name||'Unknown')+'</span><strong>'+money(s.shareAmount)+'</strong></div>';}).join('')
+      ? assignments.map((selection,assignmentIndex)=>{
+          const person=
+            personMap[selection.personId]||
+            {name:'Unknown',color:'blue'};
+
+          const key=personColorKey(
+            person,
+            (appState.people||[]).indexOf(person)
+          );
+
+          const color=PERSON_COLORS[key];
+
+          let badge='';
+
+          if(isSharedSingleItem){
+            badge='<span class="summary-claim-badge">Shared</span>';
+          }else if(
+            hasUnevenMultiQuantity&&
+            quantityClaims[assignmentIndex]!==null
+          ){
+            const claimedQuantity=
+              quantityClaims[assignmentIndex];
+
+            badge=
+              '<span class="summary-claim-badge">'+
+              claimedQuantity+
+              (claimedQuantity===1?' item':' items')+
+              '</span>';
+          }
+
+          return (
+            '<div class="summary-claim-row" '+
+              'style="--person-accent:'+color.accent+
+              ';--person-soft:'+color.soft+
+              ';--person-border:'+color.border+
+              ';--person-text:'+color.text+
+              ';--person-dark-soft:'+color.darkSoft+
+              ';--person-dark-text:'+color.darkText+'">'+
+              '<span class="summary-claim-name">'+
+                escapeHtml(person.name||'Unknown')+
+              '</span>'+
+              '<span class="summary-claim-details">'+
+                badge+
+                '<strong>'+money(selection.shareAmount)+'</strong>'+
+              '</span>'+
+            '</div>'
+          );
+        }).join('')
       : '<div class="summary-empty">Nobody yet</div>';
     const partialNote=assigned>0&&remaining>0?'<div class="remaining-note">'+money(remaining)+' remaining</div>':'';
     card.innerHTML='<div class="summary-item-top"><div><div class="summary-item-name">'+(index+1)+'. '+escapeHtml(item.name)+'</div>'+(item.quantity?'<div class="summary-item-meta">Quantity '+escapeHtml(item.quantity)+'</div>':'')+'</div><div class="summary-item-total">'+money(item.lineTotal)+partialNote+'</div></div><div class="summary-claims">'+claims+'</div>';
