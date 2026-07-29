@@ -336,20 +336,22 @@
       font-weight: 900;
     }
 
-    .availability-half.pm-half {
-      background: #fff7ed;
-      color: #c2410c;
-      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-    }
-
     .availability-half.am-half {
       background: #eef2ff;
       color: #4f46e5;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
     }
 
-    .availability-half.empty-half {
-      color: #94a3b8;
-      background: rgba(248, 250, 252, 0.72);
+    .availability-half.pm-half {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .availability-half.empty-slot {
+      visibility: hidden;
+      background: transparent;
+      border: 0;
+      padding: 0;
     }
 
     .helper-row {
@@ -873,7 +875,7 @@
       </div>
 
       <div class="choice-grid">
-        <button class="choice-btn" id="amBtn">AM <small>Morning</small></button>
+        <button class="choice-btn" id="amBtn">AM <small>Morning / first half</small></button>
         <button class="choice-btn" id="pmBtn">PM <small>Afternoon / evening</small></button>
       </div>
 
@@ -1099,15 +1101,6 @@
         return "";
       }
 
-      const pmHtml = pmCount > 0
-        ? `
-          <div class="availability-half pm-half">
-            <span>PM</span>
-            <span>${pmCount} ${pmCount === 1 ? "time" : "times"}</span>
-          </div>
-        `
-        : "";
-
       const amHtml = amCount > 0
         ? `
           <div class="availability-half am-half">
@@ -1115,7 +1108,16 @@
             <span>${amCount} ${amCount === 1 ? "time" : "times"}</span>
           </div>
         `
-        : "";
+        : `<div class="availability-half empty-slot" aria-hidden="true"></div>`;
+
+      const pmHtml = pmCount > 0
+        ? `
+          <div class="availability-half pm-half">
+            <span>PM</span>
+            <span>${pmCount} ${pmCount === 1 ? "time" : "times"}</span>
+          </div>
+        `
+        : `<div class="availability-half empty-slot" aria-hidden="true"></div>`;
 
       return `
         <div class="availability-split">
