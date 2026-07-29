@@ -432,19 +432,25 @@
 
     .choice-btn {
       border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 28px 18px;
+      border-radius: 18px;
+      min-height: 76px;
+      padding: 12px 16px;
       background: #f8fafc;
       font-weight: 950;
-      font-size: 1.8rem;
+      font-size: 1.5rem;
       cursor: pointer;
       transition: 0.18s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
     }
 
     .choice-btn small {
       display: block;
-      margin-top: 4px;
-      font-size: 0.82rem;
+      margin-top: 2px;
+      font-size: 0.78rem;
       color: var(--muted);
       font-weight: 800;
     }
@@ -745,7 +751,21 @@
       }
 
       .choice-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin: 12px 0 10px;
+      }
+
+      .choice-btn {
+        min-height: 64px;
+        padding: 9px 10px;
+        border-radius: 15px;
+        font-size: 1.35rem;
+      }
+
+      .choice-btn small {
+        font-size: 0.72rem;
+        margin-top: 1px;
       }
 
       .time-grid {
@@ -1083,7 +1103,7 @@
         ? `
           <div class="availability-half pm-half">
             <span>PM</span>
-            <span>${pmCount}</span>
+            <span>${pmCount} ${pmCount === 1 ? "time" : "times"}</span>
           </div>
         `
         : "";
@@ -1092,7 +1112,7 @@
         ? `
           <div class="availability-half am-half">
             <span>AM</span>
-            <span>${amCount}</span>
+            <span>${amCount} ${amCount === 1 ? "time" : "times"}</span>
           </div>
         `
         : "";
