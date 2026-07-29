@@ -1075,14 +1075,32 @@
       const pmCount = effectiveTimes.filter(hour => hour >= 12 && hour <= 24).length;
       const amCount = effectiveTimes.filter(hour => hour >= 8 && hour <= 11).length;
 
+      if (pmCount === 0 && amCount === 0) {
+        return "";
+      }
+
+      const pmHtml = pmCount > 0
+        ? `
+          <div class="availability-half pm-half">
+            <span>PM</span>
+            <span>${pmCount}</span>
+          </div>
+        `
+        : "";
+
+      const amHtml = amCount > 0
+        ? `
+          <div class="availability-half am-half">
+            <span>AM</span>
+            <span>${amCount}</span>
+          </div>
+        `
+        : "";
+
       return `
         <div class="availability-split">
-          <div class="availability-half pm-half ${pmCount ? "" : "empty-half"}">
-            <span>PM</span><span>${pmCount} ${pmCount === 1 ? "time" : "times"}</span>
-          </div>
-          <div class="availability-half am-half ${amCount ? "" : "empty-half"}">
-            <span>AM</span><span>${amCount} ${amCount === 1 ? "time" : "times"}</span>
-          </div>
+          ${pmHtml}
+          ${amHtml}
         </div>
       `;
     }
