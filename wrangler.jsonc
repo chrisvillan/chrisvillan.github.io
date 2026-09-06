@@ -2,12 +2,18 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "chrisvillan-github-io",
   "compatibility_date": "2026-09-03",
+
+  "main": "src/index.js",
+
   "observability": {
     "enabled": true
   },
+
   "assets": {
-    "directory": "."
+    "directory": ".",
+    "binding": "ASSETS"
   },
+
   "d1_databases": [
     {
       "binding": "DB",
