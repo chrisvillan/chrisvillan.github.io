@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chrisvillan-github-io",
+  "compatibility_date": "2026-09-03",
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": "."
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "shared-bill-db",
+      "database_id": "06520ff8-24f9-4f3a-bd93-5e5ccf4044cf"
+    }
+  ]
+}
