@@ -19,6 +19,11 @@
       "binding": "DB",
       "database_name": "shared-bill-db",
       "database_id": "06520ff8-24f9-4f3a-bd93-5e5ccf4044cf"
+    },
+    {
+      "binding": "POLL_DB",
+      "database_name": "availability-poll-db",
+      "database_id": "a24f90cb-2877-4696-a72f-b0f3543ffb37"
     }
   ]
 }
