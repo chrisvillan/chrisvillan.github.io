@@ -819,7 +819,7 @@
         <h1>Availability Poll</h1>
         <p>Pick a person, click dates, and mark AM, PM, or exact hourly availability.</p>
       </div>
-      <div class="pill" id="saveStatus">Loading Google Sheets...</div>
+      <div class="pill" id="saveStatus">Loading availability...</div>
     </section>
 
     <section class="toolbar">
@@ -859,7 +859,7 @@
 
       <div class="helper-row">
         <span>Tip: clicked dates will reopen with that person's saved choices already selected.</span>
-        <span id="storageNote">Google Sheets sync active</span>
+        <span id="storageNote">Cloudflare sync active</span>
       </div>
     </section>
   </main>
@@ -915,7 +915,7 @@
     const PEOPLE = ["Chris", "Siya", "Sarah", "Jason", "Rex", "Steph", "Ryan"];
     const GROUP_VIEW = "__GROUP__";
 
-    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwL3VcGQy7qkgG9liXIkElsJSBXPURkEuyJ3pS6SZpJm-xdhj5pBkLwY_O5HfzIIKTOcw/exec";
+    const API_URL = "https://chrisvillan-github-io.chrisvillanpro.workers.dev/api";
     const state = {
       currentDate: new Date(),
       selectedPerson: PEOPLE[0],
@@ -1405,59 +1405,100 @@
         `${count} selected day${count === 1 ? "" : "s"}`;
     }
 
-    function loadRemoteData() {
-      if (!GOOGLE_SCRIPT_URL) return Promise.resolve();
-
-      saveStatus.textContent = "Loading Google Sheets...";
-
-      return new Promise((resolve) => {
-        const callbackName = `pollLoad_${Date.now()}`;
-        const script = document.createElement("script");
-
-        const cleanup = () => {
-          delete window[callbackName];
-          script.remove();
-        };
-
-        window[callbackName] = (result) => {
-          state.data = result.data || {};
-          saveStatus.textContent = "Loaded from Google Sheets";
-          cleanup();
-          resolve();
-        };
-
-        script.onerror = () => {
-          saveStatus.textContent = "Could not load Google Sheets";
-          cleanup();
-          resolve();
-        };
-
-        script.src = `${GOOGLE_SCRIPT_URL}?action=load&callback=${callbackName}&t=${Date.now()}`;
-        document.body.appendChild(script);
-      });
+    async function loadRemoteData() {
+      saveStatus.textContent = "Loading availability...";
+    
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            action: "loadPoll"
+          })
+        });
+    
+        const result = await response.json();
+    
+        if (!result.ok) {
+          throw new Error(
+            result.error || "Could not load availability."
+          );
+        }
+    
+        state.data = result.data || {};
+    
+        saveStatus.textContent = "Availability loaded";
+        storageNote.textContent = "Cloudflare sync active";
+    
+      } catch (error) {
+        console.error(error);
+    
+        saveStatus.textContent =
+          "Could not load availability";
+    
+        storageNote.textContent =
+          "Cloudflare connection error";
+      }
     }
 
-    function persistData() {
-      if (!state.activeDateKey || !GOOGLE_SCRIPT_URL) return;
-
-      saveStatus.textContent = "Saving to Google Sheets...";
-
-      fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        body: JSON.stringify({
-          person: state.selectedPerson,
-          date: state.activeDateKey,
-          selectionType: getSelectionType(state.draft),
-          times: state.draft.exactTimes.map(formatHour),
-          am: state.draft.am,
-          pm: state.draft.pm,
-          cleared: !state.draft.am && !state.draft.pm && !state.draft.exactTimes.length
-        })
-      });
-
-      saveStatus.textContent = "Saved to Google Sheets";
-      setTimeout(() => saveStatus.textContent = "Google Sheets sync active", 1200);
+    async function persistData() {
+      if (!state.activeDateKey) return;
+    
+      saveStatus.textContent = "Saving...";
+    
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            action: "savePoll",
+            person: state.selectedPerson,
+            date: state.activeDateKey,
+            am: state.draft.am,
+            pm: state.draft.pm,
+    
+            // Send the actual numeric hours to D1.
+            times: state.draft.exactTimes,
+    
+            cleared:
+              !state.draft.am &&
+              !state.draft.pm &&
+              !state.draft.exactTimes.length
+          })
+        });
+    
+        const result = await response.json();
+    
+        if (!result.ok) {
+          throw new Error(
+            result.error || "Could not save availability."
+          );
+        }
+    
+        state.data = result.data || state.data;
+    
+        saveStatus.textContent = "Saved";
+    
+        setTimeout(() => {
+          saveStatus.textContent =
+            "Cloudflare sync active";
+        }, 1200);
+    
+      } catch (error) {
+        console.error(error);
+    
+        saveStatus.textContent =
+          "Could not save";
+    
+        alert(
+          "Could not save availability: " +
+          error.message
+        );
+      }
     }
 
     function getSelectionType(entry) {
