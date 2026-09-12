@@ -1,3 +1,5 @@
+const GEMINI_MODEL = "gemini-3.5-flash";
+
 const PERSON_COLOR_KEYS = [
   "blue", "purple", "rose", "orange", "emerald",
   "cyan", "amber", "lime", "red", "brown",
@@ -65,6 +67,83 @@ export default {
               state: await updatePersonColor(env, body)
             });
 
+          case "archiveActiveBill":
+          case "clearActiveBill":
+            verifyAdminPin(env, body.adminPin);
+
+            await archiveActiveBill(env);
+
+            return json({
+              ok: true,
+              state: await getAppState(env)
+            });
+
+          case "getBillHistory":
+            verifyAdminPin(env, body.adminPin);
+
+            return json({
+              ok: true,
+              bills: await getBillHistory(env)
+            });
+
+          case "getArchivedBill":
+            verifyAdminPin(env, body.adminPin);
+
+            return json({
+              ok: true,
+              state: await getBillStateById(
+                env,
+                String(body.billId || "")
+              )
+            });
+
+          case "restoreBill":
+            verifyAdminPin(env, body.adminPin);
+
+            return json({
+              ok: true,
+              state: await restoreBill(
+                env,
+                String(body.billId || "")
+              )
+            });
+
+          case "deleteArchivedBill":
+            verifyAdminPin(env, body.adminPin);
+
+            await deleteArchivedBill(
+              env,
+              String(body.billId || "")
+            );
+
+            return json({
+              ok: true,
+              bills: await getBillHistory(env)
+            });
+
+          case "analyzeReceiptImage":
+            verifyAdminPin(env, body.adminPin);
+
+            return json({
+              ok: true,
+              receipt: await analyzeReceiptImageWithGemini(
+                env,
+                String(body.mimeType || ""),
+                String(body.imageBase64 || "")
+              )
+            });
+
+          case "analyzeReceipt":
+            verifyAdminPin(env, body.adminPin);
+
+            return json({
+              ok: true,
+              receipt: await analyzeReceiptTextWithGemini(
+                env,
+                String(body.ocrText || "")
+              )
+            });
+
           default:
             return json({
               ok: false,
@@ -74,8 +153,8 @@ export default {
       } catch (error) {
         console.error(error);
 
-        // Keep HTTP 200 like your old Apps Script backend.
-        // bill.html reads the error from data.error.
+        // Keep HTTP 200 like the old Apps Script backend.
+        // bill.html reads errors from data.error.
         return json({
           ok: false,
           error: error?.message || String(error)
@@ -94,11 +173,18 @@ export default {
 
 function verifyAdminPin(env, candidate) {
   if (!env.ADMIN_PIN) {
-    throw new Error("ADMIN_PIN secret is not configured.");
+    throw new Error(
+      "ADMIN_PIN secret is not configured."
+    );
   }
 
-  if (String(candidate || "") !== String(env.ADMIN_PIN)) {
-    throw new Error("Incorrect admin PIN.");
+  if (
+    String(candidate || "") !==
+    String(env.ADMIN_PIN)
+  ) {
+    throw new Error(
+      "Incorrect admin PIN."
+    );
   }
 }
 
@@ -142,7 +228,8 @@ async function getBillById(env, billId) {
 
 
 async function buildBillState(env, bill) {
-  const billId = String(bill.bill_id);
+  const billId =
+    String(bill.bill_id);
 
   const [
     peopleResult,
@@ -179,69 +266,149 @@ async function buildBillState(env, bill) {
       .all()
   ]);
 
-  const people = (peopleResult.results || []).map(
-    (row, index) => {
-      const storedColor = String(row.color || "")
-        .trim()
-        .toLowerCase();
+  const people =
+    (peopleResult.results || []).map(
+      (row, index) => {
+        const storedColor =
+          String(row.color || "")
+            .trim()
+            .toLowerCase();
 
-      return {
-        personId: String(row.person_id),
-        name: String(row.name || ""),
-        color: PERSON_COLOR_KEYS.includes(storedColor)
-          ? storedColor
-          : PERSON_COLOR_KEYS[index % PERSON_COLOR_KEYS.length]
-      };
-    }
-  );
+        return {
+          personId:
+            String(row.person_id),
 
-  const items = (itemsResult.results || []).map(row => ({
-    itemId: String(row.item_id),
-    name: String(row.name || ""),
-    quantity: numberOrNull(row.quantity),
-    unitPrice: numberOrNull(row.unit_price),
-    lineTotal: Number(row.line_total || 0)
-  }));
+          name:
+            String(row.name || ""),
 
-  const selections = (selectionsResult.results || []).map(
-    row => ({
-      personId: String(row.person_id),
-      itemId: String(row.item_id),
-      shareAmount: Number(row.share_amount || 0)
-    })
-  );
+          color:
+            PERSON_COLOR_KEYS.includes(
+              storedColor
+            )
+              ? storedColor
+              : PERSON_COLOR_KEYS[
+                  index %
+                  PERSON_COLOR_KEYS.length
+                ]
+        };
+      }
+    );
+
+  const items =
+    (itemsResult.results || []).map(
+      row => ({
+        itemId:
+          String(row.item_id),
+
+        name:
+          String(row.name || ""),
+
+        quantity:
+          numberOrNull(
+            row.quantity
+          ),
+
+        unitPrice:
+          numberOrNull(
+            row.unit_price
+          ),
+
+        lineTotal:
+          Number(
+            row.line_total || 0
+          )
+      })
+    );
+
+  const selections =
+    (selectionsResult.results || []).map(
+      row => ({
+        personId:
+          String(row.person_id),
+
+        itemId:
+          String(row.item_id),
+
+        shareAmount:
+          Number(
+            row.share_amount || 0
+          )
+      })
+    );
 
   const assignedByItem = {};
 
   for (const selection of selections) {
-    assignedByItem[selection.itemId] = roundMoney(
-      (assignedByItem[selection.itemId] || 0) +
+    assignedByItem[
+      selection.itemId
+    ] = roundMoney(
+      (
+        assignedByItem[
+          selection.itemId
+        ] || 0
+      ) +
       selection.shareAmount
     );
   }
 
   return {
-    hasActiveBill: bill.status === "active",
+    hasActiveBill:
+      bill.status === "active",
 
     bill: {
       billId,
-      billName: String(bill.title || ""),
-      storeName: String(bill.restaurant_name || ""),
-      address: String(bill.address || ""),
-      date: String(bill.receipt_date || ""),
-      time: String(bill.receipt_time || ""),
-      subtotal: Number(bill.subtotal || 0),
-      tax: Number(bill.tax || 0),
-      tip: Number(bill.tip || 0),
-      grandTotal: Number(bill.grand_total || 0),
+
+      billName:
+        String(bill.title || ""),
+
+      storeName:
+        String(
+          bill.restaurant_name || ""
+        ),
+
+      address:
+        String(bill.address || ""),
+
+      date:
+        String(
+          bill.receipt_date || ""
+        ),
+
+      time:
+        String(
+          bill.receipt_time || ""
+        ),
+
+      subtotal:
+        Number(
+          bill.subtotal || 0
+        ),
+
+      tax:
+        Number(
+          bill.tax || 0
+        ),
+
+      tip:
+        Number(
+          bill.tip || 0
+        ),
+
+      grandTotal:
+        Number(
+          bill.grand_total || 0
+        ),
 
       status:
         bill.status === "active"
           ? "OPEN"
           : "ARCHIVED",
 
-      createdAt: bill.created_at || "",
-      updatedAt: bill.updated_at || ""
+      createdAt:
+        bill.created_at || "",
+
+      updatedAt:
+        bill.updated_at || ""
     },
 
     people,
@@ -256,26 +423,37 @@ async function buildBillState(env, bill) {
 // SAVE / CREATE BILL
 // ============================================================
 
-async function saveBill(env, inputBill) {
-  const bill = normalizeBillInput(inputBill);
+async function saveBill(
+  env,
+  inputBill
+) {
+  const bill =
+    normalizeBillInput(
+      inputBill
+    );
 
-  const activeBill = await env.DB
-    .prepare(`
-      SELECT *
-      FROM bills
-      WHERE status = 'active'
-      ORDER BY updated_at DESC
-      LIMIT 1
-    `)
-    .first();
+  const activeBill =
+    await env.DB
+      .prepare(`
+        SELECT *
+        FROM bills
+        WHERE status = 'active'
+        ORDER BY updated_at DESC
+        LIMIT 1
+      `)
+      .first();
 
   const requestedBillId =
-    String(inputBill.billId || "").trim();
+    String(
+      inputBill.billId || ""
+    ).trim();
 
   if (requestedBillId) {
     if (
       !activeBill ||
-      String(activeBill.bill_id) !== requestedBillId
+      String(
+        activeBill.bill_id
+      ) !== requestedBillId
     ) {
       throw new Error(
         "This bill is no longer the active bill. Reload the page before saving."
@@ -294,7 +472,10 @@ async function saveBill(env, inputBill) {
       );
     }
 
-    await createNewBill(env, bill);
+    await createNewBill(
+      env,
+      bill
+    );
   }
 
   return getAppState(env);
@@ -303,56 +484,75 @@ async function saveBill(env, inputBill) {
 
 function normalizeBillInput(bill) {
   const rawPeople =
-    Array.isArray(bill.people)
+    Array.isArray(
+      bill.people
+    )
       ? bill.people
       : [];
 
   const people = [];
 
-  rawPeople.forEach((person, index) => {
-    const value =
-      typeof person === "string"
-        ? { name: person }
-        : (person || {});
+  rawPeople.forEach(
+    (person, index) => {
+      const value =
+        typeof person === "string"
+          ? {
+              name: person
+            }
+          : (
+              person || {}
+            );
 
-    const name =
-      String(value.name || "").trim();
+      const name =
+        String(
+          value.name || ""
+        ).trim();
 
-    if (!name) return;
+      if (!name) {
+        return;
+      }
 
-    const duplicate = people.some(
-      existing =>
-        existing.name.toLowerCase() ===
-        name.toLowerCase()
-    );
+      const duplicate =
+        people.some(
+          existing =>
+            existing.name
+              .toLowerCase() ===
+            name.toLowerCase()
+        );
 
-    if (duplicate) {
-      throw new Error(
-        "Participant names must be unique."
-      );
-    }
+      if (duplicate) {
+        throw new Error(
+          "Participant names must be unique."
+        );
+      }
 
-    const requestedColor =
-      String(value.color || "")
-        .trim()
-        .toLowerCase();
-
-    people.push({
-      personId:
-        String(value.personId || "").trim(),
-
-      name,
-
-      sortOrder: index + 1,
-
-      color:
-        PERSON_COLOR_KEYS.includes(
-          requestedColor
+      const requestedColor =
+        String(
+          value.color || ""
         )
-          ? requestedColor
-          : ""
-    });
-  });
+          .trim()
+          .toLowerCase();
+
+      people.push({
+        personId:
+          String(
+            value.personId || ""
+          ).trim(),
+
+        name,
+
+        sortOrder:
+          index + 1,
+
+        color:
+          PERSON_COLOR_KEYS.includes(
+            requestedColor
+          )
+            ? requestedColor
+            : ""
+      });
+    }
+  );
 
   if (!people.length) {
     throw new Error(
@@ -360,27 +560,36 @@ function normalizeBillInput(bill) {
     );
   }
 
+
   // Assign unused colors automatically.
   const usedColors = {};
 
-  people.forEach((person, index) => {
-    if (
-      !person.color ||
-      usedColors[person.color]
-    ) {
-      person.color =
-        firstAvailablePersonColor(
-          usedColors,
-          index
-        );
-    }
+  people.forEach(
+    (person, index) => {
+      if (
+        !person.color ||
+        usedColors[
+          person.color
+        ]
+      ) {
+        person.color =
+          firstAvailablePersonColor(
+            usedColors,
+            index
+          );
+      }
 
-    usedColors[person.color] = true;
-  });
+      usedColors[
+        person.color
+      ] = true;
+    }
+  );
 
 
   const rawItems =
-    Array.isArray(bill.items)
+    Array.isArray(
+      bill.items
+    )
       ? bill.items
       : [];
 
@@ -390,92 +599,130 @@ function normalizeBillInput(bill) {
     );
   }
 
-  const items = rawItems.map(
-    (item, index) => {
-      const name =
-        String(item.name || "").trim();
 
-      const lineTotal =
-        Number(item.lineTotal);
+  const items =
+    rawItems.map(
+      (item, index) => {
+        const name =
+          String(
+            item.name || ""
+          ).trim();
 
-      if (
-        !name ||
-        !Number.isFinite(lineTotal) ||
-        lineTotal < 0
-      ) {
-        throw new Error(
-          "Every item needs a name and valid line total."
-        );
-      }
+        const lineTotal =
+          Number(
+            item.lineTotal
+          );
 
-      const assignments =
-        Array.isArray(item.assignments)
-          ? item.assignments
-              .map(assignment => ({
-                personId:
-                  String(
-                    assignment.personId || ""
-                  ).trim(),
+        if (
+          !name ||
+          !Number.isFinite(
+            lineTotal
+          ) ||
+          lineTotal < 0
+        ) {
+          throw new Error(
+            "Every item needs a name and valid line total."
+          );
+        }
 
-                name:
-                  String(
-                    assignment.name || ""
-                  ).trim(),
+        const assignments =
+          Array.isArray(
+            item.assignments
+          )
+            ? item.assignments
+                .map(
+                  assignment => ({
+                    personId:
+                      String(
+                        assignment.personId ||
+                        ""
+                      ).trim(),
 
-                shareAmount: roundMoney(
-                  Number(
-                    assignment.shareAmount || 0
-                  )
+                    name:
+                      String(
+                        assignment.name ||
+                        ""
+                      ).trim(),
+
+                    shareAmount:
+                      roundMoney(
+                        Number(
+                          assignment.shareAmount ||
+                          0
+                        )
+                      )
+                  })
                 )
-              }))
-              .filter(
-                assignment =>
-                  assignment.shareAmount > 0
-              )
-          : [];
+                .filter(
+                  assignment =>
+                    assignment.shareAmount >
+                    0
+                )
+            : [];
 
-      return {
-        itemId:
-          String(item.itemId || "").trim(),
+        return {
+          itemId:
+            String(
+              item.itemId || ""
+            ).trim(),
 
-        name,
+          name,
 
-        quantity:
-          numberOrNull(item.quantity),
+          quantity:
+            numberOrNull(
+              item.quantity
+            ),
 
-        unitPrice:
-          numberOrNull(item.unitPrice),
+          unitPrice:
+            numberOrNull(
+              item.unitPrice
+            ),
 
-        lineTotal:
-          roundMoney(lineTotal),
+          lineTotal:
+            roundMoney(
+              lineTotal
+            ),
 
-        sortOrder: index + 1,
+          sortOrder:
+            index + 1,
 
-        assignments,
+          assignments,
 
-        assignmentsTouched:
-          Boolean(item.assignmentsTouched)
-      };
-    }
-  );
+          assignmentsTouched:
+            Boolean(
+              item.assignmentsTouched
+            )
+        };
+      }
+    );
 
 
   return {
     billName:
-      String(bill.billName || "").trim() ||
+      String(
+        bill.billName || ""
+      ).trim() ||
       "Shared Bill",
 
     storeName:
-      String(bill.storeName || "").trim(),
+      String(
+        bill.storeName || ""
+      ).trim(),
 
     address:
-      String(bill.address || "").trim(),
+      String(
+        bill.address || ""
+      ).trim(),
 
     date:
-      String(bill.date || "").trim(),
+      String(
+        bill.date || ""
+      ).trim(),
 
     time:
-      String(bill.time || "").trim(),
+      String(
+        bill.time || ""
+      ).trim(),
 
     subtotal:
       requiredMoney(
@@ -507,23 +754,32 @@ function normalizeBillInput(bill) {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // CREATE NEW BILL
-// ------------------------------------------------------------
+// ============================================================
 
-async function createNewBill(env, bill) {
-  const billId = crypto.randomUUID();
+async function createNewBill(
+  env,
+  bill
+) {
+  const billId =
+    crypto.randomUUID();
 
-  // Generate IDs before creating assignments.
-  bill.people.forEach(person => {
-    person.personId =
-      crypto.randomUUID();
-  });
+  // Generate IDs before
+  // creating assignments.
+  bill.people.forEach(
+    person => {
+      person.personId =
+        crypto.randomUUID();
+    }
+  );
 
-  bill.items.forEach(item => {
-    item.itemId =
-      crypto.randomUUID();
-  });
+  bill.items.forEach(
+    item => {
+      item.itemId =
+        crypto.randomUUID();
+    }
+  );
 
   const statements = [];
 
@@ -568,7 +824,10 @@ async function createNewBill(env, bill) {
   );
 
 
-  for (const person of bill.people) {
+  for (
+    const person
+    of bill.people
+  ) {
     statements.push(
       env.DB
         .prepare(`
@@ -596,7 +855,10 @@ async function createNewBill(env, bill) {
   }
 
 
-  for (const item of bill.items) {
+  for (
+    const item
+    of bill.items
+  ) {
     statements.push(
       env.DB
         .prepare(`
@@ -627,8 +889,12 @@ async function createNewBill(env, bill) {
     );
   }
 
-  // First create the bill, people and items.
-  await env.DB.batch(statements);
+
+  // First create the bill,
+  // people and items.
+  await env.DB.batch(
+    statements
+  );
 
   await applyAdminAssignments(
     env,
@@ -639,9 +905,9 @@ async function createNewBill(env, bill) {
 }
 
 
-// ------------------------------------------------------------
+// ============================================================
 // UPDATE EXISTING BILL
-// ------------------------------------------------------------
+// ============================================================
 
 async function updateExistingBill(
   env,
@@ -682,47 +948,65 @@ async function updateExistingBill(
   ]);
 
   const existingPeople =
-    existingPeopleResult.results || [];
+    existingPeopleResult.results ||
+    [];
 
   const existingItems =
-    existingItemsResult.results || [];
+    existingItemsResult.results ||
+    [];
 
   const existingSelections =
-    existingSelectionsResult.results || [];
+    existingSelectionsResult.results ||
+    [];
 
 
   // Resolve participant IDs.
-  for (const person of bill.people) {
+  for (
+    const person
+    of bill.people
+  ) {
     const idMatch =
       existingPeople.find(
         row =>
-          String(row.person_id) ===
+          String(
+            row.person_id
+          ) ===
           person.personId
       );
 
-    if (idMatch) continue;
+    if (idMatch) {
+      continue;
+    }
 
     const nameMatch =
       existingPeople.find(
         row =>
-          String(row.name || "")
-            .toLowerCase() ===
+          String(
+            row.name || ""
+          ).toLowerCase() ===
           person.name.toLowerCase()
       );
 
     person.personId =
       nameMatch
-        ? String(nameMatch.person_id)
+        ? String(
+            nameMatch.person_id
+          )
         : crypto.randomUUID();
   }
 
 
   // Resolve item IDs.
-  for (const item of bill.items) {
+  for (
+    const item
+    of bill.items
+  ) {
     const idMatch =
       existingItems.find(
         row =>
-          String(row.item_id) ===
+          String(
+            row.item_id
+          ) ===
           item.itemId
       );
 
@@ -731,30 +1015,42 @@ async function updateExistingBill(
         crypto.randomUUID();
     }
 
+
     const currentlyAssigned =
       item.assignmentsTouched
         ? item.assignments.reduce(
-            (sum, assignment) =>
+            (
+              sum,
+              assignment
+            ) =>
               sum +
               Number(
-                assignment.shareAmount || 0
+                assignment.shareAmount ||
+                0
               ),
             0
           )
         : existingSelections
             .filter(
               row =>
-                String(row.item_id) ===
+                String(
+                  row.item_id
+                ) ===
                 item.itemId
             )
             .reduce(
-              (sum, row) =>
+              (
+                sum,
+                row
+              ) =>
                 sum +
                 Number(
-                  row.share_amount || 0
+                  row.share_amount ||
+                  0
                 ),
               0
             );
+
 
     if (
       currentlyAssigned >
@@ -807,7 +1103,10 @@ async function updateExistingBill(
 
 
   // Upsert people.
-  for (const person of bill.people) {
+  for (
+    const person
+    of bill.people
+  ) {
     statements.push(
       env.DB
         .prepare(`
@@ -842,7 +1141,10 @@ async function updateExistingBill(
 
 
   // Upsert items.
-  for (const item of bill.items) {
+  for (
+    const item
+    of bill.items
+  ) {
     statements.push(
       env.DB
         .prepare(`
@@ -881,13 +1183,18 @@ async function updateExistingBill(
     );
   }
 
-  await env.DB.batch(statements);
+
+  await env.DB.batch(
+    statements
+  );
 
 
-  // Remove people Admin explicitly deleted.
+  // Remove people Admin
+  // explicitly deleted.
   const personIdsToKeep =
     bill.people.map(
-      person => person.personId
+      person =>
+        person.personId
     );
 
   await deleteRowsNotInList(
@@ -899,10 +1206,12 @@ async function updateExistingBill(
   );
 
 
-  // Remove items Admin explicitly deleted.
+  // Remove items Admin
+  // explicitly deleted.
   const itemIdsToKeep =
     bill.items.map(
-      item => item.itemId
+      item =>
+        item.itemId
     );
 
   await deleteRowsNotInList(
@@ -935,7 +1244,8 @@ async function applyAdminAssignments(
 ) {
   const touchedItems =
     items.filter(
-      item => item.assignmentsTouched
+      item =>
+        item.assignmentsTouched
     );
 
   if (!touchedItems.length) {
@@ -945,9 +1255,13 @@ async function applyAdminAssignments(
   const peopleById = {};
   const peopleByName = {};
 
-  for (const person of people) {
-    peopleById[person.personId] =
-      person;
+  for (
+    const person
+    of people
+  ) {
+    peopleById[
+      person.personId
+    ] = person;
 
     peopleByName[
       person.name.toLowerCase()
@@ -955,21 +1269,29 @@ async function applyAdminAssignments(
   }
 
 
-  for (const item of touchedItems) {
+  for (
+    const item
+    of touchedItems
+  ) {
     const assignments =
       item.assignments || [];
 
     const itemTotal =
       roundMoney(
         assignments.reduce(
-          (sum, assignment) =>
+          (
+            sum,
+            assignment
+          ) =>
             sum +
             Number(
-              assignment.shareAmount || 0
+              assignment.shareAmount ||
+              0
             ),
           0
         )
       );
+
 
     if (
       itemTotal >
@@ -978,7 +1300,9 @@ async function applyAdminAssignments(
       throw new Error(
         item.name +
         " has " +
-        formatMoneyForError(itemTotal) +
+        formatMoneyForError(
+          itemTotal
+        ) +
         " assigned, which is more than its line total of " +
         formatMoneyForError(
           item.lineTotal
@@ -1002,7 +1326,10 @@ async function applyAdminAssignments(
     ];
 
 
-    for (const assignment of assignments) {
+    for (
+      const assignment
+      of assignments
+    ) {
       const person =
         peopleById[
           assignment.personId
@@ -1012,6 +1339,7 @@ async function applyAdminAssignments(
             assignment.name || ""
           ).toLowerCase()
         ];
+
 
       if (!person) {
         throw new Error(
@@ -1052,7 +1380,10 @@ async function applyAdminAssignments(
       );
     }
 
-    await env.DB.batch(statements);
+
+    await env.DB.batch(
+      statements
+    );
   }
 }
 
@@ -1068,7 +1399,9 @@ async function saveParticipantSelection(
   const state =
     await getAppState(env);
 
-  if (!state.hasActiveBill) {
+  if (
+    !state.hasActiveBill
+  ) {
     throw new Error(
       "There is no active bill."
     );
@@ -1081,6 +1414,7 @@ async function saveParticipantSelection(
     String(
       request.personId || ""
     ).trim();
+
 
   const personExists =
     state.people.some(
@@ -1095,6 +1429,7 @@ async function saveParticipantSelection(
     );
   }
 
+
   const submitted =
     Array.isArray(
       request.selections
@@ -1104,7 +1439,11 @@ async function saveParticipantSelection(
 
   const submittedMap = {};
 
-  for (const selection of submitted) {
+
+  for (
+    const selection
+    of submitted
+  ) {
     const itemId =
       String(
         selection.itemId || ""
@@ -1113,9 +1452,11 @@ async function saveParticipantSelection(
     const amount =
       roundMoney(
         Number(
-          selection.shareAmount || 0
+          selection.shareAmount ||
+          0
         )
       );
+
 
     if (amount < 0) {
       throw new Error(
@@ -1123,12 +1464,16 @@ async function saveParticipantSelection(
       );
     }
 
-    submittedMap[itemId] =
-      amount;
+    submittedMap[
+      itemId
+    ] = amount;
   }
 
 
-  for (const item of state.items) {
+  for (
+    const item
+    of state.items
+  ) {
     const otherPeopleAssigned =
       state.selections
         .filter(
@@ -1139,24 +1484,32 @@ async function saveParticipantSelection(
               personId
         )
         .reduce(
-          (sum, selection) =>
+          (
+            sum,
+            selection
+          ) =>
             sum +
             Number(
-              selection.shareAmount || 0
+              selection.shareAmount ||
+              0
             ),
           0
         );
+
 
     const requestedAmount =
       submittedMap[
         item.itemId
       ] || 0;
 
+
     if (
       otherPeopleAssigned +
         requestedAmount >
-      Number(item.lineTotal) +
-        0.01
+      Number(
+        item.lineTotal
+      ) +
+      0.01
     ) {
       const remaining =
         Math.max(
@@ -1166,6 +1519,7 @@ async function saveParticipantSelection(
           ) -
           otherPeopleAssigned
         );
+
 
       throw new Error(
         item.name +
@@ -1193,7 +1547,10 @@ async function saveParticipantSelection(
   ];
 
 
-  for (const item of state.items) {
+  for (
+    const item
+    of state.items
+  ) {
     const amount =
       submittedMap[
         item.itemId
@@ -1202,6 +1559,7 @@ async function saveParticipantSelection(
     if (amount <= 0) {
       continue;
     }
+
 
     statements.push(
       env.DB
@@ -1251,7 +1609,9 @@ async function updatePersonColor(
   const state =
     await getAppState(env);
 
-  if (!state.hasActiveBill) {
+  if (
+    !state.hasActiveBill
+  ) {
     throw new Error(
       "There is no active bill."
     );
@@ -1303,7 +1663,8 @@ async function updatePersonColor(
       candidate =>
         candidate.personId !==
           personId &&
-        candidate.color === color
+        candidate.color ===
+          color
     );
 
   if (claimedByOther) {
@@ -1329,7 +1690,9 @@ async function updatePersonColor(
       .run();
 
 
-  if (!result.meta?.changes) {
+  if (
+    !result.meta?.changes
+  ) {
     throw new Error(
       "The selected participant could not be updated."
     );
@@ -1337,6 +1700,688 @@ async function updatePersonColor(
 
 
   return getAppState(env);
+}
+
+
+// ============================================================
+// ARCHIVE / HISTORY
+// ============================================================
+
+async function getBillStateById(
+  env,
+  billId
+) {
+  if (!billId) {
+    throw new Error(
+      "Bill ID is required."
+    );
+  }
+
+  const bill =
+    await getBillById(
+      env,
+      billId
+    );
+
+  if (!bill) {
+    throw new Error(
+      "The bill could not be found."
+    );
+  }
+
+  return buildBillState(
+    env,
+    bill
+  );
+}
+
+
+async function archiveActiveBill(
+  env
+) {
+  const result =
+    await env.DB
+      .prepare(`
+        UPDATE bills
+        SET
+          status = 'archived',
+          archived_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE status = 'active'
+      `)
+      .run();
+
+
+  if (
+    !result.meta?.changes
+  ) {
+    throw new Error(
+      "There is no active bill to archive."
+    );
+  }
+}
+
+
+async function getBillHistory(
+  env
+) {
+  const result =
+    await env.DB
+      .prepare(`
+        SELECT
+          b.*,
+
+          (
+            SELECT COUNT(*)
+            FROM people p
+            WHERE p.bill_id = b.bill_id
+          ) AS people_count,
+
+          (
+            SELECT COUNT(*)
+            FROM items i
+            WHERE i.bill_id = b.bill_id
+          ) AS item_count
+
+        FROM bills b
+
+        WHERE b.status = 'archived'
+
+        ORDER BY b.updated_at DESC
+      `)
+      .all();
+
+
+  return (
+    result.results || []
+  ).map(
+    row => ({
+      billId:
+        String(
+          row.bill_id
+        ),
+
+      billName:
+        String(
+          row.title ||
+          "Shared Bill"
+        ),
+
+      storeName:
+        String(
+          row.restaurant_name ||
+          ""
+        ),
+
+      date:
+        String(
+          row.receipt_date ||
+          ""
+        ),
+
+      subtotal:
+        Number(
+          row.subtotal ||
+          0
+        ),
+
+      tax:
+        Number(
+          row.tax ||
+          0
+        ),
+
+      tip:
+        Number(
+          row.tip ||
+          0
+        ),
+
+      grandTotal:
+        Number(
+          row.grand_total ||
+          0
+        ),
+
+      status:
+        "ARCHIVED",
+
+      updatedAt:
+        String(
+          row.updated_at ||
+          ""
+        ),
+
+      peopleCount:
+        Number(
+          row.people_count ||
+          0
+        ),
+
+      itemCount:
+        Number(
+          row.item_count ||
+          0
+        )
+    })
+  );
+}
+
+
+async function restoreBill(
+  env,
+  billId
+) {
+  if (!billId) {
+    throw new Error(
+      "Choose a bill to restore."
+    );
+  }
+
+  const target =
+    await getBillById(
+      env,
+      billId
+    );
+
+  if (!target) {
+    throw new Error(
+      "The archived bill was not found."
+    );
+  }
+
+
+  await env.DB.batch([
+    env.DB
+      .prepare(`
+        UPDATE bills
+        SET
+          status = 'archived',
+          archived_at = CURRENT_TIMESTAMP,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE status = 'active'
+          AND bill_id <> ?
+      `)
+      .bind(
+        billId
+      ),
+
+    env.DB
+      .prepare(`
+        UPDATE bills
+        SET
+          status = 'active',
+          archived_at = NULL,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      )
+  ]);
+
+
+  return getAppState(env);
+}
+
+
+async function deleteArchivedBill(
+  env,
+  billId
+) {
+  if (!billId) {
+    throw new Error(
+      "Choose an archived bill to delete."
+    );
+  }
+
+  const bill =
+    await getBillById(
+      env,
+      billId
+    );
+
+  if (!bill) {
+    throw new Error(
+      "The archived bill was not found."
+    );
+  }
+
+  if (
+    bill.status === "active"
+  ) {
+    throw new Error(
+      "The active bill cannot be deleted. Archive it first."
+    );
+  }
+
+
+  // Explicitly delete child rows too,
+  // so this is safe even if an older
+  // version of the tables lacked
+  // ON DELETE CASCADE.
+  await env.DB.batch([
+    env.DB
+      .prepare(`
+        DELETE FROM selections
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      ),
+
+    env.DB
+      .prepare(`
+        DELETE FROM items
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      ),
+
+    env.DB
+      .prepare(`
+        DELETE FROM people
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      ),
+
+    env.DB
+      .prepare(`
+        DELETE FROM bills
+        WHERE bill_id = ?
+          AND status = 'archived'
+      `)
+      .bind(
+        billId
+      )
+  ]);
+}
+
+
+// ============================================================
+// GEMINI RECEIPT ANALYSIS
+// ============================================================
+
+async function analyzeReceiptImageWithGemini(
+  env,
+  mimeType,
+  imageBase64
+) {
+  mimeType =
+    String(
+      mimeType || ""
+    ).trim();
+
+  imageBase64 =
+    String(
+      imageBase64 || ""
+    ).trim();
+
+
+  if (
+    !mimeType.startsWith(
+      "image/"
+    ) ||
+    !imageBase64
+  ) {
+    throw new Error(
+      "A valid receipt image is required."
+    );
+  }
+
+
+  const prompt =
+    buildReceiptPrompt(
+      "Analyze this purchase receipt image directly. Read the image yourself."
+    );
+
+
+  return callGemini(
+    env,
+    [
+      {
+        text: prompt
+      },
+
+      {
+        inlineData: {
+          mimeType,
+          data:
+            imageBase64
+        }
+      }
+    ]
+  );
+}
+
+
+async function analyzeReceiptTextWithGemini(
+  env,
+  ocrText
+) {
+  ocrText =
+    String(
+      ocrText || ""
+    ).trim();
+
+
+  if (!ocrText) {
+    throw new Error(
+      "OCR text is required."
+    );
+  }
+
+
+  const prompt =
+    buildReceiptPrompt(
+      "Analyze the following OCR text from a purchase receipt."
+    ) +
+    "\n\nOCR TEXT:\n" +
+    ocrText;
+
+
+  return callGemini(
+    env,
+    [
+      {
+        text: prompt
+      }
+    ]
+  );
+}
+
+
+function buildReceiptPrompt(
+  opening
+) {
+  return [
+    opening,
+    "",
+    "Return the best reasonable structured interpretation.",
+    "",
+    "Rules:",
+    "- Correct obvious reading mistakes only when context is strong.",
+    "- Do not invent unsupported purchases.",
+    "- A number before an item may be its quantity.",
+    "- Distinguish unit price from full line total.",
+    "- If quantity is greater than 1 and only a line total is shown, infer unit price when reasonable.",
+    "- Use null when a value cannot reasonably be determined.",
+    "- Tip must be actual paid tip or mandatory gratuity.",
+    "- Never use suggested additional tip amounts as the paid tip.",
+    "- Verify subtotal + tax + tip approximately equals grand total.",
+    "- Put uncertainty or arithmetic mismatches in warnings.",
+    "- Confidence must be from 0 through 1."
+  ].join("\n");
+}
+
+
+async function callGemini(
+  env,
+  parts
+) {
+  if (
+    !env.GEMINI_API_KEY
+  ) {
+    throw new Error(
+      "GEMINI_API_KEY secret is not configured."
+    );
+  }
+
+
+  const requestBody = {
+    contents: [
+      {
+        role:
+          "user",
+
+        parts
+      }
+    ],
+
+    generationConfig: {
+      temperature:
+        0.1,
+
+      responseMimeType:
+        "application/json",
+
+      responseJsonSchema:
+        getReceiptSchema()
+    }
+  };
+
+
+  const endpoint =
+    "https://generativelanguage.googleapis.com/v1beta/models/" +
+    encodeURIComponent(
+      GEMINI_MODEL
+    ) +
+    ":generateContent?key=" +
+    encodeURIComponent(
+      env.GEMINI_API_KEY
+    );
+
+
+  const response =
+    await fetch(
+      endpoint,
+      {
+        method:
+          "POST",
+
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
+
+        body:
+          JSON.stringify(
+            requestBody
+          )
+      }
+    );
+
+
+  const responseText =
+    await response.text();
+
+
+  if (!response.ok) {
+    throw new Error(
+      "Gemini API error " +
+      response.status +
+      ": " +
+      responseText
+    );
+  }
+
+
+  const responseJson =
+    JSON.parse(
+      responseText
+    );
+
+
+  const resultText =
+    responseJson
+      ?.candidates?.[0]
+      ?.content?.parts?.[0]
+      ?.text;
+
+
+  if (!resultText) {
+    throw new Error(
+      "Gemini returned no structured receipt result."
+    );
+  }
+
+
+  return JSON.parse(
+    resultText
+  );
+}
+
+
+function getReceiptSchema() {
+  return {
+    type:
+      "object",
+
+    properties: {
+      storeName: {
+        type: [
+          "string",
+          "null"
+        ]
+      },
+
+      address: {
+        type: [
+          "string",
+          "null"
+        ]
+      },
+
+      date: {
+        type: [
+          "string",
+          "null"
+        ],
+
+        description:
+          "Use YYYY-MM-DD when reasonably determinable."
+      },
+
+      time: {
+        type: [
+          "string",
+          "null"
+        ],
+
+        description:
+          "Use HH:MM in 24-hour time when reasonably determinable."
+      },
+
+      items: {
+        type:
+          "array",
+
+        items: {
+          type:
+            "object",
+
+          properties: {
+            name: {
+              type: [
+                "string",
+                "null"
+              ]
+            },
+
+            quantity: {
+              type: [
+                "number",
+                "null"
+              ]
+            },
+
+            unitPrice: {
+              type: [
+                "number",
+                "null"
+              ]
+            },
+
+            lineTotal: {
+              type: [
+                "number",
+                "null"
+              ]
+            }
+          },
+
+          required: [
+            "name",
+            "quantity",
+            "unitPrice",
+            "lineTotal"
+          ],
+
+          additionalProperties:
+            false
+        }
+      },
+
+      subtotal: {
+        type: [
+          "number",
+          "null"
+        ]
+      },
+
+      tax: {
+        type: [
+          "number",
+          "null"
+        ]
+      },
+
+      tip: {
+        type: [
+          "number",
+          "null"
+        ]
+      },
+
+      grandTotal: {
+        type: [
+          "number",
+          "null"
+        ]
+      },
+
+      confidence: {
+        type:
+          "number",
+
+        minimum:
+          0,
+
+        maximum:
+          1
+      },
+
+      warnings: {
+        type:
+          "array",
+
+        items: {
+          type:
+            "string"
+        }
+      }
+    },
+
+    required: [
+      "storeName",
+      "address",
+      "date",
+      "time",
+      "items",
+      "subtotal",
+      "tax",
+      "tip",
+      "grandTotal",
+      "confidence",
+      "warnings"
+    ],
+
+    additionalProperties:
+      false
+  };
 }
 
 
@@ -1367,6 +2412,7 @@ async function deleteRowsNotInList(
         NOT IN (${placeholders})
   `;
 
+
   await env.DB
     .prepare(sql)
     .bind(
@@ -1388,28 +2434,34 @@ function firstAvailablePersonColor(
   for (
     let offset = 0;
     offset <
-    PERSON_COLOR_KEYS.length;
+      PERSON_COLOR_KEYS.length;
     offset++
   ) {
     const key =
       PERSON_COLOR_KEYS[
         (
           Number(
-            preferredIndex || 0
+            preferredIndex ||
+            0
           ) +
           offset
         ) %
         PERSON_COLOR_KEYS.length
       ];
 
-    if (!usedColors[key]) {
+
+    if (
+      !usedColors[key]
+    ) {
       return key;
     }
   }
 
+
   return PERSON_COLOR_KEYS[
     Number(
-      preferredIndex || 0
+      preferredIndex ||
+      0
     ) %
     PERSON_COLOR_KEYS.length
   ];
@@ -1424,7 +2476,9 @@ function requiredMoney(
     Number(value);
 
   if (
-    !Number.isFinite(number) ||
+    !Number.isFinite(
+      number
+    ) ||
     number < 0
   ) {
     throw new Error(
@@ -1434,11 +2488,15 @@ function requiredMoney(
     );
   }
 
-  return roundMoney(number);
+  return roundMoney(
+    number
+  );
 }
 
 
-function numberOrNull(value) {
+function numberOrNull(
+  value
+) {
   if (
     value === null ||
     value === undefined ||
@@ -1447,21 +2505,30 @@ function numberOrNull(value) {
     return null;
   }
 
+
   const number =
     Number(value);
 
-  return Number.isFinite(number)
+
+  return Number.isFinite(
+    number
+  )
     ? number
     : null;
 }
 
 
-function roundMoney(value) {
+function roundMoney(
+  value
+) {
   return Math.round(
     (
-      Number(value || 0) +
+      Number(
+        value || 0
+      ) +
       Number.EPSILON
-    ) * 100
+    ) *
+    100
   ) / 100;
 }
 
@@ -1483,9 +2550,13 @@ function json(
   status = 200
 ) {
   return new Response(
-    JSON.stringify(data),
+    JSON.stringify(
+      data
+    ),
+
     {
       status,
+
       headers: {
         "Content-Type":
           "application/json; charset=utf-8"
