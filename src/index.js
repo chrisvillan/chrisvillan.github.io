@@ -1,3 +1,9 @@
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "https://chrisvillanpro.com",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type"
+};
+
 const GEMINI_MODEL = "gemini-3.5-flash";
 
 const PERSON_COLOR_KEYS = [
@@ -24,6 +30,14 @@ export default {
     }
 
     if (url.pathname === "/api") {
+
+      if (request.method === "OPTIONS") {
+        return new Response(null, {
+          status: 204,
+          headers: CORS_HEADERS
+        });
+      }
+    
       if (request.method !== "POST") {
         return json({
           ok: false,
@@ -2550,16 +2564,12 @@ function json(
   status = 200
 ) {
   return new Response(
-    JSON.stringify(
-      data
-    ),
-
+    JSON.stringify(data),
     {
       status,
-
       headers: {
-        "Content-Type":
-          "application/json; charset=utf-8"
+        "Content-Type": "application/json; charset=utf-8",
+        ...CORS_HEADERS
       }
     }
   );
