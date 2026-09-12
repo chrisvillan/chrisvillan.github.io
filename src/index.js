@@ -157,7 +157,19 @@ export default {
                 String(body.ocrText || "")
               )
             });
-
+            
+            case "loadPoll":
+              return json({
+                ok: true,
+                data: await loadPollData(env)
+              });
+            
+            case "savePoll":
+              return json({
+                ok: true,
+                data: await savePollData(env, body)
+              });
+            
           default:
             return json({
               ok: false,
@@ -2398,6 +2410,145 @@ function getReceiptSchema() {
   };
 }
 
+// ============================================================
+// POLL
+// ============================================================
+
+async function loadPollData(env) {
+  const result = await env.POLL_DB
+    .prepare(`
+      SELECT
+        person,
+        date_key,
+        am,
+        pm,
+        exact_times
+      FROM poll_availability
+      ORDER BY person, date_key
+    `)
+    .all();
+
+  const data = {};
+
+  for (const row of result.results || []) {
+    const person = String(row.person || "");
+    const dateKey = String(row.date_key || "");
+
+    if (!person || !dateKey) continue;
+
+    if (!data[person]) {
+      data[person] = {};
+    }
+
+    let exactTimes = [];
+
+    try {
+      exactTimes = JSON.parse(
+        String(row.exact_times || "[]")
+      );
+    } catch {
+      exactTimes = [];
+    }
+
+    data[person][dateKey] = {
+      am: Boolean(row.am),
+      pm: Boolean(row.pm),
+      exactTimes:
+        Array.isArray(exactTimes)
+          ? exactTimes
+          : []
+    };
+  }
+
+  return data;
+}
+
+
+async function savePollData(env, request) {
+  const person =
+    String(request.person || "").trim();
+
+  const dateKey =
+    String(request.date || "").trim();
+
+  const am =
+    Boolean(request.am);
+
+  const pm =
+    Boolean(request.pm);
+
+  const exactTimes =
+    Array.isArray(request.times)
+      ? request.times
+          .map(Number)
+          .filter(value =>
+            Number.isFinite(value)
+          )
+      : [];
+
+  const cleared =
+    Boolean(request.cleared);
+
+  if (!person) {
+    throw new Error(
+      "Person is required."
+    );
+  }
+
+  if (!dateKey) {
+    throw new Error(
+      "Date is required."
+    );
+  }
+
+  if (cleared) {
+    await env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_availability
+        WHERE person = ?
+          AND date_key = ?
+      `)
+      .bind(person, dateKey)
+      .run();
+  } else {
+    await env.POLL_DB
+      .prepare(`
+        INSERT INTO poll_availability (
+          poll_id,
+          person,
+          date_key,
+          am,
+          pm,
+          exact_times,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?, ?, ?, ?, ?, ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+
+        ON CONFLICT(person, date_key)
+        DO UPDATE SET
+          am = excluded.am,
+          pm = excluded.pm,
+          exact_times = excluded.exact_times,
+          updated_at = CURRENT_TIMESTAMP
+      `)
+      .bind(
+        crypto.randomUUID(),
+        person,
+        dateKey,
+        am ? 1 : 0,
+        pm ? 1 : 0,
+        JSON.stringify(exactTimes)
+      )
+      .run();
+  }
+
+  return loadPollData(env);
+}
 
 // ============================================================
 // DATABASE HELPERS
