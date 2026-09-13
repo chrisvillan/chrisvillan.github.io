@@ -757,6 +757,81 @@
       margin-top: 6px;
     }
 
+    .suggested-admin-box {
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: #f8fafc;
+    }
+
+    .suggested-admin-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .suggested-admin-title {
+      font-weight: 950;
+      color: var(--text);
+    }
+
+    .suggested-admin-copy {
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
+    .suggested-admin-count {
+      flex: 0 0 auto;
+      padding: 6px 9px;
+      border-radius: 999px;
+      background: #eef2ff;
+      color: #4338ca;
+      font-size: .75rem;
+      font-weight: 900;
+    }
+
+    .suggested-admin-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+    }
+
+    .suggested-admin-date {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 9px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--text);
+      font-size: .78rem;
+      font-weight: 850;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .suggested-admin-date:has(input:checked) {
+      border-color: #818cf8;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .suggested-admin-date input {
+      margin: 0;
+    }
+
+    .suggested-admin-empty {
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.4;
+    }
+
     .weekday-option {
       border: 1px solid var(--border);
       border-radius: 12px;
@@ -1184,6 +1259,20 @@
 
       .weekday-picker {
         grid-template-columns: repeat(4, 1fr);
+      }
+
+      .suggested-admin-box {
+        padding: 11px;
+      }
+
+      .suggested-admin-head {
+        flex-direction: column;
+        gap: 7px;
+      }
+
+      .suggested-admin-date {
+        padding: 6px 8px;
+        font-size: .72rem;
       }
 
       .person-toolbar-right {
@@ -1780,6 +1869,37 @@
 
               </div>
 
+
+              <div class="suggested-admin-box">
+
+                <div class="suggested-admin-head">
+
+                  <div>
+                    <div class="suggested-admin-title">
+                      Suggested Pick
+                    </div>
+
+                    <div class="suggested-admin-copy">
+                      Choose the dates people can add with the Suggested Pick button.
+                    </div>
+                  </div>
+
+                  <div
+                    id="suggestedAdminCount"
+                    class="suggested-admin-count"
+                  >
+                    0 selected
+                  </div>
+
+                </div>
+
+                <div
+                  id="suggestedAdminGrid"
+                  class="suggested-admin-grid"
+                ></div>
+
+              </div>
+
             </div>
 
 
@@ -2001,22 +2121,6 @@
       fri: "Fri",
       sat: "Sat"
     };
-
-
-    // Suggested Pick dates.
-    // Edit this one list if you want to change the preset later.
-    const SUGGESTED_PICK_DATES = [
-      "2026-09-17",
-      "2026-09-18",
-      "2026-09-24",
-      "2026-09-25",
-      "2026-10-01",
-      "2026-10-02",
-      "2026-10-08",
-      "2026-10-09",
-      "2026-10-15",
-      "2026-10-16"
-    ];
 
 
     const state = {
@@ -3108,10 +3212,27 @@
 
     function getSuggestedPickDates() {
 
+      const suggestedDates =
+        Array.isArray(
+          state.session
+            ?.suggestedDates
+        )
+          ? state.session
+              .suggestedDates
+          : [];
+
+
       return (
-        SUGGESTED_PICK_DATES
+        suggestedDates
+          .map(
+            value =>
+              String(
+                value || ""
+              ).trim()
+          )
           .filter(
             dateKey =>
+              dateKey &&
               isDateAllowed(
                 dateKey
               )
@@ -4275,6 +4396,232 @@
     }
 
 
+    function getAdminSelectedSuggestedDates() {
+
+      return Array.from(
+        document.querySelectorAll(
+          ".suggested-admin-date input:checked"
+        )
+      ).map(
+        checkbox =>
+          checkbox.value
+      );
+    }
+
+
+    function getAdminSelectableDates() {
+
+      const startKey =
+        $("editStartDate")
+          ?.value || "";
+
+      const endKey =
+        $("editEndDate")
+          ?.value || "";
+
+
+      if (
+        !startKey ||
+        !endKey ||
+        endKey < startKey
+      ) {
+        return [];
+      }
+
+
+      const allowedDays =
+        getSelectedAllowedDays();
+
+
+      if (!allowedDays.length) {
+        return [];
+      }
+
+
+      const dates = [];
+
+      const cursor =
+        fromKey(
+          startKey
+        );
+
+      const end =
+        fromKey(
+          endKey
+        );
+
+
+      while (
+        cursor <= end
+      ) {
+
+        const key =
+          toKey(
+            cursor
+          );
+
+        const dayKey =
+          DAY_KEYS[
+            cursor.getDay()
+          ];
+
+
+        if (
+          allowedDays.includes(
+            dayKey
+          )
+        ) {
+          dates.push(
+            key
+          );
+        }
+
+
+        cursor.setDate(
+          cursor.getDate() + 1
+        );
+      }
+
+
+      return dates;
+    }
+
+
+    function renderAdminSuggestedDates(
+      session,
+      preserveCurrent = false
+    ) {
+
+      const grid =
+        $("suggestedAdminGrid");
+
+      const count =
+        $("suggestedAdminCount");
+
+
+      if (
+        !grid ||
+        !count
+      ) {
+        return;
+      }
+
+
+      const currentSelection =
+        preserveCurrent
+          ? getAdminSelectedSuggestedDates()
+          : (
+              Array.isArray(
+                session?.suggestedDates
+              )
+                ? session.suggestedDates
+                : []
+            );
+
+
+      const selectedSet =
+        new Set(
+          currentSelection.map(
+            value =>
+              String(
+                value || ""
+              )
+          )
+        );
+
+
+      const availableDates =
+        getAdminSelectableDates();
+
+
+      if (!availableDates.length) {
+
+        grid.innerHTML =
+          `<div class="suggested-admin-empty">
+            Set the session date range and available weekdays first.
+          </div>`;
+
+        count.textContent =
+          "0 selected";
+
+        return;
+      }
+
+
+      grid.innerHTML =
+        availableDates
+          .map(
+            dateKey => {
+
+              const date =
+                fromKey(
+                  dateKey
+                );
+
+              const label =
+                date.toLocaleDateString(
+                  undefined,
+                  {
+                    weekday:
+                      "short",
+                    month:
+                      "short",
+                    day:
+                      "numeric"
+                  }
+                );
+
+
+              return `
+                <label class="suggested-admin-date">
+                  <input
+                    type="checkbox"
+                    value="${escAttr(dateKey)}"
+                    ${
+                      selectedSet.has(
+                        dateKey
+                      )
+                        ? "checked"
+                        : ""
+                    }
+                  >
+                  ${esc(label)}
+                </label>
+              `;
+            }
+          )
+          .join("");
+
+
+      const updateCount =
+        () => {
+
+          const selected =
+            getAdminSelectedSuggestedDates()
+              .length;
+
+          count.textContent =
+            `${selected} selected`;
+        };
+
+
+      grid
+        .querySelectorAll(
+          "input"
+        )
+        .forEach(
+          checkbox => {
+
+            checkbox.onchange =
+              updateCount;
+          }
+        );
+
+
+      updateCount();
+    }
+
+
     function renderAdmin() {
 
       populateAdminHourSelects();
@@ -4413,6 +4760,11 @@
               );
           }
         );
+
+
+      renderAdminSuggestedDates(
+        session
+      );
 
 
       $("peopleList")
@@ -5052,7 +5404,10 @@
             19,
 
           defaultEndHour:
-            2
+            2,
+
+          suggestedDates:
+            []
         });
 
 
@@ -5085,6 +5440,43 @@
           renderAdmin();
         }
       };
+
+
+    [
+      "editStartDate",
+      "editEndDate"
+    ].forEach(
+      id => {
+
+        $(id).onchange =
+          () => {
+
+            renderAdminSuggestedDates(
+              adminSession(),
+              true
+            );
+          };
+      }
+    );
+
+
+    document
+      .querySelectorAll(
+        ".allowed-day"
+      )
+      .forEach(
+        checkbox => {
+
+          checkbox.onchange =
+            () => {
+
+              renderAdminSuggestedDates(
+                adminSession(),
+                true
+              );
+            };
+        }
+      );
 
 
     $("saveSession")
@@ -5138,6 +5530,10 @@
             $("editEndHour")
               .value
           );
+
+
+        const suggestedDates =
+          getAdminSelectedSuggestedDates();
 
 
         if (
@@ -5221,6 +5617,8 @@
 
           defaultEndHour:
             endHour,
+
+          suggestedDates,
 
           isActive:
             true
