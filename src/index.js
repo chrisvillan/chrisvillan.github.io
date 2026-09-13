@@ -2856,7 +2856,10 @@ async function syncFoodFromGoogleMaps(env) {
   try {
     browser =
       await puppeteer.launch(
-        env.BROWSER
+        env.BROWSER,
+        {
+          keep_alive: 600000
+        }
       );
 
     const page =
@@ -3291,91 +3294,167 @@ async function syncFoodFromGoogleMaps(env) {
             results.size;
 
 
-          // The list is virtualized, so
-          // repeatedly collect currently
-          // rendered cards, then scroll.
-          for (
-            let pass = 0;
-            pass < 220;
-            pass++
+          // Google Maps uses a virtualized list.
+          // We do multiple passes so slow-loading
+          // sections do not get skipped.
+          
+          async function scrollAndCollect(
+            direction
           ) {
-            collectVisible();
-
-
-            const beforeTop =
-              scroller.scrollTop;
-
-
-            scroller.scrollTop +=
-              Math.max(
-                350,
-                Math.floor(
-                  scroller.clientHeight *
-                    0.8
+            let noGrowthCount = 0;
+            let previousCount =
+              results.size;
+          
+            for (
+              let pass = 0;
+              pass < 350;
+              pass++
+            ) {
+              collectVisible();
+          
+              const beforeTop =
+                scroller.scrollTop;
+          
+              const step =
+                Math.max(
+                  250,
+                  Math.floor(
+                    scroller.clientHeight *
+                    0.6
+                  )
+                );
+          
+              if (direction === "down") {
+                scroller.scrollTop += step;
+              } else {
+                scroller.scrollTop -= step;
+              }
+          
+              scroller.dispatchEvent(
+                new Event(
+                  "scroll",
+                  {
+                    bubbles: true
+                  }
                 )
               );
-
-
-            scroller.dispatchEvent(
-              new Event(
-                "scroll",
-                {
-                  bubbles: true
-                }
-              )
-            );
-
-
-            await sleep(650);
-
-
-            collectVisible();
-
-
-            if (
-              results.size ===
-              previousCount
-            ) {
-              noGrowthCount++;
-            } else {
-              noGrowthCount = 0;
-
-              previousCount =
-                results.size;
-            }
-
-
-            const atBottom =
-              scroller.scrollTop +
-                scroller.clientHeight >=
-              scroller.scrollHeight -
-                10;
-
-
-            const didNotMove =
-              scroller.scrollTop ===
-              beforeTop;
-
-
-            if (
-              (
-                atBottom ||
+          
+              // Give Google Maps more time
+              // to replace virtualized cards.
+              await sleep(850);
+          
+              collectVisible();
+          
+              if (
+                results.size ===
+                previousCount
+              ) {
+                noGrowthCount++;
+              } else {
+                noGrowthCount = 0;
+                previousCount =
+                  results.size;
+              }
+          
+              const atBottom =
+                scroller.scrollTop +
+                  scroller.clientHeight >=
+                scroller.scrollHeight -
+                  15;
+          
+              const atTop =
+                scroller.scrollTop <= 5;
+          
+              const didNotMove =
+                Math.abs(
+                  scroller.scrollTop -
+                  beforeTop
+                ) < 2;
+          
+              const reachedEnd =
+                direction === "down"
+                  ? atBottom
+                  : atTop;
+          
+              // Google Maps sometimes pauses
+              // while loading another chunk.
+              // If we appear to be at an end,
+              // wait longer before giving up.
+              if (
+                reachedEnd ||
                 didNotMove
-              ) &&
-              noGrowthCount >= 4
-            ) {
-              break;
-            }
-
-
-            // Safety stop if Google stops
-            // producing new virtual cards.
-            if (
-              noGrowthCount >= 12
-            ) {
-              break;
+              ) {
+                await sleep(1800);
+          
+                collectVisible();
+          
+                if (
+                  results.size !==
+                  previousCount
+                ) {
+                  previousCount =
+                    results.size;
+          
+                  noGrowthCount = 0;
+          
+                  continue;
+                }
+              }
+          
+              // Be much more patient than before.
+              if (
+                reachedEnd &&
+                noGrowthCount >= 10
+              ) {
+                break;
+              }
+          
+              if (
+                noGrowthCount >= 25
+              ) {
+                break;
+              }
             }
           }
+          
+          
+          // PASS 1:
+          // normal top-to-bottom scrape.
+          await scrollAndCollect(
+            "down"
+          );
+          
+          
+          // Pause at the bottom because Google
+          // occasionally loads more cards late.
+          await sleep(2500);
+          collectVisible();
+          
+          
+          // PASS 2:
+          // walk back upward. This catches cards
+          // that may have been skipped while the
+          // virtual list was rendering.
+          await scrollAndCollect(
+            "up"
+          );
+          
+          
+          // Pause at the top.
+          await sleep(1500);
+          collectVisible();
+          
+          
+          // PASS 3:
+          // do one final top-to-bottom pass.
+          await scrollAndCollect(
+            "down"
+          );
+          
+          
+          // Final longer wait at the bottom.
+          await sleep(2500);
+          collectVisible();
 
 
           collectVisible();
