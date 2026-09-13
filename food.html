@@ -1,0 +1,2164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Socal Food</title>
+  <meta name="theme-color" content="#111827" />
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --panel-2: #1d212a;
+      --border: #2a303b;
+      --text: #f4f7fb;
+      --muted: #9aa4b2;
+      --accent: #ff7a59;
+      --accent-2: #ff9d7f;
+      --good: #4ade80;
+      --warning: #fbbf24;
+      --danger: #fb7185;
+      --shadow: 0 16px 40px rgba(0,0,0,.28);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      color-scheme: dark;
+    }
+
+    body {
+      margin: 0;
+      font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(255,122,89,.08), transparent 28rem),
+        var(--bg);
+      color: var(--text);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .page {
+      width: min(1400px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1;
+      letter-spacing: -.03em;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--text);
+      border-radius: 12px;
+      min-height: 42px;
+      padding: 10px 14px;
+      transition: transform .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      border-color: #3b4452;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+      font-weight: 700;
+    }
+
+    .btn-danger {
+      background: rgba(251,113,133,.12);
+      border-color: rgba(251,113,133,.4);
+      color: #ffd3db;
+    }
+
+    .filters {
+      background: rgba(23,26,33,.88);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 10px;
+      z-index: 5;
+      margin-bottom: 18px;
+    }
+
+    .filter-grid {
+      display: grid;
+      grid-template-columns: minmax(220px, 2fr) repeat(5, minmax(130px, 1fr));
+      gap: 10px;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 700;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: #11151b;
+      color: var(--text);
+      border-radius: 11px;
+      padding: 11px 12px;
+      outline: none;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(255,122,89,.12);
+    }
+
+    .filter-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .active-admin {
+      color: #ffd7cc;
+      background: rgba(255,122,89,.08);
+      border: 1px solid rgba(255,122,89,.25);
+      border-radius: 999px;
+      padding: 6px 10px;
+      display: none;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background:
+        linear-gradient(180deg, rgba(255,255,255,.018), transparent 35%),
+        var(--panel);
+      padding: 17px;
+      min-height: 210px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: #3a4350;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .place-name {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.25;
+      letter-spacing: -.015em;
+    }
+
+    .rating {
+      flex: 0 0 auto;
+      border-radius: 999px;
+      background: rgba(251,191,36,.12);
+      color: #fde68a;
+      padding: 6px 9px;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .pill {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 9px;
+      background: rgba(255,255,255,.025);
+    }
+
+    .pill-custom {
+      color: #ffd7cc;
+      border-color: rgba(255,122,89,.30);
+      background: rgba(255,122,89,.08);
+    }
+
+    .pill-tag {
+      color: #c8dcff;
+      border-color: rgba(96,165,250,.3);
+      background: rgba(96,165,250,.08);
+    }
+
+    .note {
+      color: #d6dce6;
+      font-size: 14px;
+      line-height: 1.5;
+      border-left: 3px solid rgba(255,122,89,.55);
+      padding-left: 10px;
+      min-height: 21px;
+    }
+
+    .note-empty {
+      color: #657080;
+      font-style: italic;
+      border-left-color: #333a45;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 4px;
+    }
+
+    .card-actions .btn {
+      min-height: 36px;
+      padding: 8px 10px;
+      font-size: 13px;
+    }
+
+    .admin-edit {
+      display: none;
+    }
+
+    .empty,
+    .loading,
+    .error-box {
+      border: 1px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 36px 20px;
+      text-align: center;
+      color: var(--muted);
+      grid-column: 1 / -1;
+    }
+
+    .error-box {
+      border-color: rgba(251,113,133,.35);
+      color: #ffd0d8;
+      background: rgba(251,113,133,.06);
+    }
+
+    dialog {
+      width: min(720px, calc(100vw - 28px));
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      color: var(--text);
+      background: #161a20;
+      box-shadow: 0 24px 80px rgba(0,0,0,.55);
+      padding: 0;
+    }
+
+    dialog::backdrop {
+      background: rgba(0,0,0,.68);
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-head {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-actions {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .tab {
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--panel-2);
+      color: var(--muted);
+    }
+
+    .tab.active {
+      color: white;
+      border-color: rgba(255,122,89,.5);
+      background: rgba(255,122,89,.12);
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    .help {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: 6px 0 12px;
+    }
+
+    .category-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .category-row input {
+      flex: 1;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      max-height: 240px;
+      overflow: auto;
+      padding: 4px 0;
+    }
+
+    .tag-choice {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: #11151b;
+      font-size: 13px;
+    }
+
+    .tag-choice input {
+      width: auto;
+      margin: 0;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--muted);
+      min-height: 20px;
+    }
+
+    .status.good {
+      color: var(--good);
+    }
+
+    .status.bad {
+      color: var(--danger);
+    }
+
+    .json-box {
+      min-height: 260px;
+      resize: vertical;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 1100px) {
+      .filter-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+
+      .grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        padding: 14px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .filter-grid {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .field-search {
+        grid-column: 1 / -1;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .filters {
+        position: static;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .filter-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field-search {
+        grid-column: auto;
+      }
+
+      .topbar {
+        flex-direction: column;
+      }
+
+      .top-actions {
+        width: 100%;
+      }
+
+      .top-actions .btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <div class="topbar">
+      <div class="title-wrap">
+        <h1 id="pageTitle">Socal Food</h1>
+        <div class="subtitle" id="subtitle">Loading Siya's food list…</div>
+      </div>
+
+      <div class="top-actions">
+        <span class="active-admin" id="adminBadge">Admin mode</span>
+        <button class="btn" id="adminButton" type="button">Admin</button>
+        <button class="btn" id="refreshButton" type="button">Refresh</button>
+      </div>
+    </div>
+
+    <section class="filters">
+      <div class="filter-grid">
+        <div class="field field-search">
+          <label for="searchInput">Search</label>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Name, note, cuisine, tag…"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="field">
+          <label for="customCategoryFilter">My category</label>
+          <select id="customCategoryFilter">
+            <option value="">All</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="googleCategoryFilter">Google category</label>
+          <select id="googleCategoryFilter">
+            <option value="">All</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="tagFilter">Tag</label>
+          <select id="tagFilter">
+            <option value="">All</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="priceFilter">Price</label>
+          <select id="priceFilter">
+            <option value="">All</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="ratingFilter">Min rating</label>
+          <select id="ratingFilter">
+            <option value="">Any</option>
+            <option value="4">4.0+</option>
+            <option value="4.2">4.2+</option>
+            <option value="4.4">4.4+</option>
+            <option value="4.5">4.5+</option>
+            <option value="4.6">4.6+</option>
+            <option value="4.7">4.7+</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="sortSelect">Sort</label>
+          <select id="sortSelect">
+            <option value="name">Name A–Z</option>
+            <option value="rating-desc">Rating high → low</option>
+            <option value="reviews-desc">Most reviews</option>
+            <option value="rating-asc">Rating low → high</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="filter-footer">
+        <div id="resultCount">0 restaurants</div>
+        <button class="btn" id="clearFiltersButton" type="button">Clear filters</button>
+      </div>
+    </section>
+
+    <section class="grid" id="restaurantGrid">
+      <div class="loading">Loading restaurants…</div>
+    </section>
+  </main>
+
+
+  <dialog id="adminLoginDialog">
+    <div class="modal-head">
+      <h2>Admin login</h2>
+      <button class="btn" type="button" data-close="adminLoginDialog">Close</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label for="adminCodeInput">Food admin code</label>
+        <input
+          id="adminCodeInput"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Enter admin code"
+        />
+      </div>
+      <div class="status" id="adminLoginStatus"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="adminLoginSubmit" type="button">Log in</button>
+    </div>
+  </dialog>
+
+
+  <dialog id="adminPanelDialog">
+    <div class="modal-head">
+      <h2>Food admin</h2>
+      <button class="btn" type="button" data-close="adminPanelDialog">Close</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="tabs">
+        <button class="tab active" type="button" data-tab="categoriesPanel">Categories</button>
+        <button class="tab" type="button" data-tab="importPanel">Import JSON</button>
+        <button class="tab" type="button" data-tab="statusPanel">Status</button>
+      </div>
+
+      <div class="tab-panel active" id="categoriesPanel">
+        <div class="help">
+          These are your own categories, separate from Google's category.
+          Examples: Korean, Thai, Japanese, Mexican, Dessert.
+        </div>
+
+        <div id="categoryEditor"></div>
+
+        <button class="btn" id="addCategoryButton" type="button">+ Add category</button>
+        <div class="status" id="categoryStatus"></div>
+      </div>
+
+      <div class="tab-panel" id="importPanel">
+        <div class="help">
+          Paste a JSON array of restaurants, or an object containing a
+          <code>places</code> array. This sends a complete snapshot to the Food API.
+        </div>
+
+        <textarea
+          id="importJson"
+          class="json-box"
+          placeholder='[
+  {
+    "name": "Example Restaurant",
+    "rating": 4.6,
+    "reviews": 1200,
+    "price": "$20–30",
+    "googleCategory": "Korean restaurant",
+    "note": "Siya note here"
+  }
+]'
+        ></textarea>
+
+        <div class="status" id="importStatus"></div>
+      </div>
+
+      <div class="tab-panel" id="statusPanel">
+        <div id="adminStatusText" class="help">Loading…</div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="adminLogoutButton" type="button">Log out</button>
+      <button class="btn btn-primary" id="adminPrimaryAction" type="button">Save categories</button>
+    </div>
+  </dialog>
+
+
+  <dialog id="editPlaceDialog">
+    <div class="modal-head">
+      <h2 id="editPlaceTitle">Edit restaurant</h2>
+      <button class="btn" type="button" data-close="editPlaceDialog">Close</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="field">
+        <label for="editCategorySelect">My category</label>
+        <select id="editCategorySelect">
+          <option value="">No custom category</option>
+        </select>
+      </div>
+
+      <div style="height:16px"></div>
+
+      <div class="field">
+        <label>Tags</label>
+        <div class="tag-list" id="editTagList"></div>
+        <div class="help" id="noTagsHelp" style="display:none;">
+          No tags exist yet in the database.
+        </div>
+      </div>
+
+      <div class="status" id="editPlaceStatus"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="savePlaceButton" type="button">Save</button>
+    </div>
+  </dialog>
+
+
+  <script>
+    const API_URL =
+      "https://chrisvillan-github-io.chrisvillanpro.workers.dev/api";
+
+    const app = {
+      state: null,
+      adminCode: sessionStorage.getItem("foodAdminCode") || "",
+      adminMode: false,
+      editingPlaceId: null,
+      activeAdminTab: "categoriesPanel"
+    };
+
+
+    const el = id =>
+      document.getElementById(id);
+
+
+    async function api(action, extra = {}) {
+      const response = await fetch(
+        API_URL,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            action,
+            ...extra
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        throw new Error(
+          data.error || "Request failed."
+        );
+      }
+
+      return data;
+    }
+
+
+    async function loadFood() {
+      setGridMessage(
+        "loading",
+        "Loading restaurants…"
+      );
+
+      try {
+        const data =
+          await api("foodLoad");
+
+        app.state = data.state;
+
+        renderEverything();
+      } catch (error) {
+        setGridMessage(
+          "error-box",
+          error.message
+        );
+
+        el("subtitle").textContent =
+          "Could not load the food list.";
+      }
+    }
+
+
+    function renderEverything() {
+      const state = app.state || {};
+      const list = state.list || {};
+      const places = state.places || [];
+
+      el("pageTitle").textContent =
+        list.name || "Socal Food";
+
+      const syncText =
+        list.lastSyncedAt
+          ? "Last synced " +
+            formatDateTime(
+              list.lastSyncedAt
+            )
+          : "Not synced yet";
+
+      el("subtitle").textContent =
+        `${places.length.toLocaleString()} saved places · ${syncText}`;
+
+      renderFilterOptions();
+      renderRestaurants();
+      renderAdminUi();
+    }
+
+
+    function renderFilterOptions() {
+      const state = app.state || {};
+      const places = state.places || [];
+      const categories = state.categories || [];
+      const tags = state.tags || [];
+
+      replaceOptions(
+        el("customCategoryFilter"),
+        [
+          { value: "", label: "All" },
+          ...categories.map(category => ({
+            value: category.categoryId,
+            label: category.name
+          }))
+        ]
+      );
+
+      const googleCategories =
+        uniqueSorted(
+          places
+            .map(place =>
+              String(
+                place.googleCategory || ""
+              ).trim()
+            )
+            .filter(Boolean)
+        );
+
+      replaceOptions(
+        el("googleCategoryFilter"),
+        [
+          { value: "", label: "All" },
+          ...googleCategories.map(value => ({
+            value,
+            label: value
+          }))
+        ]
+      );
+
+      replaceOptions(
+        el("tagFilter"),
+        [
+          { value: "", label: "All" },
+          ...tags.map(tag => ({
+            value: tag.tagId,
+            label: tag.name
+          }))
+        ]
+      );
+
+      const prices =
+        uniqueSorted(
+          places
+            .map(place =>
+              String(place.price || "").trim()
+            )
+            .filter(Boolean)
+        );
+
+      replaceOptions(
+        el("priceFilter"),
+        [
+          { value: "", label: "All" },
+          ...prices.map(value => ({
+            value,
+            label: value
+          }))
+        ]
+      );
+    }
+
+
+    function renderRestaurants() {
+      if (!app.state) {
+        return;
+      }
+
+      const places =
+        getFilteredPlaces();
+
+      const grid =
+        el("restaurantGrid");
+
+      el("resultCount").textContent =
+        `${places.length.toLocaleString()} restaurant${places.length === 1 ? "" : "s"}`;
+
+      if (!places.length) {
+        setGridMessage(
+          "empty",
+          app.state.places?.length
+            ? "No restaurants match these filters."
+            : "No restaurants have been imported yet."
+        );
+        return;
+      }
+
+      const categoryMap =
+        Object.fromEntries(
+          (app.state.categories || [])
+            .map(category => [
+              category.categoryId,
+              category.name
+            ])
+        );
+
+      const tagMap =
+        Object.fromEntries(
+          (app.state.tags || [])
+            .map(tag => [
+              tag.tagId,
+              tag.name
+            ])
+        );
+
+      grid.innerHTML =
+        places
+          .map(place => {
+            const customCategory =
+              place.categoryId
+                ? categoryMap[
+                    place.categoryId
+                  ]
+                : "";
+
+            const tagNames =
+              (place.tagIds || [])
+                .map(tagId =>
+                  tagMap[tagId]
+                )
+                .filter(Boolean);
+
+            const rating =
+              place.rating == null
+                ? "—"
+                : Number(place.rating)
+                    .toFixed(1);
+
+            const reviews =
+              place.reviews == null
+                ? ""
+                : `${Number(place.reviews).toLocaleString()} reviews`;
+
+            const note =
+              String(place.note || "").trim();
+
+            const mapsButton =
+              place.googleMapsUrl
+                ? `
+                  <button
+                    class="btn"
+                    type="button"
+                    onclick='window.open(${JSON.stringify(place.googleMapsUrl)}, "_blank", "noopener")'
+                  >
+                    Google Maps
+                  </button>
+                `
+                : "";
+
+            return `
+              <article class="card">
+                <div class="card-top">
+                  <h2 class="place-name">${escapeHtml(place.name)}</h2>
+                  <div class="rating">★ ${escapeHtml(rating)}</div>
+                </div>
+
+                <div class="meta">
+                  ${reviews
+                    ? `<span class="pill">${escapeHtml(reviews)}</span>`
+                    : ""
+                  }
+
+                  ${place.price
+                    ? `<span class="pill">${escapeHtml(place.price)}</span>`
+                    : ""
+                  }
+
+                  ${place.googleCategory
+                    ? `<span class="pill">${escapeHtml(place.googleCategory)}</span>`
+                    : ""
+                  }
+
+                  ${customCategory
+                    ? `<span class="pill pill-custom">${escapeHtml(customCategory)}</span>`
+                    : ""
+                  }
+
+                  ${tagNames
+                    .map(tag =>
+                      `<span class="pill pill-tag">${escapeHtml(tag)}</span>`
+                    )
+                    .join("")
+                  }
+                </div>
+
+                <div class="note ${note ? "" : "note-empty"}">
+                  ${note
+                    ? escapeHtml(note)
+                    : "No Siya note"
+                  }
+                </div>
+
+                <div class="card-actions">
+                  ${mapsButton}
+
+                  <button
+                    class="btn admin-edit"
+                    type="button"
+                    data-edit-place="${escapeAttribute(place.placeId)}"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </article>
+            `;
+          })
+          .join("");
+
+      applyAdminVisibility();
+    }
+
+
+    function getFilteredPlaces() {
+      const places =
+        [...(app.state?.places || [])];
+
+      const query =
+        el("searchInput")
+          .value
+          .trim()
+          .toLowerCase();
+
+      const customCategory =
+        el("customCategoryFilter")
+          .value;
+
+      const googleCategory =
+        el("googleCategoryFilter")
+          .value;
+
+      const tagId =
+        el("tagFilter")
+          .value;
+
+      const price =
+        el("priceFilter")
+          .value;
+
+      const minRating =
+        Number(
+          el("ratingFilter").value || 0
+        );
+
+      const categoryMap =
+        Object.fromEntries(
+          (app.state?.categories || [])
+            .map(category => [
+              category.categoryId,
+              category.name
+            ])
+        );
+
+      const tagMap =
+        Object.fromEntries(
+          (app.state?.tags || [])
+            .map(tag => [
+              tag.tagId,
+              tag.name
+            ])
+        );
+
+      let result =
+        places.filter(place => {
+          if (
+            customCategory &&
+            place.categoryId !==
+              customCategory
+          ) {
+            return false;
+          }
+
+          if (
+            googleCategory &&
+            String(place.googleCategory || "") !==
+              googleCategory
+          ) {
+            return false;
+          }
+
+          if (
+            tagId &&
+            !(place.tagIds || [])
+              .includes(tagId)
+          ) {
+            return false;
+          }
+
+          if (
+            price &&
+            String(place.price || "") !==
+              price
+          ) {
+            return false;
+          }
+
+          if (
+            minRating &&
+            (
+              place.rating == null ||
+              Number(place.rating) <
+                minRating
+            )
+          ) {
+            return false;
+          }
+
+          if (query) {
+            const customCategoryName =
+              place.categoryId
+                ? (
+                    categoryMap[
+                      place.categoryId
+                    ] || ""
+                  )
+                : "";
+
+            const tagNames =
+              (place.tagIds || [])
+                .map(id =>
+                  tagMap[id] || ""
+                )
+                .join(" ");
+
+            const haystack = [
+              place.name,
+              place.note,
+              place.googleCategory,
+              place.price,
+              customCategoryName,
+              tagNames,
+              place.address
+            ]
+              .join(" ")
+              .toLowerCase();
+
+            if (
+              !haystack.includes(query)
+            ) {
+              return false;
+            }
+          }
+
+          return true;
+        });
+
+      const sort =
+        el("sortSelect").value;
+
+      result.sort((a, b) => {
+        if (sort === "rating-desc") {
+          return (
+            numericSortValue(
+              b.rating
+            ) -
+            numericSortValue(
+              a.rating
+            )
+          ) ||
+          a.name.localeCompare(
+            b.name
+          );
+        }
+
+        if (sort === "rating-asc") {
+          return (
+            numericSortValue(
+              a.rating,
+              999
+            ) -
+            numericSortValue(
+              b.rating,
+              999
+            )
+          ) ||
+          a.name.localeCompare(
+            b.name
+          );
+        }
+
+        if (sort === "reviews-desc") {
+          return (
+            numericSortValue(
+              b.reviews
+            ) -
+            numericSortValue(
+              a.reviews
+            )
+          ) ||
+          a.name.localeCompare(
+            b.name
+          );
+        }
+
+        return a.name.localeCompare(
+          b.name
+        );
+      });
+
+      return result;
+    }
+
+
+    function numericSortValue(
+      value,
+      fallback = -1
+    ) {
+      const number =
+        Number(value);
+
+      return Number.isFinite(number)
+        ? number
+        : fallback;
+    }
+
+
+    function clearFilters() {
+      el("searchInput").value = "";
+      el("customCategoryFilter").value = "";
+      el("googleCategoryFilter").value = "";
+      el("tagFilter").value = "";
+      el("priceFilter").value = "";
+      el("ratingFilter").value = "";
+      el("sortSelect").value = "name";
+
+      renderRestaurants();
+    }
+
+
+    async function attemptStoredAdminLogin() {
+      if (!app.adminCode) {
+        return;
+      }
+
+      try {
+        const data =
+          await api(
+            "foodAdminStatus",
+            {
+              adminCode:
+                app.adminCode
+            }
+          );
+
+        app.adminMode = true;
+        app.state = data.state;
+
+        renderEverything();
+      } catch {
+        app.adminCode = "";
+        app.adminMode = false;
+        sessionStorage.removeItem(
+          "foodAdminCode"
+        );
+      }
+    }
+
+
+    async function loginAdmin() {
+      const code =
+        el("adminCodeInput")
+          .value
+          .trim();
+
+      const status =
+        el("adminLoginStatus");
+
+      status.className = "status";
+      status.textContent =
+        "Checking…";
+
+      try {
+        const data =
+          await api(
+            "foodAdminStatus",
+            {
+              adminCode: code
+            }
+          );
+
+        app.adminCode = code;
+        app.adminMode = true;
+        app.state = data.state;
+
+        sessionStorage.setItem(
+          "foodAdminCode",
+          code
+        );
+
+        status.className =
+          "status good";
+
+        status.textContent =
+          "Logged in.";
+
+        el("adminLoginDialog")
+          .close();
+
+        renderEverything();
+        openAdminPanel();
+      } catch (error) {
+        status.className =
+          "status bad";
+
+        status.textContent =
+          error.message;
+      }
+    }
+
+
+    function logoutAdmin() {
+      app.adminCode = "";
+      app.adminMode = false;
+
+      sessionStorage.removeItem(
+        "foodAdminCode"
+      );
+
+      el("adminPanelDialog")
+        .close();
+
+      renderEverything();
+    }
+
+
+    function renderAdminUi() {
+      el("adminBadge").style.display =
+        app.adminMode
+          ? "inline-flex"
+          : "none";
+
+      el("adminButton").textContent =
+        app.adminMode
+          ? "Admin panel"
+          : "Admin";
+
+      applyAdminVisibility();
+
+      if (app.adminMode) {
+        renderCategoryEditor();
+        renderAdminStatus();
+      }
+    }
+
+
+    function applyAdminVisibility() {
+      document
+        .querySelectorAll(
+          ".admin-edit"
+        )
+        .forEach(button => {
+          button.style.display =
+            app.adminMode
+              ? "inline-flex"
+              : "none";
+        });
+    }
+
+
+    function openAdmin() {
+      if (app.adminMode) {
+        openAdminPanel();
+        return;
+      }
+
+      el("adminCodeInput").value =
+        "";
+
+      el("adminLoginStatus")
+        .textContent = "";
+
+      el("adminLoginDialog")
+        .showModal();
+
+      setTimeout(() =>
+        el("adminCodeInput")
+          .focus(),
+      50);
+    }
+
+
+    function openAdminPanel() {
+      renderCategoryEditor();
+      renderAdminStatus();
+      setAdminTab(
+        app.activeAdminTab ||
+        "categoriesPanel"
+      );
+
+      el("adminPanelDialog")
+        .showModal();
+    }
+
+
+    function setAdminTab(panelId) {
+      app.activeAdminTab =
+        panelId;
+
+      document
+        .querySelectorAll(".tab")
+        .forEach(tab => {
+          tab.classList.toggle(
+            "active",
+            tab.dataset.tab ===
+              panelId
+          );
+        });
+
+      document
+        .querySelectorAll(
+          ".tab-panel"
+        )
+        .forEach(panel => {
+          panel.classList.toggle(
+            "active",
+            panel.id ===
+              panelId
+          );
+        });
+
+      const primary =
+        el("adminPrimaryAction");
+
+      if (
+        panelId ===
+        "categoriesPanel"
+      ) {
+        primary.style.display =
+          "inline-flex";
+
+        primary.textContent =
+          "Save categories";
+      } else if (
+        panelId ===
+        "importPanel"
+      ) {
+        primary.style.display =
+          "inline-flex";
+
+        primary.textContent =
+          "Import snapshot";
+      } else {
+        primary.style.display =
+          "none";
+      }
+    }
+
+
+    function renderCategoryEditor() {
+      const container =
+        el("categoryEditor");
+
+      const categories =
+        app.state?.categories || [];
+
+      container.innerHTML =
+        categories
+          .map(category => `
+            <div
+              class="category-row"
+              data-category-row
+              data-category-id="${escapeAttribute(category.categoryId)}"
+            >
+              <input
+                type="text"
+                value="${escapeAttribute(category.name)}"
+                placeholder="Category name"
+              />
+              <button
+                class="btn btn-danger"
+                type="button"
+                data-remove-category
+              >
+                Remove
+              </button>
+            </div>
+          `)
+          .join("");
+    }
+
+
+    function addCategoryRow() {
+      const wrapper =
+        document.createElement(
+          "div"
+        );
+
+      wrapper.className =
+        "category-row";
+
+      wrapper.dataset.categoryRow =
+        "";
+
+      wrapper.dataset.categoryId =
+        "";
+
+      wrapper.innerHTML = `
+        <input
+          type="text"
+          placeholder="Category name"
+        />
+        <button
+          class="btn btn-danger"
+          type="button"
+          data-remove-category
+        >
+          Remove
+        </button>
+      `;
+
+      el("categoryEditor")
+        .appendChild(wrapper);
+
+      wrapper
+        .querySelector("input")
+        .focus();
+    }
+
+
+    async function saveCategories() {
+      const status =
+        el("categoryStatus");
+
+      status.className =
+        "status";
+
+      status.textContent =
+        "Saving…";
+
+      const categories =
+        [...document.querySelectorAll(
+          "[data-category-row]"
+        )]
+          .map(row => ({
+            categoryId:
+              row.dataset.categoryId ||
+              "",
+
+            name:
+              row
+                .querySelector("input")
+                .value
+                .trim()
+          }))
+          .filter(category =>
+            category.name
+          );
+
+      try {
+        const data =
+          await api(
+            "foodAdminSaveCategories",
+            {
+              adminCode:
+                app.adminCode,
+              categories
+            }
+          );
+
+        app.state = data.state;
+
+        status.className =
+          "status good";
+
+        status.textContent =
+          "Categories saved.";
+
+        renderEverything();
+        renderCategoryEditor();
+      } catch (error) {
+        status.className =
+          "status bad";
+
+        status.textContent =
+          error.message;
+      }
+    }
+
+
+    async function importSnapshot() {
+      const status =
+        el("importStatus");
+
+      status.className =
+        "status";
+
+      status.textContent =
+        "Parsing JSON…";
+
+      try {
+        const parsed =
+          JSON.parse(
+            el("importJson").value
+          );
+
+        const places =
+          Array.isArray(parsed)
+            ? parsed
+            : parsed?.places;
+
+        if (
+          !Array.isArray(places) ||
+          !places.length
+        ) {
+          throw new Error(
+            "JSON must contain a non-empty places array."
+          );
+        }
+
+        status.textContent =
+          `Importing ${places.length.toLocaleString()} places…`;
+
+        const data =
+          await api(
+            "foodAdminSync",
+            {
+              adminCode:
+                app.adminCode,
+              places
+            }
+          );
+
+        app.state = data.state;
+
+        status.className =
+          "status good";
+
+        status.textContent =
+          `Imported ${places.length.toLocaleString()} places.`;
+
+        renderEverything();
+      } catch (error) {
+        status.className =
+          "status bad";
+
+        status.textContent =
+          error.message;
+      }
+    }
+
+
+    function renderAdminStatus() {
+      const state =
+        app.state || {};
+
+      const sourceConfigured =
+        state.sourceConfigured;
+
+      const list =
+        state.list || {};
+
+      el("adminStatusText")
+        .innerHTML = `
+          <strong>Restaurants:</strong>
+          ${(state.places || []).length.toLocaleString()}
+          <br><br>
+
+          <strong>Categories:</strong>
+          ${(state.categories || []).length.toLocaleString()}
+          <br><br>
+
+          <strong>Tags:</strong>
+          ${(state.tags || []).length.toLocaleString()}
+          <br><br>
+
+          <strong>Last synced:</strong>
+          ${list.lastSyncedAt
+            ? escapeHtml(
+                formatDateTime(
+                  list.lastSyncedAt
+                )
+              )
+            : "Never"
+          }
+          <br><br>
+
+          <strong>Private Google source URL configured:</strong>
+          ${sourceConfigured
+            ? "Yes"
+            : "No"
+          }
+        `;
+    }
+
+
+    function openPlaceEditor(
+      placeId
+    ) {
+      const place =
+        app.state?.places
+          ?.find(item =>
+            item.placeId ===
+              placeId
+          );
+
+      if (!place) {
+        return;
+      }
+
+      app.editingPlaceId =
+        placeId;
+
+      el("editPlaceTitle")
+        .textContent =
+          `Edit: ${place.name}`;
+
+      const categories =
+        app.state?.categories || [];
+
+      replaceOptions(
+        el("editCategorySelect"),
+        [
+          {
+            value: "",
+            label:
+              "No custom category"
+          },
+          ...categories.map(
+            category => ({
+              value:
+                category.categoryId,
+              label:
+                category.name
+            })
+          )
+        ]
+      );
+
+      el("editCategorySelect").value =
+        place.categoryId || "";
+
+      const tags =
+        app.state?.tags || [];
+
+      const selected =
+        new Set(
+          place.tagIds || []
+        );
+
+      el("editTagList").innerHTML =
+        tags
+          .map(tag => `
+            <label class="tag-choice">
+              <input
+                type="checkbox"
+                value="${escapeAttribute(tag.tagId)}"
+                ${selected.has(tag.tagId) ? "checked" : ""}
+              />
+              ${escapeHtml(tag.name)}
+            </label>
+          `)
+          .join("");
+
+      el("noTagsHelp").style.display =
+        tags.length
+          ? "none"
+          : "block";
+
+      el("editPlaceStatus")
+        .textContent = "";
+
+      el("editPlaceDialog")
+        .showModal();
+    }
+
+
+    async function savePlaceEdits() {
+      const placeId =
+        app.editingPlaceId;
+
+      if (!placeId) {
+        return;
+      }
+
+      const status =
+        el("editPlaceStatus");
+
+      status.className =
+        "status";
+
+      status.textContent =
+        "Saving…";
+
+      const categoryId =
+        el("editCategorySelect")
+          .value;
+
+      const tagIds =
+        [...el("editTagList")
+          .querySelectorAll(
+            'input[type="checkbox"]:checked'
+          )]
+          .map(input =>
+            input.value
+          );
+
+      try {
+        let data =
+          await api(
+            "foodAdminSavePlace",
+            {
+              adminCode:
+                app.adminCode,
+              placeId,
+              categoryId
+            }
+          );
+
+        app.state = data.state;
+
+        data =
+          await api(
+            "foodAdminSaveTags",
+            {
+              adminCode:
+                app.adminCode,
+              placeId,
+              tagIds
+            }
+          );
+
+        app.state = data.state;
+
+        status.className =
+          "status good";
+
+        status.textContent =
+          "Saved.";
+
+        renderEverything();
+
+        setTimeout(() => {
+          el("editPlaceDialog")
+            .close();
+        }, 350);
+      } catch (error) {
+        status.className =
+          "status bad";
+
+        status.textContent =
+          error.message;
+      }
+    }
+
+
+    function handleAdminPrimaryAction() {
+      if (
+        app.activeAdminTab ===
+        "categoriesPanel"
+      ) {
+        saveCategories();
+      } else if (
+        app.activeAdminTab ===
+        "importPanel"
+      ) {
+        importSnapshot();
+      }
+    }
+
+
+    function replaceOptions(
+      select,
+      options
+    ) {
+      const current =
+        select.value;
+
+      select.innerHTML =
+        options
+          .map(option => `
+            <option
+              value="${escapeAttribute(option.value)}"
+            >
+              ${escapeHtml(option.label)}
+            </option>
+          `)
+          .join("");
+
+      if (
+        options.some(
+          option =>
+            option.value === current
+        )
+      ) {
+        select.value =
+          current;
+      }
+    }
+
+
+    function uniqueSorted(values) {
+      return [
+        ...new Set(values)
+      ].sort(
+        (a, b) =>
+          a.localeCompare(b)
+      );
+    }
+
+
+    function setGridMessage(
+      className,
+      message
+    ) {
+      el("restaurantGrid")
+        .innerHTML = `
+          <div class="${className}">
+            ${escapeHtml(message)}
+          </div>
+        `;
+    }
+
+
+    function formatDateTime(value) {
+      if (!value) {
+        return "";
+      }
+
+      const iso =
+        String(value)
+          .includes("T")
+          ? String(value)
+          : String(value)
+              .replace(" ", "T") +
+            "Z";
+
+      const date =
+        new Date(iso);
+
+      if (
+        Number.isNaN(
+          date.getTime()
+        )
+      ) {
+        return String(value);
+      }
+
+      return date.toLocaleString(
+        undefined,
+        {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "numeric",
+          minute: "2-digit"
+        }
+      );
+    }
+
+
+    function escapeHtml(value) {
+      return String(
+        value ?? ""
+      )
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+
+    function escapeAttribute(value) {
+      return escapeHtml(value);
+    }
+
+
+    document
+      .querySelectorAll(
+        "[data-close]"
+      )
+      .forEach(button => {
+        button.addEventListener(
+          "click",
+          () => {
+            el(
+              button.dataset.close
+            ).close();
+          }
+        );
+      });
+
+
+    document
+      .querySelectorAll(".tab")
+      .forEach(tab => {
+        tab.addEventListener(
+          "click",
+          () =>
+            setAdminTab(
+              tab.dataset.tab
+            )
+        );
+      });
+
+
+    el("searchInput")
+      .addEventListener(
+        "input",
+        renderRestaurants
+      );
+
+    [
+      "customCategoryFilter",
+      "googleCategoryFilter",
+      "tagFilter",
+      "priceFilter",
+      "ratingFilter",
+      "sortSelect"
+    ].forEach(id => {
+      el(id).addEventListener(
+        "change",
+        renderRestaurants
+      );
+    });
+
+
+    el("clearFiltersButton")
+      .addEventListener(
+        "click",
+        clearFilters
+      );
+
+
+    el("refreshButton")
+      .addEventListener(
+        "click",
+        loadFood
+      );
+
+
+    el("adminButton")
+      .addEventListener(
+        "click",
+        openAdmin
+      );
+
+
+    el("adminLoginSubmit")
+      .addEventListener(
+        "click",
+        loginAdmin
+      );
+
+
+    el("adminCodeInput")
+      .addEventListener(
+        "keydown",
+        event => {
+          if (
+            event.key === "Enter"
+          ) {
+            loginAdmin();
+          }
+        }
+      );
+
+
+    el("adminLogoutButton")
+      .addEventListener(
+        "click",
+        logoutAdmin
+      );
+
+
+    el("addCategoryButton")
+      .addEventListener(
+        "click",
+        addCategoryRow
+      );
+
+
+    el("categoryEditor")
+      .addEventListener(
+        "click",
+        event => {
+          const button =
+            event.target.closest(
+              "[data-remove-category]"
+            );
+
+          if (!button) {
+            return;
+          }
+
+          button
+            .closest(
+              "[data-category-row]"
+            )
+            .remove();
+        }
+      );
+
+
+    el("adminPrimaryAction")
+      .addEventListener(
+        "click",
+        handleAdminPrimaryAction
+      );
+
+
+    el("restaurantGrid")
+      .addEventListener(
+        "click",
+        event => {
+          const button =
+            event.target.closest(
+              "[data-edit-place]"
+            );
+
+          if (!button) {
+            return;
+          }
+
+          openPlaceEditor(
+            button.dataset.editPlace
+          );
+        }
+      );
+
+
+    el("savePlaceButton")
+      .addEventListener(
+        "click",
+        savePlaceEdits
+      );
+
+
+    async function init() {
+      await loadFood();
+      await attemptStoredAdminLogin();
+    }
+
+    init();
+  </script>
+</body>
+</html>
