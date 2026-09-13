@@ -238,33 +238,6 @@ export default {
                 state: await deletePollPerson(env, body)
               });
             
-            
-            case "pollAdminAddEvent":
-              verifyPollAdmin(env, body.adminCode);
-            
-              return json({
-                ok: true,
-                state: await addPollEvent(env, body)
-              });
-            
-            
-            case "pollAdminSaveEvent":
-              verifyPollAdmin(env, body.adminCode);
-            
-              return json({
-                ok: true,
-                state: await updatePollEvent(env, body)
-              });
-            
-            
-            case "pollAdminDeleteEvent":
-              verifyPollAdmin(env, body.adminCode);
-            
-              return json({
-                ok: true,
-                state: await deletePollEvent(env, body)
-              });
-            
           default:
             return json({
               ok: false,
@@ -2543,7 +2516,7 @@ async function pollLogin(env, request) {
   }
 
 
-  // Admin code
+  // Admin login
   if (
     env.POLL_ADMIN_CODE &&
     code === String(env.POLL_ADMIN_CODE)
@@ -2554,14 +2527,19 @@ async function pollLogin(env, request) {
   }
 
 
-  // Normal friend-group session
+  // Normal session login
   const session =
     await env.POLL_DB
       .prepare(`
         SELECT
           session_id,
           session_name,
-          session_code
+          session_code,
+          start_date,
+          end_date,
+          allowed_days,
+          default_start_hour,
+          default_end_hour
         FROM poll_sessions
         WHERE UPPER(session_code) = UPPER(?)
           AND is_active = 1
@@ -2589,7 +2567,32 @@ async function pollLogin(env, request) {
         String(session.session_name),
 
       sessionCode:
-        String(session.session_code)
+        String(session.session_code),
+
+      startDate:
+        String(
+          session.start_date || ""
+        ),
+
+      endDate:
+        String(
+          session.end_date || ""
+        ),
+
+      allowedDays:
+        parsePollAllowedDays(
+          session.allowed_days
+        ),
+
+      defaultStartHour:
+        numberOrNull(
+          session.default_start_hour
+        ),
+
+      defaultEndHour:
+        numberOrNull(
+          session.default_end_hour
+        )
     }
   };
 }
@@ -2610,24 +2613,8 @@ async function loadPollState(
     );
 
 
-  const eventId =
-    normalizeOptionalId(
-      request.eventId
-    );
-
-
-  if (eventId) {
-    await verifyPollEventBelongsToSession(
-      env,
-      session.session_id,
-      eventId
-    );
-  }
-
-
   const [
     peopleResult,
-    eventsResult,
     availabilityResult
   ] = await Promise.all([
 
@@ -2652,67 +2639,22 @@ async function loadPollState(
     env.POLL_DB
       .prepare(`
         SELECT
-          event_id,
-          event_name,
-          start_date,
-          end_date,
-          is_active,
-          sort_order
-        FROM poll_events
+          person_id,
+          date_key,
+          am,
+          pm,
+          exact_times
+        FROM poll_availability
         WHERE session_id = ?
-          AND is_active = 1
+          AND event_id IS NULL
         ORDER BY
-          sort_order,
-          start_date,
-          event_name
+          person_id,
+          date_key
       `)
       .bind(
         session.session_id
       )
-      .all(),
-
-
-    eventId
-      ? env.POLL_DB
-          .prepare(`
-            SELECT
-              person_id,
-              date_key,
-              am,
-              pm,
-              exact_times
-            FROM poll_availability
-            WHERE session_id = ?
-              AND event_id = ?
-            ORDER BY
-              person_id,
-              date_key
-          `)
-          .bind(
-            session.session_id,
-            eventId
-          )
-          .all()
-
-      : env.POLL_DB
-          .prepare(`
-            SELECT
-              person_id,
-              date_key,
-              am,
-              pm,
-              exact_times
-            FROM poll_availability
-            WHERE session_id = ?
-              AND event_id IS NULL
-            ORDER BY
-              person_id,
-              date_key
-          `)
-          .bind(
-            session.session_id
-          )
-          .all()
+      .all()
   ]);
 
 
@@ -2724,23 +2666,6 @@ async function loadPollState(
 
         name:
           String(row.name || "")
-      }));
-
-
-  const events =
-    (eventsResult.results || [])
-      .map(row => ({
-        eventId:
-          String(row.event_id),
-
-        eventName:
-          String(row.event_name || ""),
-
-        startDate:
-          String(row.start_date || ""),
-
-        endDate:
-          String(row.end_date || "")
       }));
 
 
@@ -2760,10 +2685,14 @@ async function loadPollState(
     of availabilityResult.results || []
   ) {
     const personId =
-      String(row.person_id || "");
+      String(
+        row.person_id || ""
+      );
 
     const person =
-      peopleById[personId];
+      peopleById[
+        personId
+      ];
 
     if (!person) {
       continue;
@@ -2771,7 +2700,9 @@ async function loadPollState(
 
 
     const dateKey =
-      String(row.date_key || "");
+      String(
+        row.date_key || ""
+      );
 
     if (!dateKey) {
       continue;
@@ -2808,10 +2739,14 @@ async function loadPollState(
       person.name
     ][dateKey] = {
       am:
-        Boolean(row.am),
+        Boolean(
+          row.am
+        ),
 
       pm:
-        Boolean(row.pm),
+        Boolean(
+          row.pm
+        ),
 
       exactTimes:
         Array.isArray(
@@ -2820,18 +2755,6 @@ async function loadPollState(
           ? exactTimes
           : []
     };
-  }
-
-
-  let selectedEvent = null;
-
-  if (eventId) {
-    selectedEvent =
-      events.find(
-        event =>
-          event.eventId ===
-          eventId
-      ) || null;
   }
 
 
@@ -2845,19 +2768,40 @@ async function loadPollState(
       sessionName:
         String(
           session.session_name
+        ),
+
+      sessionCode:
+        String(
+          session.session_code
+        ),
+
+      startDate:
+        String(
+          session.start_date || ""
+        ),
+
+      endDate:
+        String(
+          session.end_date || ""
+        ),
+
+      allowedDays:
+        parsePollAllowedDays(
+          session.allowed_days
+        ),
+
+      defaultStartHour:
+        numberOrNull(
+          session.default_start_hour
+        ),
+
+      defaultEndHour:
+        numberOrNull(
+          session.default_end_hour
         )
     },
 
-    mode:
-      eventId
-        ? "event"
-        : "general",
-
-    selectedEvent,
-
     people,
-
-    events,
 
     availability
   };
@@ -2891,12 +2835,6 @@ async function savePollAvailability(
     ).trim();
 
 
-  const eventId =
-    normalizeOptionalId(
-      request.eventId
-    );
-
-
   if (!personId) {
     throw new Error(
       "Choose a person."
@@ -2909,6 +2847,12 @@ async function savePollAvailability(
       "Date is required."
     );
   }
+
+
+  validatePollAvailabilityDate(
+    session,
+    dateKey
+  );
 
 
   const person =
@@ -2935,192 +2879,83 @@ async function savePollAvailability(
   }
 
 
-  if (eventId) {
-    await verifyPollEventBelongsToSession(
-      env,
-      session.session_id,
-      eventId
-    );
-  }
-
-
-  const am =
-    Boolean(
-      request.am
-    );
-
-  const pm =
-    Boolean(
-      request.pm
-    );
-
-
   const exactTimes =
-    Array.isArray(
+    normalizePollTimes(
       request.times
-    )
-      ? request.times
-          .map(Number)
-          .filter(
-            value =>
-              Number.isFinite(
-                value
-              )
-          )
-      : [];
+    );
 
 
   const cleared =
     Boolean(
       request.cleared
     ) ||
-    (
-      !am &&
-      !pm &&
-      !exactTimes.length
-    );
+    !exactTimes.length;
 
 
   if (cleared) {
-
-    if (eventId) {
-      await env.POLL_DB
-        .prepare(`
-          DELETE FROM poll_availability
-          WHERE session_id = ?
-            AND person_id = ?
-            AND event_id = ?
-            AND date_key = ?
-        `)
-        .bind(
-          session.session_id,
-          personId,
-          eventId,
-          dateKey
-        )
-        .run();
-
-    } else {
-      await env.POLL_DB
-        .prepare(`
-          DELETE FROM poll_availability
-          WHERE session_id = ?
-            AND person_id = ?
-            AND event_id IS NULL
-            AND date_key = ?
-        `)
-        .bind(
-          session.session_id,
-          personId,
-          dateKey
-        )
-        .run();
-    }
+    await env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_availability
+        WHERE session_id = ?
+          AND person_id = ?
+          AND event_id IS NULL
+          AND date_key = ?
+      `)
+      .bind(
+        session.session_id,
+        personId,
+        dateKey
+      )
+      .run();
 
   } else {
 
-    if (eventId) {
-      await env.POLL_DB
-        .prepare(`
-          INSERT INTO poll_availability (
-            availability_id,
-            session_id,
-            person_id,
-            event_id,
-            date_key,
-            am,
-            pm,
-            exact_times,
-            created_at,
-            updated_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?,
-            ?, ?, ?,
-            CURRENT_TIMESTAMP,
-            CURRENT_TIMESTAMP
-          )
-
-          ON CONFLICT(
-            session_id,
-            person_id,
-            event_id,
-            date_key
-          )
-          WHERE event_id IS NOT NULL
-
-          DO UPDATE SET
-            am = excluded.am,
-            pm = excluded.pm,
-            exact_times =
-              excluded.exact_times,
-            updated_at =
-              CURRENT_TIMESTAMP
-        `)
-        .bind(
-          crypto.randomUUID(),
-          session.session_id,
-          personId,
-          eventId,
-          dateKey,
-          am ? 1 : 0,
-          pm ? 1 : 0,
-          JSON.stringify(
-            exactTimes
-          )
+    await env.POLL_DB
+      .prepare(`
+        INSERT INTO poll_availability (
+          availability_id,
+          session_id,
+          person_id,
+          event_id,
+          date_key,
+          am,
+          pm,
+          exact_times,
+          created_at,
+          updated_at
         )
-        .run();
-
-    } else {
-      await env.POLL_DB
-        .prepare(`
-          INSERT INTO poll_availability (
-            availability_id,
-            session_id,
-            person_id,
-            event_id,
-            date_key,
-            am,
-            pm,
-            exact_times,
-            created_at,
-            updated_at
-          )
-          VALUES (
-            ?, ?, ?, NULL, ?,
-            ?, ?, ?,
-            CURRENT_TIMESTAMP,
-            CURRENT_TIMESTAMP
-          )
-
-          ON CONFLICT(
-            session_id,
-            person_id,
-            date_key
-          )
-          WHERE event_id IS NULL
-
-          DO UPDATE SET
-            am = excluded.am,
-            pm = excluded.pm,
-            exact_times =
-              excluded.exact_times,
-            updated_at =
-              CURRENT_TIMESTAMP
-        `)
-        .bind(
-          crypto.randomUUID(),
-          session.session_id,
-          personId,
-          dateKey,
-          am ? 1 : 0,
-          pm ? 1 : 0,
-          JSON.stringify(
-            exactTimes
-          )
+        VALUES (
+          ?, ?, ?, NULL, ?,
+          0, 0, ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
         )
-        .run();
-    }
+
+        ON CONFLICT(
+          session_id,
+          person_id,
+          date_key
+        )
+        WHERE event_id IS NULL
+
+        DO UPDATE SET
+          am = 0,
+          pm = 0,
+          exact_times =
+            excluded.exact_times,
+          updated_at =
+            CURRENT_TIMESTAMP
+      `)
+      .bind(
+        crypto.randomUUID(),
+        session.session_id,
+        personId,
+        dateKey,
+        JSON.stringify(
+          exactTimes
+        )
+      )
+      .run();
   }
 
 
@@ -3128,9 +2963,7 @@ async function savePollAvailability(
     env,
     {
       sessionCode:
-        request.sessionCode,
-
-      eventId
+        request.sessionCode
     }
   );
 }
@@ -3143,8 +2976,7 @@ async function savePollAvailability(
 async function getPollAdminState(env) {
   const [
     sessionsResult,
-    peopleResult,
-    eventsResult
+    peopleResult
   ] = await Promise.all([
 
     env.POLL_DB
@@ -3153,6 +2985,11 @@ async function getPollAdminState(env) {
           session_id,
           session_name,
           session_code,
+          start_date,
+          end_date,
+          allowed_days,
+          default_start_hour,
+          default_end_hour,
           is_active,
           created_at,
           updated_at
@@ -3176,25 +3013,6 @@ async function getPollAdminState(env) {
           sort_order,
           name
       `)
-      .all(),
-
-
-    env.POLL_DB
-      .prepare(`
-        SELECT
-          event_id,
-          session_id,
-          event_name,
-          start_date,
-          end_date,
-          is_active,
-          sort_order
-        FROM poll_events
-        ORDER BY
-          session_id,
-          sort_order,
-          event_name
-      `)
       .all()
   ]);
 
@@ -3204,7 +3022,10 @@ async function getPollAdminState(env) {
       .map(row => {
 
         const sessionId =
-          String(row.session_id);
+          String(
+            row.session_id
+          );
+
 
         return {
           sessionId,
@@ -3219,6 +3040,33 @@ async function getPollAdminState(env) {
             String(
               row.session_code ||
               ""
+            ),
+
+          startDate:
+            String(
+              row.start_date ||
+              ""
+            ),
+
+          endDate:
+            String(
+              row.end_date ||
+              ""
+            ),
+
+          allowedDays:
+            parsePollAllowedDays(
+              row.allowed_days
+            ),
+
+          defaultStartHour:
+            numberOrNull(
+              row.default_start_hour
+            ),
+
+          defaultEndHour:
+            numberOrNull(
+              row.default_end_hour
             ),
 
           isActive:
@@ -3243,46 +3091,8 @@ async function getPollAdminState(env) {
 
                 name:
                   String(
-                    person.name || ""
-                  )
-              })),
-
-          events:
-            (eventsResult.results || [])
-              .filter(
-                event =>
-                  String(
-                    event.session_id
-                  ) ===
-                  sessionId
-              )
-              .map(event => ({
-                eventId:
-                  String(
-                    event.event_id
-                  ),
-
-                eventName:
-                  String(
-                    event.event_name ||
+                    person.name ||
                     ""
-                  ),
-
-                startDate:
-                  String(
-                    event.start_date ||
-                    ""
-                  ),
-
-                endDate:
-                  String(
-                    event.end_date ||
-                    ""
-                  ),
-
-                isActive:
-                  Boolean(
-                    event.is_active
                   )
               }))
         };
@@ -3308,10 +3118,43 @@ async function createPollSession(
       request.sessionName || ""
     ).trim();
 
+
   const sessionCode =
     String(
       request.sessionCode || ""
     ).trim();
+
+
+  const startDate =
+    normalizeOptionalText(
+      request.startDate
+    );
+
+
+  const endDate =
+    normalizeOptionalText(
+      request.endDate
+    );
+
+
+  const allowedDays =
+    normalizePollAllowedDays(
+      request.allowedDays
+    );
+
+
+  const defaultStartHour =
+    normalizePollHour(
+      request.defaultStartHour,
+      "Default start time"
+    );
+
+
+  const defaultEndHour =
+    normalizePollHour(
+      request.defaultEndHour,
+      "Default end time"
+    );
 
 
   if (!sessionName) {
@@ -3326,6 +3169,12 @@ async function createPollSession(
       "Session code is required."
     );
   }
+
+
+  validatePollDateRange(
+    startDate,
+    endDate
+  );
 
 
   if (
@@ -3370,11 +3219,17 @@ async function createPollSession(
         session_id,
         session_name,
         session_code,
+        start_date,
+        end_date,
+        allowed_days,
+        default_start_hour,
+        default_end_hour,
         is_active,
         created_at,
         updated_at
       )
       VALUES (
+        ?, ?, ?, ?, ?,
         ?, ?, ?, 1,
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
@@ -3383,7 +3238,14 @@ async function createPollSession(
     .bind(
       crypto.randomUUID(),
       sessionName,
-      sessionCode
+      sessionCode,
+      startDate,
+      endDate,
+      JSON.stringify(
+        allowedDays
+      ),
+      defaultStartHour,
+      defaultEndHour
     )
     .run();
 
@@ -3405,15 +3267,49 @@ async function updatePollSession(
       request.sessionId || ""
     ).trim();
 
+
   const sessionName =
     String(
       request.sessionName || ""
     ).trim();
 
+
   const sessionCode =
     String(
       request.sessionCode || ""
     ).trim();
+
+
+  const startDate =
+    normalizeOptionalText(
+      request.startDate
+    );
+
+
+  const endDate =
+    normalizeOptionalText(
+      request.endDate
+    );
+
+
+  const allowedDays =
+    normalizePollAllowedDays(
+      request.allowedDays
+    );
+
+
+  const defaultStartHour =
+    normalizePollHour(
+      request.defaultStartHour,
+      "Default start time"
+    );
+
+
+  const defaultEndHour =
+    normalizePollHour(
+      request.defaultEndHour,
+      "Default end time"
+    );
 
 
   if (
@@ -3425,6 +3321,12 @@ async function updatePollSession(
       "Session name and code are required."
     );
   }
+
+
+  validatePollDateRange(
+    startDate,
+    endDate
+  );
 
 
   if (
@@ -3472,6 +3374,11 @@ async function updatePollSession(
         SET
           session_name = ?,
           session_code = ?,
+          start_date = ?,
+          end_date = ?,
+          allowed_days = ?,
+          default_start_hour = ?,
+          default_end_hour = ?,
           is_active = ?,
           updated_at =
             CURRENT_TIMESTAMP
@@ -3480,6 +3387,13 @@ async function updatePollSession(
       .bind(
         sessionName,
         sessionCode,
+        startDate,
+        endDate,
+        JSON.stringify(
+          allowedDays
+        ),
+        defaultStartHour,
+        defaultEndHour,
         request.isActive === false
           ? 0
           : 1,
@@ -3578,6 +3492,7 @@ async function addPollPerson(
     String(
       request.sessionId || ""
     ).trim();
+
 
   const name =
     String(
@@ -3718,222 +3633,6 @@ async function deletePollPerson(
 
 
 // ============================================================
-// ADD EVENT
-// ============================================================
-
-async function addPollEvent(
-  env,
-  request
-) {
-  const sessionId =
-    String(
-      request.sessionId || ""
-    ).trim();
-
-  const eventName =
-    String(
-      request.eventName || ""
-    ).trim();
-
-  const startDate =
-    normalizeOptionalText(
-      request.startDate
-    );
-
-  const endDate =
-    normalizeOptionalText(
-      request.endDate
-    );
-
-
-  if (!sessionId || !eventName) {
-    throw new Error(
-      "Session and event name are required."
-    );
-  }
-
-
-  await verifyPollSessionId(
-    env,
-    sessionId
-  );
-
-
-  const orderRow =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          COALESCE(
-            MAX(sort_order),
-            0
-          ) + 1 AS next_order
-        FROM poll_events
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionId
-      )
-      .first();
-
-
-  await env.POLL_DB
-    .prepare(`
-      INSERT INTO poll_events (
-        event_id,
-        session_id,
-        event_name,
-        start_date,
-        end_date,
-        is_active,
-        sort_order,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        ?, ?, ?, ?, ?,
-        1, ?,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-    `)
-    .bind(
-      crypto.randomUUID(),
-      sessionId,
-      eventName,
-      startDate,
-      endDate,
-      Number(
-        orderRow?.next_order ||
-        1
-      )
-    )
-    .run();
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// UPDATE EVENT
-// ============================================================
-
-async function updatePollEvent(
-  env,
-  request
-) {
-  const eventId =
-    String(
-      request.eventId || ""
-    ).trim();
-
-  const eventName =
-    String(
-      request.eventName || ""
-    ).trim();
-
-  const startDate =
-    normalizeOptionalText(
-      request.startDate
-    );
-
-  const endDate =
-    normalizeOptionalText(
-      request.endDate
-    );
-
-
-  if (!eventId || !eventName) {
-    throw new Error(
-      "Event ID and event name are required."
-    );
-  }
-
-
-  const result =
-    await env.POLL_DB
-      .prepare(`
-        UPDATE poll_events
-        SET
-          event_name = ?,
-          start_date = ?,
-          end_date = ?,
-          is_active = ?,
-          updated_at =
-            CURRENT_TIMESTAMP
-        WHERE event_id = ?
-      `)
-      .bind(
-        eventName,
-        startDate,
-        endDate,
-        request.isActive === false
-          ? 0
-          : 1,
-        eventId
-      )
-      .run();
-
-
-  if (!result.meta?.changes) {
-    throw new Error(
-      "Event not found."
-    );
-  }
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// DELETE EVENT
-// ============================================================
-
-async function deletePollEvent(
-  env,
-  request
-) {
-  const eventId =
-    String(
-      request.eventId || ""
-    ).trim();
-
-
-  if (!eventId) {
-    throw new Error(
-      "Event ID is required."
-    );
-  }
-
-
-  await env.POLL_DB.batch([
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_availability
-        WHERE event_id = ?
-      `)
-      .bind(
-        eventId
-      ),
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_events
-        WHERE event_id = ?
-      `)
-      .bind(
-        eventId
-      )
-  ]);
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
 // POLL HELPERS
 // ============================================================
 
@@ -3960,7 +3659,12 @@ async function getPollSessionByCode(
         SELECT
           session_id,
           session_name,
-          session_code
+          session_code,
+          start_date,
+          end_date,
+          allowed_days,
+          default_start_hour,
+          default_end_hour
         FROM poll_sessions
         WHERE UPPER(session_code) =
           UPPER(?)
@@ -4011,47 +3715,6 @@ async function verifyPollSessionId(
 }
 
 
-async function verifyPollEventBelongsToSession(
-  env,
-  sessionId,
-  eventId
-) {
-  const event =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          event_id
-        FROM poll_events
-        WHERE event_id = ?
-          AND session_id = ?
-          AND is_active = 1
-        LIMIT 1
-      `)
-      .bind(
-        eventId,
-        sessionId
-      )
-      .first();
-
-
-  if (!event) {
-    throw new Error(
-      "Event not found for this session."
-    );
-  }
-}
-
-
-function normalizeOptionalId(value) {
-  const text =
-    String(
-      value || ""
-    ).trim();
-
-  return text || null;
-}
-
-
 function normalizeOptionalText(value) {
   const text =
     String(
@@ -4059,6 +3722,286 @@ function normalizeOptionalText(value) {
     ).trim();
 
   return text || null;
+}
+
+
+function parsePollAllowedDays(value) {
+  try {
+    const parsed =
+      JSON.parse(
+        String(
+          value || "[]"
+        )
+      );
+
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+
+    const validDays = [
+      "sun",
+      "mon",
+      "tue",
+      "wed",
+      "thu",
+      "fri",
+      "sat"
+    ];
+
+
+    return parsed
+      .map(day =>
+        String(
+          day || ""
+        )
+          .trim()
+          .toLowerCase()
+      )
+      .filter(day =>
+        validDays.includes(
+          day
+        )
+      );
+
+  } catch {
+    return [];
+  }
+}
+
+
+function normalizePollAllowedDays(value) {
+  const source =
+    Array.isArray(value)
+      ? value
+      : [];
+
+
+  const validDays = [
+    "sun",
+    "mon",
+    "tue",
+    "wed",
+    "thu",
+    "fri",
+    "sat"
+  ];
+
+
+  return [
+    ...new Set(
+      source
+        .map(day =>
+          String(
+            day || ""
+          )
+            .trim()
+            .toLowerCase()
+        )
+        .filter(day =>
+          validDays.includes(
+            day
+          )
+        )
+    )
+  ];
+}
+
+
+function normalizePollHour(
+  value,
+  label
+) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+
+  const hour =
+    Number(value);
+
+
+  if (
+    !Number.isInteger(hour) ||
+    hour < 0 ||
+    hour > 23
+  ) {
+    throw new Error(
+      label +
+      " must be a whole hour from 0 through 23."
+    );
+  }
+
+
+  return hour;
+}
+
+
+function validatePollDateRange(
+  startDate,
+  endDate
+) {
+  if (
+    startDate &&
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      startDate
+    )
+  ) {
+    throw new Error(
+      "Start date must use YYYY-MM-DD."
+    );
+  }
+
+
+  if (
+    endDate &&
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      endDate
+    )
+  ) {
+    throw new Error(
+      "End date must use YYYY-MM-DD."
+    );
+  }
+
+
+  if (
+    startDate &&
+    endDate &&
+    endDate < startDate
+  ) {
+    throw new Error(
+      "End date cannot be before start date."
+    );
+  }
+}
+
+
+function validatePollAvailabilityDate(
+  session,
+  dateKey
+) {
+  if (
+    !/^\d{4}-\d{2}-\d{2}$/.test(
+      dateKey
+    )
+  ) {
+    throw new Error(
+      "Invalid availability date."
+    );
+  }
+
+
+  const startDate =
+    String(
+      session.start_date || ""
+    );
+
+
+  const endDate =
+    String(
+      session.end_date || ""
+    );
+
+
+  if (
+    startDate &&
+    dateKey < startDate
+  ) {
+    throw new Error(
+      "That date is before this session begins."
+    );
+  }
+
+
+  if (
+    endDate &&
+    dateKey > endDate
+  ) {
+    throw new Error(
+      "That date is after this session ends."
+    );
+  }
+
+
+  const allowedDays =
+    parsePollAllowedDays(
+      session.allowed_days
+    );
+
+
+  if (!allowedDays.length) {
+    return;
+  }
+
+
+  const parts =
+    dateKey
+      .split("-")
+      .map(Number);
+
+
+  const date =
+    new Date(
+      Date.UTC(
+        parts[0],
+        parts[1] - 1,
+        parts[2]
+      )
+    );
+
+
+  const dayKeys = [
+    "sun",
+    "mon",
+    "tue",
+    "wed",
+    "thu",
+    "fri",
+    "sat"
+  ];
+
+
+  const dayKey =
+    dayKeys[
+      date.getUTCDay()
+    ];
+
+
+  if (
+    !allowedDays.includes(
+      dayKey
+    )
+  ) {
+    throw new Error(
+      "That day is not available for this session."
+    );
+  }
+}
+
+
+function normalizePollTimes(value) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+
+  return [
+    ...new Set(
+      value
+        .map(Number)
+        .filter(hour =>
+          Number.isInteger(hour) &&
+          hour >= 0 &&
+          hour <= 23
+        )
+    )
+  ];
 }
 
 // ============================================================
