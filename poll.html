@@ -328,8 +328,9 @@
     .weekdays,
     .calendar {
       display: grid;
-      grid-template-columns: repeat(7, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 8px;
+      width: 100%;
     }
 
     .weekday {
@@ -341,6 +342,7 @@
     }
 
     .day {
+      min-width: 0;
       min-height: 108px;
       border: 1px solid var(--border);
       border-radius: 18px;
@@ -415,11 +417,15 @@
     }
 
     .badges {
+      min-width: 0;
+      max-width: 100%;
       margin-top: auto;
+      overflow: hidden;
     }
 
     .badge {
       display: inline-block;
+      max-width: 100%;
       margin: 2px;
       padding: 5px 7px;
       border-radius: 999px;
@@ -427,6 +433,10 @@
       color: #6d28d9;
       font-size: .7rem;
       font-weight: 900;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      vertical-align: bottom;
     }
 
     .badge.available {
@@ -950,6 +960,16 @@
         text-align: center;
         width: 100%;
         margin-bottom: 3px;
+      }
+
+      .badge {
+        display: block;
+        width: 100%;
+        margin: 2px 0 0;
+        padding: 4px 3px;
+        font-size: .56rem;
+        text-align: center;
+        border-radius: 8px;
       }
 
       .num {
