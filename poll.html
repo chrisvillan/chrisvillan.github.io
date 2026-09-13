@@ -250,6 +250,20 @@
       background: #cbd5e1;
     }
 
+    .calendar-month + .calendar-month {
+      margin-top: 34px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+
+    .month-heading {
+      margin-bottom: 12px;
+    }
+
+    .month-subtitle {
+      margin-top: 3px;
+    }
+
     .weekdays,
     .calendar {
       display: grid;
@@ -795,6 +809,15 @@
         color: #0f172a;
       }
 
+      .calendar-month + .calendar-month {
+        margin-top: 24px;
+        padding-top: 22px;
+      }
+
+      .month-heading {
+        margin-bottom: 10px;
+      }
+
       .weekdays,
       .calendar {
         gap: 3px;
@@ -1059,51 +1082,7 @@
 
     <section class="calendar-card">
 
-      <div class="calendar-header">
-
-        <div>
-          <h2 id="monthLabel"></h2>
-          <div
-            id="monthSubLabel"
-            class="muted"
-          ></div>
-        </div>
-
-        <div class="nav">
-
-          <button
-            id="prevMonth"
-            class="btn secondary"
-          >
-            ‹
-          </button>
-
-          <button
-            id="nextMonth"
-            class="btn secondary"
-          >
-            ›
-          </button>
-
-        </div>
-      </div>
-
-
-      <div class="weekdays">
-        <div class="weekday">Sun</div>
-        <div class="weekday">Mon</div>
-        <div class="weekday">Tue</div>
-        <div class="weekday">Wed</div>
-        <div class="weekday">Thu</div>
-        <div class="weekday">Fri</div>
-        <div class="weekday">Sat</div>
-      </div>
-
-
-      <div
-        id="calendar"
-        class="calendar"
-      ></div>
+      <div id="calendars"></div>
 
 
       <div class="helper">
@@ -2267,32 +2246,6 @@
 
     function renderCalendar() {
 
-      const year =
-        state.currentDate
-          .getFullYear();
-
-
-      const month =
-        state.currentDate
-          .getMonth();
-
-
-      const first =
-        new Date(
-          year,
-          month,
-          1
-        );
-
-
-      const last =
-        new Date(
-          year,
-          month + 1,
-          0
-        );
-
-
       const today =
         toKey(
           new Date()
@@ -2303,166 +2256,294 @@
         state.selectedPersonId === null;
 
 
-      $("monthLabel")
-        .textContent =
-        first.toLocaleDateString(
-          undefined,
-          {
-            month: "long",
-            year: "numeric"
-          }
-        );
-
-
-      $("monthSubLabel")
-        .textContent =
+      const subtitle =
         group
           ? "Group overlap"
           : `${state.selectedPersonName || "Person"}'s availability`;
 
 
-      $("calendar")
-        .innerHTML =
+      const calendars =
+        $("calendars");
+
+
+      calendars.innerHTML =
         "";
 
 
-      for (
-        let i = 0;
-        i < first.getDay();
-        i++
-      ) {
-        $("calendar")
-          .insertAdjacentHTML(
-            "beforeend",
-            '<div class="day empty"></div>'
-          );
+      const session =
+        state.session || {};
+
+
+      let rangeStart =
+        session.startDate
+          ? fromKey(session.startDate)
+          : new Date(
+              state.currentDate.getFullYear(),
+              state.currentDate.getMonth(),
+              1
+            );
+
+
+      let rangeEnd =
+        session.endDate
+          ? fromKey(session.endDate)
+          : new Date(
+              rangeStart.getFullYear(),
+              rangeStart.getMonth(),
+              1
+            );
+
+
+      if (rangeEnd < rangeStart) {
+        rangeEnd =
+          new Date(rangeStart);
       }
 
 
-      for (
-        let day = 1;
-        day <= last.getDate();
-        day++
-      ) {
+      const finalMonth =
+        new Date(
+          rangeEnd.getFullYear(),
+          rangeEnd.getMonth(),
+          1
+        );
 
-        const date =
+
+      let cursor =
+        new Date(
+          rangeStart.getFullYear(),
+          rangeStart.getMonth(),
+          1
+        );
+
+
+      let monthIndex = 0;
+
+
+      while (cursor <= finalMonth) {
+
+        const year =
+          cursor.getFullYear();
+
+
+        const month =
+          cursor.getMonth();
+
+
+        const first =
           new Date(
             year,
             month,
-            day
+            1
           );
 
 
-        const key =
-          toKey(date);
-
-
-        const enabled =
-          isDateAllowed(
-            key
+        const last =
+          new Date(
+            year,
+            month + 1,
+            0
           );
 
 
-        const entry =
-          group
-            ? groupSummary(
-                key
-              )
-            : getEntry(
-                key
-              );
-
-
-        const element =
+        const monthSection =
           document.createElement(
-            "button"
+            "section"
           );
 
 
-        element.type =
-          "button";
+        monthSection.className =
+          "calendar-month";
 
 
-        const selected =
-          !group &&
-          Boolean(
-            getEntry(key)
-          );
-
-
-        element.className =
-          [
-            "day",
-
-            key === today
-              ? "today"
-              : "",
-
-            !enabled
-              ? "disabled"
-              : "",
-
-            selected
-              ? "selected-day"
-              : ""
-          ]
-            .filter(Boolean)
-            .join(" ");
-
-
-        element.innerHTML =
-          `
-            <div class="num">
-              ${day}
-            </div>
-
-            <div class="badges">
+        monthSection.innerHTML = `
+          <div class="calendar-header month-heading">
+            <div>
+              <h2>${first.toLocaleDateString(
+                undefined,
+                {
+                  month: "long",
+                  year: "numeric"
+                }
+              )}</h2>
               ${
-                enabled
-                  ? (
-                      group
-                        ? renderGroupBadge(
-                            entry
-                          )
-                        : renderBadge(
-                            entry
-                          )
-                    )
+                monthIndex === 0
+                  ? `<div class="muted month-subtitle">${subtitle}</div>`
                   : ""
               }
             </div>
-          `;
+          </div>
+
+          <div class="weekdays">
+            <div class="weekday">Sun</div>
+            <div class="weekday">Mon</div>
+            <div class="weekday">Tue</div>
+            <div class="weekday">Wed</div>
+            <div class="weekday">Thu</div>
+            <div class="weekday">Fri</div>
+            <div class="weekday">Sat</div>
+          </div>
+
+          <div class="calendar"></div>
+        `;
 
 
-        if (enabled) {
+        const calendar =
+          monthSection.querySelector(
+            ".calendar"
+          );
 
-          element.onclick =
-            () =>
-              group
-                ? openGroup(
-                    key
-                  )
-                : openDay(
-                    key
-                  );
 
-        } else {
-
-          element.disabled =
-            true;
+        for (
+          let i = 0;
+          i < first.getDay();
+          i++
+        ) {
+          calendar.insertAdjacentHTML(
+            "beforeend",
+            '<div class="day empty"></div>'
+          );
         }
 
 
-        $("calendar")
-          .appendChild(
+        for (
+          let day = 1;
+          day <= last.getDate();
+          day++
+        ) {
+
+          const date =
+            new Date(
+              year,
+              month,
+              day
+            );
+
+
+          const key =
+            toKey(date);
+
+
+          const enabled =
+            isDateAllowed(
+              key
+            );
+
+
+          const entry =
+            group
+              ? groupSummary(
+                  key
+                )
+              : getEntry(
+                  key
+                );
+
+
+          const element =
+            document.createElement(
+              "button"
+            );
+
+
+          element.type =
+            "button";
+
+
+          const selected =
+            !group &&
+            Boolean(
+              getEntry(key)
+            );
+
+
+          element.className =
+            [
+              "day",
+
+              key === today
+                ? "today"
+                : "",
+
+              !enabled
+                ? "disabled"
+                : "",
+
+              selected
+                ? "selected-day"
+                : ""
+            ]
+              .filter(Boolean)
+              .join(" ");
+
+
+          element.innerHTML =
+            `
+              <div class="num">
+                ${day}
+              </div>
+
+              <div class="badges">
+                ${
+                  enabled
+                    ? (
+                        group
+                          ? renderGroupBadge(
+                              entry
+                            )
+                          : renderBadge(
+                              entry
+                            )
+                      )
+                    : ""
+                }
+              </div>
+            `;
+
+
+          if (enabled) {
+
+            element.onclick =
+              () =>
+                group
+                  ? openGroup(
+                      key
+                    )
+                  : openDay(
+                      key
+                    );
+
+          } else {
+
+            element.disabled =
+              true;
+          }
+
+
+          calendar.appendChild(
             element
           );
+        }
+
+
+        calendars.appendChild(
+          monthSection
+        );
+
+
+        cursor =
+          new Date(
+            year,
+            month + 1,
+            1
+          );
+
+
+        monthIndex++;
       }
 
 
       updateSummary();
     }
-
 
     function isDateAllowed(key) {
 
@@ -3903,46 +3984,6 @@
               .click();
           }
         };
-    $("prevMonth")
-      .onclick =
-      () => {
-
-        state.currentDate =
-          new Date(
-            state.currentDate
-              .getFullYear(),
-
-            state.currentDate
-              .getMonth() - 1,
-
-            1
-          );
-
-
-        renderCalendar();
-      };
-
-
-    $("nextMonth")
-      .onclick =
-      () => {
-
-        state.currentDate =
-          new Date(
-            state.currentDate
-              .getFullYear(),
-
-            state.currentDate
-              .getMonth() + 1,
-
-            1
-          );
-
-
-        renderCalendar();
-      };
-
-
     $("saveDay")
       .onclick =
       () =>
