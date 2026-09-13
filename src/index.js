@@ -265,6 +265,56 @@ export default {
                 ok: true,
                 state: await deletePollPerson(env, body)
               });
+
+            // ============================================================
+            // FOOD
+            // ============================================================
+
+            case "foodLoad":
+              return json({
+                ok: true,
+                state: await getFoodState(env)
+              });
+
+            case "foodAdminStatus":
+              verifyFoodAdmin(env, body.adminCode);
+
+              return json({
+                ok: true,
+                state: await getFoodAdminState(env)
+              });
+
+            case "foodAdminSync":
+              verifyFoodAdmin(env, body.adminCode);
+
+              return json({
+                ok: true,
+                state: await syncFoodPlaces(env, body)
+              });
+
+            case "foodAdminSavePlace":
+              verifyFoodAdmin(env, body.adminCode);
+
+              return json({
+                ok: true,
+                state: await saveFoodPlace(env, body)
+              });
+
+            case "foodAdminSaveTags":
+              verifyFoodAdmin(env, body.adminCode);
+
+              return json({
+                ok: true,
+                state: await saveFoodTags(env, body)
+              });
+
+            case "foodAdminSaveCategories":
+              verifyFoodAdmin(env, body.adminCode);
+
+              return json({
+                ok: true,
+                state: await saveFoodCategories(env, body)
+              });
             
           default:
             return json({
@@ -2504,6 +2554,844 @@ function getReceiptSchema() {
   };
 }
 
+// ============================================================
+// FOOD
+// ============================================================
+
+function verifyFoodAdmin(env, candidate) {
+  if (!env.FOOD_ADMIN_CODE) {
+    throw new Error(
+      "FOOD_ADMIN_CODE secret is not configured."
+    );
+  }
+
+  if (
+    String(candidate || "") !==
+    String(env.FOOD_ADMIN_CODE)
+  ) {
+    throw new Error(
+      "Incorrect food admin code."
+    );
+  }
+}
+
+
+async function getFoodState(env) {
+  if (!env.FOOD_DB) {
+    throw new Error(
+      "FOOD_DB binding is not configured."
+    );
+  }
+
+  const [
+    list,
+    placesResult,
+    categoriesResult,
+    tagsResult,
+    placeTagsResult
+  ] = await Promise.all([
+    env.FOOD_DB
+      .prepare(`
+        SELECT
+          list_id,
+          name,
+          last_synced_at
+        FROM food_lists
+        WHERE list_id = 'socal-food'
+        LIMIT 1
+      `)
+      .first(),
+
+    env.FOOD_DB
+      .prepare(`
+        SELECT
+          place_id,
+          list_id,
+          identity_key,
+          name,
+          rating,
+          reviews,
+          price,
+          google_category,
+          category_id,
+          note,
+          address,
+          google_maps_url,
+          latitude,
+          longitude,
+          last_seen_at,
+          updated_at
+        FROM food_places
+        WHERE list_id = 'socal-food'
+        ORDER BY name COLLATE NOCASE
+      `)
+      .all(),
+
+    env.FOOD_DB
+      .prepare(`
+        SELECT
+          category_id,
+          name,
+          sort_order
+        FROM food_categories
+        ORDER BY sort_order, name COLLATE NOCASE
+      `)
+      .all(),
+
+    env.FOOD_DB
+      .prepare(`
+        SELECT
+          tag_id,
+          name
+        FROM food_tags
+        ORDER BY name COLLATE NOCASE
+      `)
+      .all(),
+
+    env.FOOD_DB
+      .prepare(`
+        SELECT
+          place_id,
+          tag_id
+        FROM food_place_tags
+      `)
+      .all()
+  ]);
+
+  const placeTags = {};
+
+  for (
+    const row of
+    placeTagsResult.results || []
+  ) {
+    const placeId =
+      String(row.place_id);
+
+    if (!placeTags[placeId]) {
+      placeTags[placeId] = [];
+    }
+
+    placeTags[placeId].push(
+      String(row.tag_id)
+    );
+  }
+
+  const places =
+    (placesResult.results || []).map(
+      row => ({
+        placeId:
+          String(row.place_id),
+
+        name:
+          String(row.name || ""),
+
+        rating:
+          row.rating == null
+            ? null
+            : Number(row.rating),
+
+        reviews:
+          row.reviews == null
+            ? null
+            : Number(row.reviews),
+
+        price:
+          String(row.price || ""),
+
+        googleCategory:
+          String(
+            row.google_category || ""
+          ),
+
+        categoryId:
+          row.category_id
+            ? String(row.category_id)
+            : null,
+
+        note:
+          String(row.note || ""),
+
+        address:
+          String(row.address || ""),
+
+        googleMapsUrl:
+          String(
+            row.google_maps_url || ""
+          ),
+
+        latitude:
+          row.latitude == null
+            ? null
+            : Number(row.latitude),
+
+        longitude:
+          row.longitude == null
+            ? null
+            : Number(row.longitude),
+
+        tagIds:
+          placeTags[
+            String(row.place_id)
+          ] || []
+      })
+    );
+
+  return {
+    list: {
+      listId:
+        String(
+          list?.list_id ||
+          "socal-food"
+        ),
+
+      name:
+        String(
+          list?.name ||
+          "Socal Food"
+        ),
+
+      lastSyncedAt:
+        list?.last_synced_at ||
+        null
+    },
+
+    places,
+
+    categories:
+      (categoriesResult.results || [])
+        .map(row => ({
+          categoryId:
+            String(row.category_id),
+
+          name:
+            String(row.name || ""),
+
+          sortOrder:
+            Number(
+              row.sort_order || 0
+            )
+        })),
+
+    tags:
+      (tagsResult.results || [])
+        .map(row => ({
+          tagId:
+            String(row.tag_id),
+
+          name:
+            String(row.name || "")
+        }))
+  };
+}
+
+
+async function getFoodAdminState(env) {
+  const state =
+    await getFoodState(env);
+
+  return {
+    ...state,
+
+    sourceConfigured:
+      Boolean(env.FOOD_SOURCE_URL)
+  };
+}
+
+
+async function syncFoodPlaces(
+  env,
+  request
+) {
+  const places =
+    Array.isArray(request.places)
+      ? request.places
+      : [];
+
+  if (!places.length) {
+    throw new Error(
+      "No restaurants were supplied."
+    );
+  }
+
+  const seenKeys = new Set();
+  const statements = [];
+
+  for (const raw of places) {
+    const name =
+      String(raw.name || "").trim();
+
+    if (!name) {
+      continue;
+    }
+
+    const identityKey =
+      makeFoodIdentityKey(
+        raw.identityKey || name
+      );
+
+    if (
+      !identityKey ||
+      seenKeys.has(identityKey)
+    ) {
+      continue;
+    }
+
+    seenKeys.add(identityKey);
+
+    const existing =
+      await env.FOOD_DB
+        .prepare(`
+          SELECT place_id
+          FROM food_places
+          WHERE list_id = 'socal-food'
+            AND identity_key = ?
+          LIMIT 1
+        `)
+        .bind(identityKey)
+        .first();
+
+    const placeId =
+      existing?.place_id
+        ? String(existing.place_id)
+        : crypto.randomUUID();
+
+    statements.push(
+      env.FOOD_DB
+        .prepare(`
+          INSERT INTO food_places (
+            place_id,
+            list_id,
+            identity_key,
+            name,
+            rating,
+            reviews,
+            price,
+            google_category,
+            note,
+            address,
+            google_maps_url,
+            latitude,
+            longitude,
+            last_seen_at,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ?,
+            'socal-food',
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            ?,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+
+          ON CONFLICT(
+            list_id,
+            identity_key
+          )
+          DO UPDATE SET
+            name = excluded.name,
+            rating = excluded.rating,
+            reviews = excluded.reviews,
+            price = excluded.price,
+            google_category =
+              excluded.google_category,
+            note = excluded.note,
+            address = excluded.address,
+            google_maps_url =
+              excluded.google_maps_url,
+            latitude = excluded.latitude,
+            longitude = excluded.longitude,
+            last_seen_at =
+              CURRENT_TIMESTAMP,
+            updated_at =
+              CURRENT_TIMESTAMP
+        `)
+        .bind(
+          placeId,
+          identityKey,
+          name,
+          foodNumberOrNull(
+            raw.rating
+          ),
+          foodIntegerOrNull(
+            raw.reviews
+          ),
+          foodStringOrNull(
+            raw.price
+          ),
+          foodStringOrNull(
+            raw.googleCategory ||
+            raw.category
+          ),
+          foodStringOrNull(
+            raw.note
+          ),
+          foodStringOrNull(
+            raw.address
+          ),
+          foodStringOrNull(
+            raw.googleMapsUrl
+          ),
+          foodNumberOrNull(
+            raw.latitude
+          ),
+          foodNumberOrNull(
+            raw.longitude
+          )
+        )
+    );
+  }
+
+  if (!statements.length) {
+    throw new Error(
+      "No valid restaurants were supplied."
+    );
+  }
+
+  await env.FOOD_DB.batch(
+    statements
+  );
+
+  await env.FOOD_DB
+    .prepare(`
+      UPDATE food_lists
+      SET
+        last_synced_at =
+          CURRENT_TIMESTAMP,
+        updated_at =
+          CURRENT_TIMESTAMP
+      WHERE list_id =
+        'socal-food'
+    `)
+    .run();
+
+  return getFoodAdminState(env);
+}
+
+
+async function saveFoodPlace(
+  env,
+  request
+) {
+  const placeId =
+    String(
+      request.placeId || ""
+    ).trim();
+
+  if (!placeId) {
+    throw new Error(
+      "Place ID is required."
+    );
+  }
+
+  const categoryId =
+    String(
+      request.categoryId || ""
+    ).trim() || null;
+
+  if (categoryId) {
+    const category =
+      await env.FOOD_DB
+        .prepare(`
+          SELECT category_id
+          FROM food_categories
+          WHERE category_id = ?
+          LIMIT 1
+        `)
+        .bind(categoryId)
+        .first();
+
+    if (!category) {
+      throw new Error(
+        "The selected category does not exist."
+      );
+    }
+  }
+
+  const result =
+    await env.FOOD_DB
+      .prepare(`
+        UPDATE food_places
+        SET
+          category_id = ?,
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE place_id = ?
+      `)
+      .bind(
+        categoryId,
+        placeId
+      )
+      .run();
+
+  if (!result.meta?.changes) {
+    throw new Error(
+      "Restaurant not found."
+    );
+  }
+
+  return getFoodAdminState(env);
+}
+
+
+async function saveFoodTags(
+  env,
+  request
+) {
+  const placeId =
+    String(
+      request.placeId || ""
+    ).trim();
+
+  if (!placeId) {
+    throw new Error(
+      "Place ID is required."
+    );
+  }
+
+  const place =
+    await env.FOOD_DB
+      .prepare(`
+        SELECT place_id
+        FROM food_places
+        WHERE place_id = ?
+        LIMIT 1
+      `)
+      .bind(placeId)
+      .first();
+
+  if (!place) {
+    throw new Error(
+      "Restaurant not found."
+    );
+  }
+
+  const tagIds =
+    Array.isArray(request.tagIds)
+      ? [
+          ...new Set(
+            request.tagIds
+              .map(value =>
+                String(value || "")
+                  .trim()
+              )
+              .filter(Boolean)
+          )
+        ]
+      : [];
+
+  const statements = [
+    env.FOOD_DB
+      .prepare(`
+        DELETE FROM food_place_tags
+        WHERE place_id = ?
+      `)
+      .bind(placeId)
+  ];
+
+  for (const tagId of tagIds) {
+    const tag =
+      await env.FOOD_DB
+        .prepare(`
+          SELECT tag_id
+          FROM food_tags
+          WHERE tag_id = ?
+          LIMIT 1
+        `)
+        .bind(tagId)
+        .first();
+
+    if (!tag) {
+      throw new Error(
+        "One of the selected tags does not exist."
+      );
+    }
+
+    statements.push(
+      env.FOOD_DB
+        .prepare(`
+          INSERT INTO food_place_tags (
+            place_id,
+            tag_id,
+            created_at
+          )
+          VALUES (
+            ?, ?,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          placeId,
+          tagId
+        )
+    );
+  }
+
+  await env.FOOD_DB.batch(
+    statements
+  );
+
+  return getFoodAdminState(env);
+}
+
+
+async function saveFoodCategories(
+  env,
+  request
+) {
+  const categories =
+    Array.isArray(request.categories)
+      ? request.categories
+      : [];
+
+  const cleaned = [];
+
+  categories.forEach(
+    (category, index) => {
+      const name =
+        String(
+          typeof category === "string"
+            ? category
+            : category?.name || ""
+        ).trim();
+
+      if (!name) {
+        return;
+      }
+
+      const duplicate =
+        cleaned.some(
+          item =>
+            item.name.toLowerCase() ===
+            name.toLowerCase()
+        );
+
+      if (!duplicate) {
+        cleaned.push({
+          categoryId:
+            String(
+              category?.categoryId ||
+              ""
+            ).trim() ||
+            crypto.randomUUID(),
+
+          name,
+
+          sortOrder:
+            index + 1
+        });
+      }
+    }
+  );
+
+  const existing =
+    await env.FOOD_DB
+      .prepare(`
+        SELECT category_id
+        FROM food_categories
+      `)
+      .all();
+
+  const keepIds =
+    new Set(
+      cleaned.map(
+        category =>
+          category.categoryId
+      )
+    );
+
+  for (const category of cleaned) {
+    await env.FOOD_DB
+      .prepare(`
+        INSERT INTO food_categories (
+          category_id,
+          name,
+          sort_order,
+          created_at,
+          updated_at
+        )
+        VALUES (
+          ?, ?, ?,
+          CURRENT_TIMESTAMP,
+          CURRENT_TIMESTAMP
+        )
+
+        ON CONFLICT(category_id)
+        DO UPDATE SET
+          name = excluded.name,
+          sort_order =
+            excluded.sort_order,
+          updated_at =
+            CURRENT_TIMESTAMP
+      `)
+      .bind(
+        category.categoryId,
+        category.name,
+        category.sortOrder
+      )
+      .run();
+  }
+
+  for (
+    const row of
+    existing.results || []
+  ) {
+    const categoryId =
+      String(row.category_id);
+
+    if (!keepIds.has(categoryId)) {
+      await env.FOOD_DB
+        .prepare(`
+          UPDATE food_places
+          SET category_id = NULL
+          WHERE category_id = ?
+        `)
+        .bind(categoryId)
+        .run();
+
+      await env.FOOD_DB
+        .prepare(`
+          DELETE FROM food_categories
+          WHERE category_id = ?
+        `)
+        .bind(categoryId)
+        .run();
+    }
+  }
+
+  return getFoodAdminState(env);
+}
+
+
+async function saveFoodTags(
+  env,
+  request
+) {
+  const placeId =
+    String(
+      request.placeId || ""
+    ).trim();
+
+  if (!placeId) {
+    throw new Error(
+      "Place ID is required."
+    );
+  }
+
+  const tagIds =
+    Array.isArray(request.tagIds)
+      ? request.tagIds
+          .map(value =>
+            String(value || "")
+              .trim()
+          )
+          .filter(Boolean)
+      : [];
+
+  const statements = [
+    env.FOOD_DB
+      .prepare(`
+        DELETE FROM food_place_tags
+        WHERE place_id = ?
+      `)
+      .bind(placeId)
+  ];
+
+  for (const tagId of tagIds) {
+    statements.push(
+      env.FOOD_DB
+        .prepare(`
+          INSERT OR IGNORE
+          INTO food_place_tags (
+            place_id,
+            tag_id,
+            created_at
+          )
+          VALUES (
+            ?, ?,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          placeId,
+          tagId
+        )
+    );
+  }
+
+  await env.FOOD_DB.batch(
+    statements
+  );
+
+  return getFoodAdminState(env);
+}
+
+
+function makeFoodIdentityKey(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(
+      /[\u0300-\u036f]/g,
+      ""
+    )
+    .replace(
+      /[^a-z0-9]+/g,
+      "-"
+    )
+    .replace(
+      /^-+|-+$/g,
+      ""
+    );
+}
+
+
+function foodStringOrNull(value) {
+  const result =
+    String(value ?? "").trim();
+
+  return result || null;
+}
+
+
+function foodNumberOrNull(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const result =
+    Number(value);
+
+  return Number.isFinite(result)
+    ? result
+    : null;
+}
+
+
+function foodIntegerOrNull(value) {
+  const result =
+    foodNumberOrNull(value);
+
+  return result === null
+    ? null
+    : Math.round(result);
+}
 
 // ============================================================
 // POLL
