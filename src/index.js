@@ -162,6 +162,19 @@ export default {
             // POLL
             // ============================================================
             
+            case "pollBootstrap":
+              return json({
+                ok: true,
+                ...(await getPollBootstrap(env))
+              });
+
+            case "pollLoadLive":
+              return json({
+                ok: true,
+                state: await loadLivePollState(env)
+              });
+
+
             case "pollLogin":
               return json({
                 ok: true,
@@ -179,6 +192,7 @@ export default {
                 ok: true,
                 state: await savePollAvailability(env, body)
               });
+
             case "pollAddPerson":
               return json({
                 ok: true,
@@ -199,6 +213,15 @@ export default {
               });
             
             
+            case "pollAdminSaveSettings":
+              verifyPollAdmin(env, body.adminCode);
+
+              return json({
+                ok: true,
+                state: await savePollSettings(env, body)
+              });
+
+
             case "pollAdminCreateSession":
               verifyPollAdmin(env, body.adminCode);
             
@@ -880,9 +903,8 @@ async function createNewBill(
     }
   );
 
-  const statements = [];
 
-  statements.push(
+  const statements = [
     env.DB
       .prepare(`
         INSERT INTO bills (
@@ -920,7 +942,7 @@ async function createNewBill(
         bill.tip,
         bill.grandTotal
       )
-  );
+  ];
 
 
   for (
@@ -989,20 +1011,19 @@ async function createNewBill(
   }
 
 
-  // First create the bill,
-  // people and items.
   await env.DB.batch(
     statements
   );
 
-  await applyAdminAssignments(
+
+  await replaceBillAssignments(
     env,
     billId,
     bill.people,
-    bill.items
+    bill.items,
+    true
   );
 }
-
 
 // ============================================================
 // UPDATE EXISTING BILL
@@ -1014,9 +1035,9 @@ async function updateExistingBill(
   bill
 ) {
   const [
-    existingPeopleResult,
-    existingItemsResult,
-    existingSelectionsResult
+    oldPeopleResult,
+    oldItemsResult,
+    oldSelectionsResult
   ] = await Promise.all([
     env.DB
       .prepare(`
@@ -1046,130 +1067,117 @@ async function updateExistingBill(
       .all()
   ]);
 
-  const existingPeople =
-    existingPeopleResult.results ||
-    [];
 
-  const existingItems =
-    existingItemsResult.results ||
-    [];
+  const oldPeople =
+    oldPeopleResult.results || [];
 
-  const existingSelections =
-    existingSelectionsResult.results ||
-    [];
+  const oldItems =
+    oldItemsResult.results || [];
+
+  const oldSelections =
+    oldSelectionsResult.results || [];
 
 
-  // Resolve participant IDs.
-  for (
-    const person
-    of bill.people
-  ) {
-    const idMatch =
-      existingPeople.find(
+  const oldPersonIds =
+    new Set(
+      oldPeople.map(
         row =>
           String(
             row.person_id
-          ) ===
-          person.personId
-      );
-
-    if (idMatch) {
-      continue;
-    }
-
-    const nameMatch =
-      existingPeople.find(
-        row =>
-          String(
-            row.name || ""
-          ).toLowerCase() ===
-          person.name.toLowerCase()
-      );
-
-    person.personId =
-      nameMatch
-        ? String(
-            nameMatch.person_id
           )
-        : crypto.randomUUID();
-  }
+      )
+    );
 
-
-  // Resolve item IDs.
-  for (
-    const item
-    of bill.items
-  ) {
-    const idMatch =
-      existingItems.find(
+  const oldItemIds =
+    new Set(
+      oldItems.map(
         row =>
           String(
             row.item_id
-          ) ===
-          item.itemId
-      );
+          )
+      )
+    );
 
-    if (!idMatch) {
+
+  const usedPersonIds =
+    new Set();
+
+  bill.people.forEach(
+    person => {
+      const requestedId =
+        String(
+          person.personId || ""
+        ).trim();
+
+      if (
+        requestedId &&
+        oldPersonIds.has(
+          requestedId
+        ) &&
+        !usedPersonIds.has(
+          requestedId
+        )
+      ) {
+        person.personId =
+          requestedId;
+
+        usedPersonIds.add(
+          requestedId
+        );
+
+        return;
+      }
+
+      person.personId =
+        crypto.randomUUID();
+
+      usedPersonIds.add(
+        person.personId
+      );
+    }
+  );
+
+
+  const usedItemIds =
+    new Set();
+
+  bill.items.forEach(
+    item => {
+      const requestedId =
+        String(
+          item.itemId || ""
+        ).trim();
+
+      if (
+        requestedId &&
+        oldItemIds.has(
+          requestedId
+        ) &&
+        !usedItemIds.has(
+          requestedId
+        )
+      ) {
+        item.itemId =
+          requestedId;
+
+        usedItemIds.add(
+          requestedId
+        );
+
+        return;
+      }
+
       item.itemId =
         crypto.randomUUID();
-    }
 
-
-    const currentlyAssigned =
-      item.assignmentsTouched
-        ? item.assignments.reduce(
-            (
-              sum,
-              assignment
-            ) =>
-              sum +
-              Number(
-                assignment.shareAmount ||
-                0
-              ),
-            0
-          )
-        : existingSelections
-            .filter(
-              row =>
-                String(
-                  row.item_id
-                ) ===
-                item.itemId
-            )
-            .reduce(
-              (
-                sum,
-                row
-              ) =>
-                sum +
-                Number(
-                  row.share_amount ||
-                  0
-                ),
-              0
-            );
-
-
-    if (
-      currentlyAssigned >
-      item.lineTotal + 0.01
-    ) {
-      throw new Error(
-        item.name +
-        " already has " +
-        formatMoneyForError(
-          currentlyAssigned
-        ) +
-        " claimed. Its line total cannot be reduced below that amount."
+      usedItemIds.add(
+        item.itemId
       );
     }
-  }
+  );
 
 
-  const statements = [];
-
-  statements.push(
+  const statements = [
     env.DB
       .prepare(`
         UPDATE bills
@@ -1183,7 +1191,8 @@ async function updateExistingBill(
           tax = ?,
           tip = ?,
           grand_total = ?,
-          updated_at = CURRENT_TIMESTAMP
+          updated_at =
+            CURRENT_TIMESTAMP
         WHERE bill_id = ?
       `)
       .bind(
@@ -1197,869 +1206,8 @@ async function updateExistingBill(
         bill.tip,
         bill.grandTotal,
         billId
-      )
-  );
-
-
-  // Upsert people.
-  for (
-    const person
-    of bill.people
-  ) {
-    statements.push(
-      env.DB
-        .prepare(`
-          INSERT INTO people (
-            person_id,
-            bill_id,
-            name,
-            color,
-            sort_order,
-            created_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?,
-            CURRENT_TIMESTAMP
-          )
-
-          ON CONFLICT(person_id)
-          DO UPDATE SET
-            name = excluded.name,
-            color = excluded.color,
-            sort_order = excluded.sort_order
-        `)
-        .bind(
-          person.personId,
-          billId,
-          person.name,
-          person.color,
-          person.sortOrder
-        )
-    );
-  }
-
-
-  // Upsert items.
-  for (
-    const item
-    of bill.items
-  ) {
-    statements.push(
-      env.DB
-        .prepare(`
-          INSERT INTO items (
-            item_id,
-            bill_id,
-            name,
-            quantity,
-            unit_price,
-            line_total,
-            sort_order,
-            created_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?, ?, ?,
-            CURRENT_TIMESTAMP
-          )
-
-          ON CONFLICT(item_id)
-          DO UPDATE SET
-            name = excluded.name,
-            quantity = excluded.quantity,
-            unit_price = excluded.unit_price,
-            line_total = excluded.line_total,
-            sort_order = excluded.sort_order
-        `)
-        .bind(
-          item.itemId,
-          billId,
-          item.name,
-          item.quantity,
-          item.unitPrice,
-          item.lineTotal,
-          item.sortOrder
-        )
-    );
-  }
-
-
-  await env.DB.batch(
-    statements
-  );
-
-
-  // Remove people Admin
-  // explicitly deleted.
-  const personIdsToKeep =
-    bill.people.map(
-      person =>
-        person.personId
-    );
-
-  await deleteRowsNotInList(
-    env,
-    "people",
-    "person_id",
-    billId,
-    personIdsToKeep
-  );
-
-
-  // Remove items Admin
-  // explicitly deleted.
-  const itemIdsToKeep =
-    bill.items.map(
-      item =>
-        item.itemId
-    );
-
-  await deleteRowsNotInList(
-    env,
-    "items",
-    "item_id",
-    billId,
-    itemIdsToKeep
-  );
-
-
-  await applyAdminAssignments(
-    env,
-    billId,
-    bill.people,
-    bill.items
-  );
-}
-
-
-// ============================================================
-// ADMIN PRE-ASSIGNMENTS
-// ============================================================
-
-async function applyAdminAssignments(
-  env,
-  billId,
-  people,
-  items
-) {
-  const touchedItems =
-    items.filter(
-      item =>
-        item.assignmentsTouched
-    );
-
-  if (!touchedItems.length) {
-    return;
-  }
-
-  const peopleById = {};
-  const peopleByName = {};
-
-  for (
-    const person
-    of people
-  ) {
-    peopleById[
-      person.personId
-    ] = person;
-
-    peopleByName[
-      person.name.toLowerCase()
-    ] = person;
-  }
-
-
-  for (
-    const item
-    of touchedItems
-  ) {
-    const assignments =
-      item.assignments || [];
-
-    const itemTotal =
-      roundMoney(
-        assignments.reduce(
-          (
-            sum,
-            assignment
-          ) =>
-            sum +
-            Number(
-              assignment.shareAmount ||
-              0
-            ),
-          0
-        )
-      );
-
-
-    if (
-      itemTotal >
-      item.lineTotal + 0.01
-    ) {
-      throw new Error(
-        item.name +
-        " has " +
-        formatMoneyForError(
-          itemTotal
-        ) +
-        " assigned, which is more than its line total of " +
-        formatMoneyForError(
-          item.lineTotal
-        ) +
-        "."
-      );
-    }
-
-
-    const statements = [
-      env.DB
-        .prepare(`
-          DELETE FROM selections
-          WHERE bill_id = ?
-            AND item_id = ?
-        `)
-        .bind(
-          billId,
-          item.itemId
-        )
-    ];
-
-
-    for (
-      const assignment
-      of assignments
-    ) {
-      const person =
-        peopleById[
-          assignment.personId
-        ] ||
-        peopleByName[
-          String(
-            assignment.name || ""
-          ).toLowerCase()
-        ];
-
-
-      if (!person) {
-        throw new Error(
-          "An assignment for " +
-          item.name +
-          " references a participant who no longer exists."
-        );
-      }
-
-
-      statements.push(
-        env.DB
-          .prepare(`
-            INSERT INTO selections (
-              selection_id,
-              bill_id,
-              item_id,
-              person_id,
-              share_amount,
-              created_at,
-              updated_at
-            )
-            VALUES (
-              ?, ?, ?, ?, ?,
-              CURRENT_TIMESTAMP,
-              CURRENT_TIMESTAMP
-            )
-          `)
-          .bind(
-            crypto.randomUUID(),
-            billId,
-            item.itemId,
-            person.personId,
-            roundMoney(
-              assignment.shareAmount
-            )
-          )
-      );
-    }
-
-
-    await env.DB.batch(
-      statements
-    );
-  }
-}
-
-
-// ============================================================
-// PARTICIPANT SELECTIONS
-// ============================================================
-
-async function saveParticipantSelection(
-  env,
-  request
-) {
-  const state =
-    await getAppState(env);
-
-  if (
-    !state.hasActiveBill
-  ) {
-    throw new Error(
-      "There is no active bill."
-    );
-  }
-
-  const billId =
-    state.bill.billId;
-
-  const personId =
-    String(
-      request.personId || ""
-    ).trim();
-
-
-  const personExists =
-    state.people.some(
-      person =>
-        person.personId ===
-        personId
-    );
-
-  if (!personExists) {
-    throw new Error(
-      "The selected person was not found."
-    );
-  }
-
-
-  const submitted =
-    Array.isArray(
-      request.selections
-    )
-      ? request.selections
-      : [];
-
-  const submittedMap = {};
-
-
-  for (
-    const selection
-    of submitted
-  ) {
-    const itemId =
-      String(
-        selection.itemId || ""
-      );
-
-    const amount =
-      roundMoney(
-        Number(
-          selection.shareAmount ||
-          0
-        )
-      );
-
-
-    if (amount < 0) {
-      throw new Error(
-        "Item shares cannot be negative."
-      );
-    }
-
-    submittedMap[
-      itemId
-    ] = amount;
-  }
-
-
-  for (
-    const item
-    of state.items
-  ) {
-    const otherPeopleAssigned =
-      state.selections
-        .filter(
-          selection =>
-            selection.itemId ===
-              item.itemId &&
-            selection.personId !==
-              personId
-        )
-        .reduce(
-          (
-            sum,
-            selection
-          ) =>
-            sum +
-            Number(
-              selection.shareAmount ||
-              0
-            ),
-          0
-        );
-
-
-    const requestedAmount =
-      submittedMap[
-        item.itemId
-      ] || 0;
-
-
-    if (
-      otherPeopleAssigned +
-        requestedAmount >
-      Number(
-        item.lineTotal
-      ) +
-      0.01
-    ) {
-      const remaining =
-        Math.max(
-          0,
-          Number(
-            item.lineTotal
-          ) -
-          otherPeopleAssigned
-        );
-
-
-      throw new Error(
-        item.name +
-        " only has " +
-        formatMoneyForError(
-          remaining
-        ) +
-        " remaining."
-      );
-    }
-  }
-
-
-  const statements = [
-    env.DB
-      .prepare(`
-        DELETE FROM selections
-        WHERE bill_id = ?
-          AND person_id = ?
-      `)
-      .bind(
-        billId,
-        personId
-      )
-  ];
-
-
-  for (
-    const item
-    of state.items
-  ) {
-    const amount =
-      submittedMap[
-        item.itemId
-      ] || 0;
-
-    if (amount <= 0) {
-      continue;
-    }
-
-
-    statements.push(
-      env.DB
-        .prepare(`
-          INSERT INTO selections (
-            selection_id,
-            bill_id,
-            item_id,
-            person_id,
-            share_amount,
-            created_at,
-            updated_at
-          )
-          VALUES (
-            ?, ?, ?, ?, ?,
-            CURRENT_TIMESTAMP,
-            CURRENT_TIMESTAMP
-          )
-        `)
-        .bind(
-          crypto.randomUUID(),
-          billId,
-          item.itemId,
-          personId,
-          amount
-        )
-    );
-  }
-
-
-  await env.DB.batch(
-    statements
-  );
-
-  return getAppState(env);
-}
-
-
-// ============================================================
-// PERSON COLORS
-// ============================================================
-
-async function updatePersonColor(
-  env,
-  request
-) {
-  const state =
-    await getAppState(env);
-
-  if (
-    !state.hasActiveBill
-  ) {
-    throw new Error(
-      "There is no active bill."
-    );
-  }
-
-  const billId =
-    state.bill.billId;
-
-  const personId =
-    String(
-      request.personId || ""
-    ).trim();
-
-  const color =
-    String(
-      request.color || ""
-    )
-      .trim()
-      .toLowerCase();
-
-
-  if (
-    !PERSON_COLOR_KEYS.includes(
-      color
-    )
-  ) {
-    throw new Error(
-      "Choose one of the available colors."
-    );
-  }
-
-
-  const person =
-    state.people.find(
-      candidate =>
-        candidate.personId ===
-        personId
-    );
-
-  if (!person) {
-    throw new Error(
-      "The selected person was not found."
-    );
-  }
-
-
-  const claimedByOther =
-    state.people.some(
-      candidate =>
-        candidate.personId !==
-          personId &&
-        candidate.color ===
-          color
-    );
-
-  if (claimedByOther) {
-    throw new Error(
-      "That color has already been claimed."
-    );
-  }
-
-
-  const result =
-    await env.DB
-      .prepare(`
-        UPDATE people
-        SET color = ?
-        WHERE bill_id = ?
-          AND person_id = ?
-      `)
-      .bind(
-        color,
-        billId,
-        personId
-      )
-      .run();
-
-
-  if (
-    !result.meta?.changes
-  ) {
-    throw new Error(
-      "The selected participant could not be updated."
-    );
-  }
-
-
-  return getAppState(env);
-}
-
-
-// ============================================================
-// ARCHIVE / HISTORY
-// ============================================================
-
-async function getBillStateById(
-  env,
-  billId
-) {
-  if (!billId) {
-    throw new Error(
-      "Bill ID is required."
-    );
-  }
-
-  const bill =
-    await getBillById(
-      env,
-      billId
-    );
-
-  if (!bill) {
-    throw new Error(
-      "The bill could not be found."
-    );
-  }
-
-  return buildBillState(
-    env,
-    bill
-  );
-}
-
-
-async function archiveActiveBill(
-  env
-) {
-  const result =
-    await env.DB
-      .prepare(`
-        UPDATE bills
-        SET
-          status = 'archived',
-          archived_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE status = 'active'
-      `)
-      .run();
-
-
-  if (
-    !result.meta?.changes
-  ) {
-    throw new Error(
-      "There is no active bill to archive."
-    );
-  }
-}
-
-
-async function getBillHistory(
-  env
-) {
-  const result =
-    await env.DB
-      .prepare(`
-        SELECT
-          b.*,
-
-          (
-            SELECT COUNT(*)
-            FROM people p
-            WHERE p.bill_id = b.bill_id
-          ) AS people_count,
-
-          (
-            SELECT COUNT(*)
-            FROM items i
-            WHERE i.bill_id = b.bill_id
-          ) AS item_count
-
-        FROM bills b
-
-        WHERE b.status = 'archived'
-
-        ORDER BY b.updated_at DESC
-      `)
-      .all();
-
-
-  return (
-    result.results || []
-  ).map(
-    row => ({
-      billId:
-        String(
-          row.bill_id
-        ),
-
-      billName:
-        String(
-          row.title ||
-          "Shared Bill"
-        ),
-
-      storeName:
-        String(
-          row.restaurant_name ||
-          ""
-        ),
-
-      date:
-        String(
-          row.receipt_date ||
-          ""
-        ),
-
-      subtotal:
-        Number(
-          row.subtotal ||
-          0
-        ),
-
-      tax:
-        Number(
-          row.tax ||
-          0
-        ),
-
-      tip:
-        Number(
-          row.tip ||
-          0
-        ),
-
-      grandTotal:
-        Number(
-          row.grand_total ||
-          0
-        ),
-
-      status:
-        "ARCHIVED",
-
-      updatedAt:
-        String(
-          row.updated_at ||
-          ""
-        ),
-
-      peopleCount:
-        Number(
-          row.people_count ||
-          0
-        ),
-
-      itemCount:
-        Number(
-          row.item_count ||
-          0
-        )
-    })
-  );
-}
-
-
-async function restoreBill(
-  env,
-  billId
-) {
-  if (!billId) {
-    throw new Error(
-      "Choose a bill to restore."
-    );
-  }
-
-  const target =
-    await getBillById(
-      env,
-      billId
-    );
-
-  if (!target) {
-    throw new Error(
-      "The archived bill was not found."
-    );
-  }
-
-
-  await env.DB.batch([
-    env.DB
-      .prepare(`
-        UPDATE bills
-        SET
-          status = 'archived',
-          archived_at = CURRENT_TIMESTAMP,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE status = 'active'
-          AND bill_id <> ?
-      `)
-      .bind(
-        billId
       ),
 
-    env.DB
-      .prepare(`
-        UPDATE bills
-        SET
-          status = 'active',
-          archived_at = NULL,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE bill_id = ?
-      `)
-      .bind(
-        billId
-      )
-  ]);
-
-
-  return getAppState(env);
-}
-
-
-async function deleteArchivedBill(
-  env,
-  billId
-) {
-  if (!billId) {
-    throw new Error(
-      "Choose an archived bill to delete."
-    );
-  }
-
-  const bill =
-    await getBillById(
-      env,
-      billId
-    );
-
-  if (!bill) {
-    throw new Error(
-      "The archived bill was not found."
-    );
-  }
-
-  if (
-    bill.status === "active"
-  ) {
-    throw new Error(
-      "The active bill cannot be deleted. Archive it first."
-    );
-  }
-
-
-  // Explicitly delete child rows too,
-  // so this is safe even if an older
-  // version of the tables lacked
-  // ON DELETE CASCADE.
-  await env.DB.batch([
     env.DB
       .prepare(`
         DELETE FROM selections
@@ -2085,23 +1233,1100 @@ async function deleteArchivedBill(
       `)
       .bind(
         billId
-      ),
-
-    env.DB
-      .prepare(`
-        DELETE FROM bills
-        WHERE bill_id = ?
-          AND status = 'archived'
-      `)
-      .bind(
-        billId
       )
-  ]);
+  ];
+
+
+  await env.DB.batch(
+    statements
+  );
+
+
+  const insertStatements = [];
+
+
+  for (
+    const person
+    of bill.people
+  ) {
+    insertStatements.push(
+      env.DB
+        .prepare(`
+          INSERT INTO people (
+            person_id,
+            bill_id,
+            name,
+            color,
+            sort_order,
+            created_at
+          )
+          VALUES (
+            ?, ?, ?, ?, ?,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          person.personId,
+          billId,
+          person.name,
+          person.color,
+          person.sortOrder
+        )
+    );
+  }
+
+
+  for (
+    const item
+    of bill.items
+  ) {
+    insertStatements.push(
+      env.DB
+        .prepare(`
+          INSERT INTO items (
+            item_id,
+            bill_id,
+            name,
+            quantity,
+            unit_price,
+            line_total,
+            sort_order,
+            created_at
+          )
+          VALUES (
+            ?, ?, ?, ?, ?, ?, ?,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          item.itemId,
+          billId,
+          item.name,
+          item.quantity,
+          item.unitPrice,
+          item.lineTotal,
+          item.sortOrder
+        )
+    );
+  }
+
+
+  if (
+    insertStatements.length
+  ) {
+    await env.DB.batch(
+      insertStatements
+    );
+  }
+
+
+  await restoreExistingSelections(
+    env,
+    billId,
+    bill.people,
+    bill.items,
+    oldPeople,
+    oldItems,
+    oldSelections
+  );
+
+
+  await replaceBillAssignments(
+    env,
+    billId,
+    bill.people,
+    bill.items,
+    false
+  );
 }
 
 
 // ============================================================
-// GEMINI RECEIPT ANALYSIS
+// RESTORE EXISTING SELECTIONS
+// ============================================================
+
+async function restoreExistingSelections(
+  env,
+  billId,
+  newPeople,
+  newItems,
+  oldPeople,
+  oldItems,
+  oldSelections
+) {
+  const newPersonIds =
+    new Set(
+      newPeople.map(
+        person =>
+          person.personId
+      )
+    );
+
+  const newItemIds =
+    new Set(
+      newItems.map(
+        item =>
+          item.itemId
+      )
+    );
+
+
+  const statements = [];
+
+
+  for (
+    const selection
+    of oldSelections
+  ) {
+    const personId =
+      String(
+        selection.person_id
+      );
+
+    const itemId =
+      String(
+        selection.item_id
+      );
+
+    if (
+      !newPersonIds.has(
+        personId
+      ) ||
+      !newItemIds.has(
+        itemId
+      )
+    ) {
+      continue;
+    }
+
+
+    statements.push(
+      env.DB
+        .prepare(`
+          INSERT INTO selections (
+            selection_id,
+            bill_id,
+            person_id,
+            item_id,
+            share_amount,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ?, ?, ?, ?, ?,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+        `)
+        .bind(
+          crypto.randomUUID(),
+          billId,
+          personId,
+          itemId,
+          Number(
+            selection.share_amount ||
+            0
+          )
+        )
+    );
+  }
+
+
+  if (
+    statements.length
+  ) {
+    await env.DB.batch(
+      statements
+    );
+  }
+}
+
+
+// ============================================================
+// ADMIN ASSIGNMENTS
+// ============================================================
+
+async function replaceBillAssignments(
+  env,
+  billId,
+  people,
+  items,
+  isNewBill
+) {
+  const personById =
+    new Map(
+      people.map(
+        person => [
+          person.personId,
+          person
+        ]
+      )
+    );
+
+  const personByName =
+    new Map(
+      people.map(
+        person => [
+          person.name
+            .toLowerCase(),
+          person
+        ]
+      )
+    );
+
+
+  for (
+    const item
+    of items
+  ) {
+    if (
+      !isNewBill &&
+      !item.assignmentsTouched
+    ) {
+      continue;
+    }
+
+
+    await env.DB
+      .prepare(`
+        DELETE FROM selections
+        WHERE bill_id = ?
+          AND item_id = ?
+      `)
+      .bind(
+        billId,
+        item.itemId
+      )
+      .run();
+
+
+    if (
+      !item.assignments.length
+    ) {
+      continue;
+    }
+
+
+    const statements = [];
+
+
+    for (
+      const assignment
+      of item.assignments
+    ) {
+      let person = null;
+
+
+      if (
+        assignment.personId &&
+        personById.has(
+          assignment.personId
+        )
+      ) {
+        person =
+          personById.get(
+            assignment.personId
+          );
+      }
+
+
+      if (
+        !person &&
+        assignment.name
+      ) {
+        person =
+          personByName.get(
+            assignment.name
+              .toLowerCase()
+          );
+      }
+
+
+      if (!person) {
+        continue;
+      }
+
+
+      const shareAmount =
+        roundMoney(
+          Number(
+            assignment.shareAmount ||
+            0
+          )
+        );
+
+
+      if (
+        shareAmount <= 0
+      ) {
+        continue;
+      }
+
+
+      statements.push(
+        env.DB
+          .prepare(`
+            INSERT INTO selections (
+              selection_id,
+              bill_id,
+              person_id,
+              item_id,
+              share_amount,
+              created_at,
+              updated_at
+            )
+            VALUES (
+              ?, ?, ?, ?, ?,
+              CURRENT_TIMESTAMP,
+              CURRENT_TIMESTAMP
+            )
+          `)
+          .bind(
+            crypto.randomUUID(),
+            billId,
+            person.personId,
+            item.itemId,
+            shareAmount
+          )
+      );
+    }
+
+
+    if (
+      statements.length
+    ) {
+      await env.DB.batch(
+        statements
+      );
+    }
+  }
+}
+
+
+// ============================================================
+// PARTICIPANT SELECTION
+// ============================================================
+
+async function saveParticipantSelection(
+  env,
+  request
+) {
+  const billId =
+    String(
+      request.billId || ""
+    ).trim();
+
+  const personId =
+    String(
+      request.personId || ""
+    ).trim();
+
+  const selections =
+    Array.isArray(
+      request.selections
+    )
+      ? request.selections
+      : [];
+
+
+  if (
+    !billId ||
+    !personId
+  ) {
+    throw new Error(
+      "Bill and participant are required."
+    );
+  }
+
+
+  const bill =
+    await env.DB
+      .prepare(`
+        SELECT
+          bill_id,
+          status
+        FROM bills
+        WHERE bill_id = ?
+        LIMIT 1
+      `)
+      .bind(
+        billId
+      )
+      .first();
+
+
+  if (
+    !bill ||
+    bill.status !== "active"
+  ) {
+    throw new Error(
+      "This bill is no longer active."
+    );
+  }
+
+
+  const person =
+    await env.DB
+      .prepare(`
+        SELECT
+          person_id
+        FROM people
+        WHERE bill_id = ?
+          AND person_id = ?
+        LIMIT 1
+      `)
+      .bind(
+        billId,
+        personId
+      )
+      .first();
+
+
+  if (!person) {
+    throw new Error(
+      "Participant not found."
+    );
+  }
+
+
+  const itemsResult =
+    await env.DB
+      .prepare(`
+        SELECT
+          item_id,
+          line_total
+        FROM items
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      )
+      .all();
+
+
+  const itemById =
+    new Map(
+      (
+        itemsResult.results ||
+        []
+      ).map(
+        row => [
+          String(
+            row.item_id
+          ),
+          {
+            itemId:
+              String(
+                row.item_id
+              ),
+
+            lineTotal:
+              Number(
+                row.line_total ||
+                0
+              )
+          }
+        ]
+      )
+    );
+
+
+  const normalized = [];
+
+
+  for (
+    const selection
+    of selections
+  ) {
+    const itemId =
+      String(
+        selection.itemId || ""
+      ).trim();
+
+    const shareAmount =
+      roundMoney(
+        Number(
+          selection.shareAmount ||
+          0
+        )
+      );
+
+
+    if (
+      !itemId ||
+      !itemById.has(
+        itemId
+      )
+    ) {
+      continue;
+    }
+
+
+    if (
+      !Number.isFinite(
+        shareAmount
+      ) ||
+      shareAmount < 0
+    ) {
+      throw new Error(
+        "Invalid item share."
+      );
+    }
+
+
+    if (
+      shareAmount === 0
+    ) {
+      continue;
+    }
+
+
+    normalized.push({
+      itemId,
+      shareAmount
+    });
+  }
+
+
+  const duplicateCheck =
+    new Set();
+
+
+  for (
+    const selection
+    of normalized
+  ) {
+    if (
+      duplicateCheck.has(
+        selection.itemId
+      )
+    ) {
+      throw new Error(
+        "Duplicate item selection."
+      );
+    }
+
+    duplicateCheck.add(
+      selection.itemId
+    );
+  }
+
+
+  const existingResult =
+    await env.DB
+      .prepare(`
+        SELECT
+          person_id,
+          item_id,
+          share_amount
+        FROM selections
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      )
+      .all();
+
+
+  const totalsByItem = {};
+
+
+  for (
+    const row
+    of existingResult.results ||
+    []
+  ) {
+    if (
+      String(
+        row.person_id
+      ) ===
+      personId
+    ) {
+      continue;
+    }
+
+    const itemId =
+      String(
+        row.item_id
+      );
+
+    totalsByItem[
+      itemId
+    ] =
+      roundMoney(
+        (
+          totalsByItem[
+            itemId
+          ] || 0
+        ) +
+        Number(
+          row.share_amount ||
+          0
+        )
+      );
+  }
+
+
+  for (
+    const selection
+    of normalized
+  ) {
+    const item =
+      itemById.get(
+        selection.itemId
+      );
+
+    const alreadyAssigned =
+      totalsByItem[
+        selection.itemId
+      ] || 0;
+
+    const proposedTotal =
+      roundMoney(
+        alreadyAssigned +
+        selection.shareAmount
+      );
+
+
+    if (
+      proposedTotal >
+      roundMoney(
+        item.lineTotal
+      ) +
+      0.01
+    ) {
+      throw new Error(
+        "That item no longer has enough unclaimed amount. Reload and try again."
+      );
+    }
+  }
+
+
+  await env.DB
+    .prepare(`
+      DELETE FROM selections
+      WHERE bill_id = ?
+        AND person_id = ?
+    `)
+    .bind(
+      billId,
+      personId
+    )
+    .run();
+
+
+  if (
+    normalized.length
+  ) {
+    const statements =
+      normalized.map(
+        selection =>
+          env.DB
+            .prepare(`
+              INSERT INTO selections (
+                selection_id,
+                bill_id,
+                person_id,
+                item_id,
+                share_amount,
+                created_at,
+                updated_at
+              )
+              VALUES (
+                ?, ?, ?, ?, ?,
+                CURRENT_TIMESTAMP,
+                CURRENT_TIMESTAMP
+              )
+            `)
+            .bind(
+              crypto.randomUUID(),
+              billId,
+              personId,
+              selection.itemId,
+              selection.shareAmount
+            )
+      );
+
+
+    await env.DB.batch(
+      statements
+    );
+  }
+
+
+  return getAppState(env);
+}
+
+
+// ============================================================
+// PERSON COLOR
+// ============================================================
+
+async function updatePersonColor(
+  env,
+  request
+) {
+  const billId =
+    String(
+      request.billId || ""
+    ).trim();
+
+  const personId =
+    String(
+      request.personId || ""
+    ).trim();
+
+  const color =
+    String(
+      request.color || ""
+    )
+      .trim()
+      .toLowerCase();
+
+
+  if (
+    !billId ||
+    !personId
+  ) {
+    throw new Error(
+      "Bill and participant are required."
+    );
+  }
+
+
+  if (
+    !PERSON_COLOR_KEYS.includes(
+      color
+    )
+  ) {
+    throw new Error(
+      "Invalid color."
+    );
+  }
+
+
+  const bill =
+    await env.DB
+      .prepare(`
+        SELECT
+          bill_id,
+          status
+        FROM bills
+        WHERE bill_id = ?
+        LIMIT 1
+      `)
+      .bind(
+        billId
+      )
+      .first();
+
+
+  if (
+    !bill ||
+    bill.status !== "active"
+  ) {
+    throw new Error(
+      "This bill is no longer active."
+    );
+  }
+
+
+  const person =
+    await env.DB
+      .prepare(`
+        SELECT
+          person_id
+        FROM people
+        WHERE bill_id = ?
+          AND person_id = ?
+        LIMIT 1
+      `)
+      .bind(
+        billId,
+        personId
+      )
+      .first();
+
+
+  if (!person) {
+    throw new Error(
+      "Participant not found."
+    );
+  }
+
+
+  const used =
+    await env.DB
+      .prepare(`
+        SELECT
+          person_id
+        FROM people
+        WHERE bill_id = ?
+          AND color = ?
+          AND person_id <> ?
+        LIMIT 1
+      `)
+      .bind(
+        billId,
+        color,
+        personId
+      )
+      .first();
+
+
+  if (used) {
+    throw new Error(
+      "That color is already being used."
+    );
+  }
+
+
+  await env.DB
+    .prepare(`
+      UPDATE people
+      SET color = ?
+      WHERE bill_id = ?
+        AND person_id = ?
+    `)
+    .bind(
+      color,
+      billId,
+      personId
+    )
+    .run();
+
+
+  return getAppState(env);
+}
+
+
+// ============================================================
+// ARCHIVE
+// ============================================================
+
+async function archiveActiveBill(
+  env
+) {
+  await env.DB
+    .prepare(`
+      UPDATE bills
+      SET
+        status = 'archived',
+        updated_at =
+          CURRENT_TIMESTAMP
+      WHERE status = 'active'
+    `)
+    .run();
+}
+
+
+async function getBillHistory(env) {
+  const result =
+    await env.DB
+      .prepare(`
+        SELECT
+          bill_id,
+          title,
+          restaurant_name,
+          receipt_date,
+          grand_total,
+          status,
+          created_at,
+          updated_at
+        FROM bills
+        WHERE status = 'archived'
+        ORDER BY updated_at DESC
+      `)
+      .all();
+
+
+  return (
+    result.results || []
+  ).map(
+    row => ({
+      billId:
+        String(
+          row.bill_id
+        ),
+
+      billName:
+        String(
+          row.title || ""
+        ),
+
+      storeName:
+        String(
+          row.restaurant_name ||
+          ""
+        ),
+
+      date:
+        String(
+          row.receipt_date ||
+          ""
+        ),
+
+      grandTotal:
+        Number(
+          row.grand_total ||
+          0
+        ),
+
+      status:
+        String(
+          row.status || ""
+        ),
+
+      createdAt:
+        row.created_at || "",
+
+      updatedAt:
+        row.updated_at || ""
+    })
+  );
+}
+
+
+async function getBillStateById(
+  env,
+  billId
+) {
+  if (!billId) {
+    throw new Error(
+      "Bill ID is required."
+    );
+  }
+
+
+  const bill =
+    await getBillById(
+      env,
+      billId
+    );
+
+
+  if (!bill) {
+    throw new Error(
+      "Bill not found."
+    );
+  }
+
+
+  return buildBillState(
+    env,
+    bill
+  );
+}
+
+
+async function restoreBill(
+  env,
+  billId
+) {
+  if (!billId) {
+    throw new Error(
+      "Bill ID is required."
+    );
+  }
+
+
+  const bill =
+    await getBillById(
+      env,
+      billId
+    );
+
+
+  if (!bill) {
+    throw new Error(
+      "Bill not found."
+    );
+  }
+
+
+  const statements = [
+    env.DB
+      .prepare(`
+        UPDATE bills
+        SET
+          status = 'archived',
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE status = 'active'
+      `),
+
+    env.DB
+      .prepare(`
+        UPDATE bills
+        SET
+          status = 'active',
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE bill_id = ?
+      `)
+      .bind(
+        billId
+      )
+  ];
+
+
+  await env.DB.batch(
+    statements
+  );
+
+
+  return getAppState(env);
+}
+
+
+async function deleteArchivedBill(
+  env,
+  billId
+) {
+  if (!billId) {
+    throw new Error(
+      "Bill ID is required."
+    );
+  }
+
+
+  const bill =
+    await getBillById(
+      env,
+      billId
+    );
+
+
+  if (!bill) {
+    throw new Error(
+      "Bill not found."
+    );
+  }
+
+
+  if (
+    bill.status === "active"
+  ) {
+    throw new Error(
+      "Archive the bill before deleting it."
+    );
+  }
+
+
+  await env.DB
+    .prepare(`
+      DELETE FROM bills
+      WHERE bill_id = ?
+    `)
+    .bind(
+      billId
+    )
+    .run();
+}
+
+
+// ============================================================
+// GEMINI RECEIPT IMAGE ANALYSIS
 // ============================================================
 
 async function analyzeReceiptImageWithGemini(
@@ -2109,164 +2334,222 @@ async function analyzeReceiptImageWithGemini(
   mimeType,
   imageBase64
 ) {
-  mimeType =
-    String(
-      mimeType || ""
-    ).trim();
-
-  imageBase64 =
-    String(
-      imageBase64 || ""
-    ).trim();
-
-
-  if (
-    !mimeType.startsWith(
-      "image/"
-    ) ||
-    !imageBase64
-  ) {
-    throw new Error(
-      "A valid receipt image is required."
-    );
-  }
-
-
-  const prompt =
-    buildReceiptPrompt(
-      "Analyze this purchase receipt image directly. Read the image yourself."
-    );
-
-
-  return callGemini(
-    env,
-    [
-      {
-        text: prompt
-      },
-
-      {
-        inlineData: {
-          mimeType,
-          data:
-            imageBase64
-        }
-      }
-    ]
-  );
-}
-
-
-async function analyzeReceiptTextWithGemini(
-  env,
-  ocrText
-) {
-  ocrText =
-    String(
-      ocrText || ""
-    ).trim();
-
-
-  if (!ocrText) {
-    throw new Error(
-      "OCR text is required."
-    );
-  }
-
-
-  const prompt =
-    buildReceiptPrompt(
-      "Analyze the following OCR text from a purchase receipt."
-    ) +
-    "\n\nOCR TEXT:\n" +
-    ocrText;
-
-
-  return callGemini(
-    env,
-    [
-      {
-        text: prompt
-      }
-    ]
-  );
-}
-
-
-function buildReceiptPrompt(
-  opening
-) {
-  return [
-    opening,
-    "",
-    "Return the best reasonable structured interpretation.",
-    "",
-    "Rules:",
-    "- Correct obvious reading mistakes only when context is strong.",
-    "- Do not invent unsupported purchases.",
-    "- A number before an item may be its quantity.",
-    "- Distinguish unit price from full line total.",
-    "- If quantity is greater than 1 and only a line total is shown, infer unit price when reasonable.",
-    "- Use null when a value cannot reasonably be determined.",
-    "- Tip must be actual paid tip or mandatory gratuity.",
-    "- Never use suggested additional tip amounts as the paid tip.",
-    "- Verify subtotal + tax + tip approximately equals grand total.",
-    "- Put uncertainty or arithmetic mismatches in warnings.",
-    "- Confidence must be from 0 through 1."
-  ].join("\n");
-}
-
-
-async function callGemini(
-  env,
-  parts
-) {
-  if (
-    !env.GEMINI_API_KEY
-  ) {
+  if (!env.GEMINI_API_KEY) {
     throw new Error(
       "GEMINI_API_KEY secret is not configured."
     );
   }
 
 
-  const requestBody = {
-    contents: [
-      {
-        role:
-          "user",
+  if (!imageBase64) {
+    throw new Error(
+      "Receipt image is required."
+    );
+  }
 
-        parts
-      }
-    ],
 
-    generationConfig: {
-      temperature:
-        0.1,
+  const cleanMimeType =
+    String(
+      mimeType ||
+      "image/jpeg"
+    )
+      .split(";")[0]
+      .trim();
 
-      responseMimeType:
-        "application/json",
 
-      responseJsonSchema:
-        getReceiptSchema()
+  const prompt = `
+You are analyzing a restaurant or store receipt image.
+
+Return ONLY valid JSON.
+
+Use this exact structure:
+
+{
+  "storeName": "",
+  "address": "",
+  "date": "",
+  "time": "",
+  "subtotal": 0,
+  "tax": 0,
+  "tip": 0,
+  "grandTotal": 0,
+  "items": [
+    {
+      "name": "",
+      "quantity": null,
+      "unitPrice": null,
+      "lineTotal": 0
     }
-  };
+  ]
+}
+
+Rules:
+
+1. Extract only actual purchased line items.
+2. Do not include subtotal, tax, tip, total, balance, payment, change, card information, discounts, or headers as items.
+3. Preserve item names as closely as practical while cleaning obvious OCR noise.
+4. quantity should be a number when the receipt clearly indicates multiple units; otherwise null.
+5. unitPrice should be a number only when clearly shown or safely derivable.
+6. lineTotal must be the total charged for that item line.
+7. All money values must be plain numbers without currency symbols.
+8. If tip is blank, missing, handwritten but unreadable, or not clearly present, use 0.
+9. If subtotal/tax/total are clearly printed, prefer the printed values.
+10. If an item line has modifiers or continuation text, combine it into a useful item name when appropriate.
+11. Do not invent items or amounts.
+12. date should preferably be YYYY-MM-DD when the receipt provides enough information.
+13. time should preferably be HH:MM when readable.
+`.trim();
 
 
-  const endpoint =
-    "https://generativelanguage.googleapis.com/v1beta/models/" +
-    encodeURIComponent(
-      GEMINI_MODEL
-    ) +
-    ":generateContent?key=" +
-    encodeURIComponent(
-      env.GEMINI_API_KEY
+  const data =
+    await callGemini(
+      env,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text:
+                  prompt
+              },
+              {
+                inline_data: {
+                  mime_type:
+                    cleanMimeType,
+                  data:
+                    imageBase64
+                }
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature:
+            0.1,
+          responseMimeType:
+            "application/json"
+        }
+      }
     );
 
 
+  return normalizeGeminiReceipt(
+    extractGeminiJson(
+      data
+    )
+  );
+}
+
+
+// ============================================================
+// GEMINI OCR TEXT ANALYSIS
+// ============================================================
+
+async function analyzeReceiptTextWithGemini(
+  env,
+  ocrText
+) {
+  if (!env.GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY secret is not configured."
+    );
+  }
+
+
+  if (!ocrText.trim()) {
+    throw new Error(
+      "OCR text is required."
+    );
+  }
+
+
+  const prompt = `
+You are given OCR text from a restaurant or store receipt.
+
+Return ONLY valid JSON.
+
+Use this exact structure:
+
+{
+  "storeName": "",
+  "address": "",
+  "date": "",
+  "time": "",
+  "subtotal": 0,
+  "tax": 0,
+  "tip": 0,
+  "grandTotal": 0,
+  "items": [
+    {
+      "name": "",
+      "quantity": null,
+      "unitPrice": null,
+      "lineTotal": 0
+    }
+  ]
+}
+
+Rules:
+
+1. Extract only actual purchased line items.
+2. Do not include subtotal, tax, tip, total, balance, payment, change, card information, discounts, or headers as items.
+3. Clean obvious OCR noise from item names.
+4. quantity should be a number when clearly indicated; otherwise null.
+5. unitPrice should be a number only when clearly shown or safely derivable.
+6. lineTotal must be the total charged for the item line.
+7. All money values must be plain numbers.
+8. If tip is missing or unclear, use 0.
+9. Prefer printed subtotal/tax/total values from the OCR when clearly available.
+10. Do not invent missing purchases or amounts.
+
+OCR TEXT:
+${ocrText}
+`.trim();
+
+
+  const data =
+    await callGemini(
+      env,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text:
+                  prompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature:
+            0.1,
+          responseMimeType:
+            "application/json"
+        }
+      }
+    );
+
+
+  return normalizeGeminiReceipt(
+    extractGeminiJson(
+      data
+    )
+  );
+}
+
+
+// ============================================================
+// GEMINI API
+// ============================================================
+
+async function callGemini(
+  env,
+  payload
+) {
   const response =
     await fetch(
-      endpoint,
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(env.GEMINI_API_KEY)}`,
       {
         method:
           "POST",
@@ -2278,2031 +2561,224 @@ async function callGemini(
 
         body:
           JSON.stringify(
-            requestBody
+            payload
           )
       }
     );
 
 
-  const responseText =
+  const text =
     await response.text();
 
 
+  let data;
+
+
+  try {
+    data =
+      JSON.parse(
+        text
+      );
+  } catch {
+    throw new Error(
+      "Gemini returned an invalid response."
+    );
+  }
+
+
   if (!response.ok) {
+    const message =
+      data?.error?.message ||
+      `Gemini request failed (${response.status}).`;
+
     throw new Error(
-      "Gemini API error " +
-      response.status +
-      ": " +
-      responseText
+      message
     );
   }
 
 
-  const responseJson =
-    JSON.parse(
-      responseText
-    );
+  return data;
+}
 
 
-  const resultText =
-    responseJson
+function extractGeminiJson(
+  data
+) {
+  const text =
+    data
       ?.candidates?.[0]
-      ?.content?.parts?.[0]
-      ?.text;
-
-
-  if (!resultText) {
-    throw new Error(
-      "Gemini returned no structured receipt result."
-    );
-  }
-
-
-  return JSON.parse(
-    resultText
-  );
-}
-
-
-function getReceiptSchema() {
-  return {
-    type:
-      "object",
-
-    properties: {
-      storeName: {
-        type: [
-          "string",
-          "null"
-        ]
-      },
-
-      address: {
-        type: [
-          "string",
-          "null"
-        ]
-      },
-
-      date: {
-        type: [
-          "string",
-          "null"
-        ],
-
-        description:
-          "Use YYYY-MM-DD when reasonably determinable."
-      },
-
-      time: {
-        type: [
-          "string",
-          "null"
-        ],
-
-        description:
-          "Use HH:MM in 24-hour time when reasonably determinable."
-      },
-
-      items: {
-        type:
-          "array",
-
-        items: {
-          type:
-            "object",
-
-          properties: {
-            name: {
-              type: [
-                "string",
-                "null"
-              ]
-            },
-
-            quantity: {
-              type: [
-                "number",
-                "null"
-              ]
-            },
-
-            unitPrice: {
-              type: [
-                "number",
-                "null"
-              ]
-            },
-
-            lineTotal: {
-              type: [
-                "number",
-                "null"
-              ]
-            }
-          },
-
-          required: [
-            "name",
-            "quantity",
-            "unitPrice",
-            "lineTotal"
-          ],
-
-          additionalProperties:
-            false
-        }
-      },
-
-      subtotal: {
-        type: [
-          "number",
-          "null"
-        ]
-      },
-
-      tax: {
-        type: [
-          "number",
-          "null"
-        ]
-      },
-
-      tip: {
-        type: [
-          "number",
-          "null"
-        ]
-      },
-
-      grandTotal: {
-        type: [
-          "number",
-          "null"
-        ]
-      },
-
-      confidence: {
-        type:
-          "number",
-
-        minimum:
-          0,
-
-        maximum:
-          1
-      },
-
-      warnings: {
-        type:
-          "array",
-
-        items: {
-          type:
-            "string"
-        }
-      }
-    },
-
-    required: [
-      "storeName",
-      "address",
-      "date",
-      "time",
-      "items",
-      "subtotal",
-      "tax",
-      "tip",
-      "grandTotal",
-      "confidence",
-      "warnings"
-    ],
-
-    additionalProperties:
-      false
-  };
-}
-
-// ============================================================
-// POLL
-// ============================================================
-
-function verifyPollAdmin(env, candidate) {
-  if (!env.POLL_ADMIN_CODE) {
-    throw new Error(
-      "POLL_ADMIN_CODE secret is not configured."
-    );
-  }
-
-  if (
-    String(candidate || "") !==
-    String(env.POLL_ADMIN_CODE)
-  ) {
-    throw new Error(
-      "Incorrect admin code."
-    );
-  }
-}
-
-
-// ============================================================
-// POLL LOGIN
-// ============================================================
-
-async function pollLogin(env, request) {
-  const code =
-    String(request.code || "")
+      ?.content
+      ?.parts
+      ?.map(
+        part =>
+          part.text || ""
+      )
+      .join("")
       .trim();
 
-  if (!code) {
+
+  if (!text) {
     throw new Error(
-      "Enter a session code."
+      "Gemini returned no receipt data."
     );
   }
 
 
-  // Admin login
-  if (
-    env.POLL_ADMIN_CODE &&
-    code === String(env.POLL_ADMIN_CODE)
-  ) {
-    return {
-      mode: "admin"
-    };
-  }
+  let cleaned =
+    text.trim();
 
 
-  // Normal session login
-  const session =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          session_id,
-          session_name,
-          session_code,
-          start_date,
-          end_date,
-          allowed_days,
-          default_start_hour,
-          default_end_hour
-        FROM poll_sessions
-        WHERE UPPER(session_code) = UPPER(?)
-          AND is_active = 1
-        LIMIT 1
-      `)
-      .bind(code)
-      .first();
-
-
-  if (!session) {
-    throw new Error(
-      "Invalid session code."
+  cleaned =
+    cleaned.replace(
+      /^```(?:json)?\s*/i,
+      ""
     );
-  }
 
-
-  return {
-    mode: "session",
-
-    session: {
-      sessionId:
-        String(session.session_id),
-
-      sessionName:
-        String(session.session_name),
-
-      sessionCode:
-        String(session.session_code),
-
-      startDate:
-        String(
-          session.start_date || ""
-        ),
-
-      endDate:
-        String(
-          session.end_date || ""
-        ),
-
-      allowedDays:
-        parsePollAllowedDays(
-          session.allowed_days
-        ),
-
-      defaultStartHour:
-        numberOrNull(
-          session.default_start_hour
-        ),
-
-      defaultEndHour:
-        numberOrNull(
-          session.default_end_hour
-        )
-    }
-  };
-}
-
-
-// ============================================================
-// LOAD POLL
-// ============================================================
-
-async function loadPollState(
-  env,
-  request
-) {
-  const session =
-    await getPollSessionByCode(
-      env,
-      request.sessionCode
+  cleaned =
+    cleaned.replace(
+      /\s*```$/,
+      ""
     );
 
 
-  const [
-    peopleResult,
-    availabilityResult
-  ] = await Promise.all([
-
-    env.POLL_DB
-      .prepare(`
-        SELECT
-          person_id,
-          name,
-          sort_order
-        FROM poll_people
-        WHERE session_id = ?
-        ORDER BY
-          sort_order,
-          name
-      `)
-      .bind(
-        session.session_id
-      )
-      .all(),
-
-
-    env.POLL_DB
-      .prepare(`
-        SELECT
-          person_id,
-          date_key,
-          am,
-          pm,
-          exact_times
-        FROM poll_availability
-        WHERE session_id = ?
-          AND event_id IS NULL
-        ORDER BY
-          person_id,
-          date_key
-      `)
-      .bind(
-        session.session_id
-      )
-      .all()
-  ]);
-
-
-  const people =
-    (peopleResult.results || [])
-      .map(row => ({
-        personId:
-          String(row.person_id),
-
-        name:
-          String(row.name || "")
-      }));
-
-
-  const peopleById = {};
-
-  for (const person of people) {
-    peopleById[
-      person.personId
-    ] = person;
-  }
-
-
-  const availability = {};
-
-  for (
-    const row
-    of availabilityResult.results || []
-  ) {
-    const personId =
-      String(
-        row.person_id || ""
+  try {
+    return JSON.parse(
+      cleaned
+    );
+  } catch {
+    const firstBrace =
+      cleaned.indexOf(
+        "{"
       );
 
-    const person =
-      peopleById[
-        personId
-      ];
-
-    if (!person) {
-      continue;
-    }
-
-
-    const dateKey =
-      String(
-        row.date_key || ""
+    const lastBrace =
+      cleaned.lastIndexOf(
+        "}"
       );
-
-    if (!dateKey) {
-      continue;
-    }
 
 
     if (
-      !availability[
-        person.name
-      ]
+      firstBrace >= 0 &&
+      lastBrace >
+      firstBrace
     ) {
-      availability[
-        person.name
-      ] = {};
-    }
-
-
-    let exactTimes = [];
-
-    try {
-      exactTimes =
-        JSON.parse(
-          String(
-            row.exact_times ||
-            "[]"
-          )
-        );
-    } catch {
-      exactTimes = [];
-    }
-
-
-    availability[
-      person.name
-    ][dateKey] = {
-      am:
-        Boolean(
-          row.am
-        ),
-
-      pm:
-        Boolean(
-          row.pm
-        ),
-
-      exactTimes:
-        Array.isArray(
-          exactTimes
+      return JSON.parse(
+        cleaned.slice(
+          firstBrace,
+          lastBrace + 1
         )
-          ? exactTimes
-          : []
-    };
+      );
+    }
+
+
+    throw new Error(
+      "Gemini returned receipt data that could not be parsed."
+    );
   }
-
-
-  return {
-    session: {
-      sessionId:
-        String(
-          session.session_id
-        ),
-
-      sessionName:
-        String(
-          session.session_name
-        ),
-
-      sessionCode:
-        String(
-          session.session_code
-        ),
-
-      startDate:
-        String(
-          session.start_date || ""
-        ),
-
-      endDate:
-        String(
-          session.end_date || ""
-        ),
-
-      allowedDays:
-        parsePollAllowedDays(
-          session.allowed_days
-        ),
-
-      defaultStartHour:
-        numberOrNull(
-          session.default_start_hour
-        ),
-
-      defaultEndHour:
-        numberOrNull(
-          session.default_end_hour
-        )
-    },
-
-    people,
-
-    availability
-  };
 }
 
 
-// ============================================================
-// SAVE POLL AVAILABILITY
-// ============================================================
-
-async function savePollAvailability(
-  env,
-  request
+function normalizeGeminiReceipt(
+  receipt
 ) {
-  const session =
-    await getPollSessionByCode(
-      env,
-      request.sessionCode
-    );
-
-
-  const personId =
-    String(
-      request.personId || ""
-    ).trim();
-
-
-  const dateKey =
-    String(
-      request.date || ""
-    ).trim();
-
-
-  if (!personId) {
-    throw new Error(
-      "Choose a person."
-    );
-  }
-
-
-  if (!dateKey) {
-    throw new Error(
-      "Date is required."
-    );
-  }
-
-
-  validatePollAvailabilityDate(
-    session,
-    dateKey
-  );
-
-
-  const person =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          person_id
-        FROM poll_people
-        WHERE person_id = ?
-          AND session_id = ?
-        LIMIT 1
-      `)
-      .bind(
-        personId,
-        session.session_id
-      )
-      .first();
-
-
-  if (!person) {
-    throw new Error(
-      "That person does not belong to this session."
-    );
-  }
-
-
-  const exactTimes =
-    normalizePollTimes(
-      request.times
-    );
-
-
-  const cleared =
-    Boolean(
-      request.cleared
-    ) ||
-    !exactTimes.length;
-
-
-  if (cleared) {
-    await env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_availability
-        WHERE session_id = ?
-          AND person_id = ?
-          AND event_id IS NULL
-          AND date_key = ?
-      `)
-      .bind(
-        session.session_id,
-        personId,
-        dateKey
-      )
-      .run();
-
-  } else {
-
-    await env.POLL_DB
-      .prepare(`
-        INSERT INTO poll_availability (
-          availability_id,
-          session_id,
-          person_id,
-          event_id,
-          date_key,
-          am,
-          pm,
-          exact_times,
-          created_at,
-          updated_at
-        )
-        VALUES (
-          ?, ?, ?, NULL, ?,
-          0, 0, ?,
-          CURRENT_TIMESTAMP,
-          CURRENT_TIMESTAMP
-        )
-
-        ON CONFLICT(
-          session_id,
-          person_id,
-          date_key
-        )
-        WHERE event_id IS NULL
-
-        DO UPDATE SET
-          am = 0,
-          pm = 0,
-          exact_times =
-            excluded.exact_times,
-          updated_at =
-            CURRENT_TIMESTAMP
-      `)
-      .bind(
-        crypto.randomUUID(),
-        session.session_id,
-        personId,
-        dateKey,
-        JSON.stringify(
-          exactTimes
-        )
-      )
-      .run();
-  }
-
-
-  return loadPollState(
-    env,
-    {
-      sessionCode:
-        request.sessionCode
-    }
-  );
-}
-
-// ============================================================
-// PARTICIPANT - ADD YOURSELF
-// ============================================================
-
-async function addPollPersonSelf(
-  env,
-  request
-) {
-  const session =
-    await getPollSessionByCode(
-      env,
-      request.sessionCode
-    );
-
-
-  const name =
-    String(
-      request.name || ""
-    ).trim();
-
-
-  if (!name) {
-    throw new Error(
-      "Enter your name."
-    );
-  }
-
-
-  if (name.length > 50) {
-    throw new Error(
-      "Name is too long."
-    );
-  }
-
-
-  const existing =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          person_id
-        FROM poll_people
-        WHERE session_id = ?
-          AND LOWER(name) = LOWER(?)
-        LIMIT 1
-      `)
-      .bind(
-        session.session_id,
-        name
-      )
-      .first();
-
-
-  if (existing) {
-    throw new Error(
-      "That name is already in this session."
-    );
-  }
-
-
-  const orderRow =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          COALESCE(
-            MAX(sort_order),
-            0
-          ) + 1 AS next_order
-        FROM poll_people
-        WHERE session_id = ?
-      `)
-      .bind(
-        session.session_id
-      )
-      .first();
-
-
-  const personId =
-    crypto.randomUUID();
-
-
-  await env.POLL_DB
-    .prepare(`
-      INSERT INTO poll_people (
-        person_id,
-        session_id,
-        name,
-        sort_order,
-        created_at
-      )
-      VALUES (
-        ?, ?, ?, ?,
-        CURRENT_TIMESTAMP
-      )
-    `)
-    .bind(
-      personId,
-      session.session_id,
-      name,
-      Number(
-        orderRow?.next_order || 1
-      )
+  const items =
+    Array.isArray(
+      receipt?.items
     )
-    .run();
+      ? receipt.items
+          .map(
+            item => {
+              const name =
+                String(
+                  item?.name ||
+                  ""
+                ).trim();
+
+              const lineTotal =
+                Number(
+                  item?.lineTotal
+                );
 
 
-  const state =
-    await loadPollState(
-      env,
-      {
-        sessionCode:
-          request.sessionCode
-      }
-    );
+              if (
+                !name ||
+                !Number.isFinite(
+                  lineTotal
+                )
+              ) {
+                return null;
+              }
 
 
-  return {
-    ...state,
+              return {
+                name,
 
-    addedPersonId:
-      personId
-  };
-}
-
-// ============================================================
-// POLL ADMIN STATE
-// ============================================================
-
-async function getPollAdminState(env) {
-  const [
-    sessionsResult,
-    peopleResult
-  ] = await Promise.all([
-
-    env.POLL_DB
-      .prepare(`
-        SELECT
-          session_id,
-          session_name,
-          session_code,
-          start_date,
-          end_date,
-          allowed_days,
-          default_start_hour,
-          default_end_hour,
-          is_active,
-          created_at,
-          updated_at
-        FROM poll_sessions
-        ORDER BY
-          session_name
-      `)
-      .all(),
-
-
-    env.POLL_DB
-      .prepare(`
-        SELECT
-          person_id,
-          session_id,
-          name,
-          sort_order
-        FROM poll_people
-        ORDER BY
-          session_id,
-          sort_order,
-          name
-      `)
-      .all()
-  ]);
-
-
-  const sessions =
-    (sessionsResult.results || [])
-      .map(row => {
-
-        const sessionId =
-          String(
-            row.session_id
-          );
-
-
-        return {
-          sessionId,
-
-          sessionName:
-            String(
-              row.session_name ||
-              ""
-            ),
-
-          sessionCode:
-            String(
-              row.session_code ||
-              ""
-            ),
-
-          startDate:
-            String(
-              row.start_date ||
-              ""
-            ),
-
-          endDate:
-            String(
-              row.end_date ||
-              ""
-            ),
-
-          allowedDays:
-            parsePollAllowedDays(
-              row.allowed_days
-            ),
-
-          defaultStartHour:
-            numberOrNull(
-              row.default_start_hour
-            ),
-
-          defaultEndHour:
-            numberOrNull(
-              row.default_end_hour
-            ),
-
-          isActive:
-            Boolean(
-              row.is_active
-            ),
-
-          people:
-            (peopleResult.results || [])
-              .filter(
-                person =>
-                  String(
-                    person.session_id
-                  ) ===
-                  sessionId
-              )
-              .map(person => ({
-                personId:
-                  String(
-                    person.person_id
+                quantity:
+                  numberOrNull(
+                    item?.quantity
                   ),
 
-                name:
-                  String(
-                    person.name ||
-                    ""
+                unitPrice:
+                  numberOrNull(
+                    item?.unitPrice
+                  ),
+
+                lineTotal:
+                  roundMoney(
+                    lineTotal
                   )
-              }))
-        };
-      });
-
-
-  return {
-    sessions
-  };
-}
-
-
-// ============================================================
-// CREATE SESSION
-// ============================================================
-
-async function createPollSession(
-  env,
-  request
-) {
-  const sessionName =
-    String(
-      request.sessionName || ""
-    ).trim();
-
-
-  const sessionCode =
-    String(
-      request.sessionCode || ""
-    ).trim();
-
-
-  const startDate =
-    normalizeOptionalText(
-      request.startDate
-    );
-
-
-  const endDate =
-    normalizeOptionalText(
-      request.endDate
-    );
-
-
-  const allowedDays =
-    normalizePollAllowedDays(
-      request.allowedDays
-    );
-
-
-  const defaultStartHour =
-    normalizePollHour(
-      request.defaultStartHour,
-      "Default start time"
-    );
-
-
-  const defaultEndHour =
-    normalizePollHour(
-      request.defaultEndHour,
-      "Default end time"
-    );
-
-
-  if (!sessionName) {
-    throw new Error(
-      "Session name is required."
-    );
-  }
-
-
-  if (!sessionCode) {
-    throw new Error(
-      "Session code is required."
-    );
-  }
-
-
-  validatePollDateRange(
-    startDate,
-    endDate
-  );
-
-
-  if (
-    env.POLL_ADMIN_CODE &&
-    sessionCode ===
-      String(
-        env.POLL_ADMIN_CODE
-      )
-  ) {
-    throw new Error(
-      "That code is reserved for admin access."
-    );
-  }
-
-
-  const duplicate =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          session_id
-        FROM poll_sessions
-        WHERE UPPER(session_code) =
-          UPPER(?)
-        LIMIT 1
-      `)
-      .bind(
-        sessionCode
-      )
-      .first();
-
-
-  if (duplicate) {
-    throw new Error(
-      "That session code is already in use."
-    );
-  }
-
-
-  await env.POLL_DB
-    .prepare(`
-      INSERT INTO poll_sessions (
-        session_id,
-        session_name,
-        session_code,
-        start_date,
-        end_date,
-        allowed_days,
-        default_start_hour,
-        default_end_hour,
-        is_active,
-        created_at,
-        updated_at
-      )
-      VALUES (
-        ?, ?, ?, ?, ?,
-        ?, ?, ?, 1,
-        CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP
-      )
-    `)
-    .bind(
-      crypto.randomUUID(),
-      sessionName,
-      sessionCode,
-      startDate,
-      endDate,
-      JSON.stringify(
-        allowedDays
-      ),
-      defaultStartHour,
-      defaultEndHour
-    )
-    .run();
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// UPDATE SESSION
-// ============================================================
-
-async function updatePollSession(
-  env,
-  request
-) {
-  const sessionId =
-    String(
-      request.sessionId || ""
-    ).trim();
-
-
-  const sessionName =
-    String(
-      request.sessionName || ""
-    ).trim();
-
-
-  const sessionCode =
-    String(
-      request.sessionCode || ""
-    ).trim();
-
-
-  const startDate =
-    normalizeOptionalText(
-      request.startDate
-    );
-
-
-  const endDate =
-    normalizeOptionalText(
-      request.endDate
-    );
-
-
-  const allowedDays =
-    normalizePollAllowedDays(
-      request.allowedDays
-    );
-
-
-  const defaultStartHour =
-    normalizePollHour(
-      request.defaultStartHour,
-      "Default start time"
-    );
-
-
-  const defaultEndHour =
-    normalizePollHour(
-      request.defaultEndHour,
-      "Default end time"
-    );
-
-
-  if (
-    !sessionId ||
-    !sessionName ||
-    !sessionCode
-  ) {
-    throw new Error(
-      "Session name and code are required."
-    );
-  }
-
-
-  validatePollDateRange(
-    startDate,
-    endDate
-  );
-
-
-  if (
-    env.POLL_ADMIN_CODE &&
-    sessionCode ===
-      String(
-        env.POLL_ADMIN_CODE
-      )
-  ) {
-    throw new Error(
-      "That code is reserved for admin access."
-    );
-  }
-
-
-  const duplicate =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          session_id
-        FROM poll_sessions
-        WHERE UPPER(session_code) =
-          UPPER(?)
-          AND session_id <> ?
-        LIMIT 1
-      `)
-      .bind(
-        sessionCode,
-        sessionId
-      )
-      .first();
-
-
-  if (duplicate) {
-    throw new Error(
-      "That session code is already in use."
-    );
-  }
-
-
-  const result =
-    await env.POLL_DB
-      .prepare(`
-        UPDATE poll_sessions
-        SET
-          session_name = ?,
-          session_code = ?,
-          start_date = ?,
-          end_date = ?,
-          allowed_days = ?,
-          default_start_hour = ?,
-          default_end_hour = ?,
-          is_active = ?,
-          updated_at =
-            CURRENT_TIMESTAMP
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionName,
-        sessionCode,
-        startDate,
-        endDate,
-        JSON.stringify(
-          allowedDays
-        ),
-        defaultStartHour,
-        defaultEndHour,
-        request.isActive === false
-          ? 0
-          : 1,
-        sessionId
-      )
-      .run();
-
-
-  if (!result.meta?.changes) {
-    throw new Error(
-      "Session not found."
-    );
-  }
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// DELETE SESSION
-// ============================================================
-
-async function deletePollSession(
-  env,
-  request
-) {
-  const sessionId =
-    String(
-      request.sessionId || ""
-    ).trim();
-
-
-  if (!sessionId) {
-    throw new Error(
-      "Session ID is required."
-    );
-  }
-
-
-  // Explicit child deletion keeps this
-  // safe regardless of FK settings.
-  await env.POLL_DB.batch([
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_availability
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionId
-      ),
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_events
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionId
-      ),
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_people
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionId
-      ),
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_sessions
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionId
-      )
-  ]);
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// ADD PERSON
-// ============================================================
-
-async function addPollPerson(
-  env,
-  request
-) {
-  const sessionId =
-    String(
-      request.sessionId || ""
-    ).trim();
-
-
-  const name =
-    String(
-      request.name || ""
-    ).trim();
-
-
-  if (!sessionId || !name) {
-    throw new Error(
-      "Session and name are required."
-    );
-  }
-
-
-  await verifyPollSessionId(
-    env,
-    sessionId
-  );
-
-
-  const existing =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          person_id
-        FROM poll_people
-        WHERE session_id = ?
-          AND LOWER(name) =
-            LOWER(?)
-        LIMIT 1
-      `)
-      .bind(
-        sessionId,
-        name
-      )
-      .first();
-
-
-  if (existing) {
-    throw new Error(
-      "That person is already in this session."
-    );
-  }
-
-
-  const orderRow =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          COALESCE(
-            MAX(sort_order),
-            0
-          ) + 1 AS next_order
-        FROM poll_people
-        WHERE session_id = ?
-      `)
-      .bind(
-        sessionId
-      )
-      .first();
-
-
-  await env.POLL_DB
-    .prepare(`
-      INSERT INTO poll_people (
-        person_id,
-        session_id,
-        name,
-        sort_order,
-        created_at
-      )
-      VALUES (
-        ?, ?, ?, ?,
-        CURRENT_TIMESTAMP
-      )
-    `)
-    .bind(
-      crypto.randomUUID(),
-      sessionId,
-      name,
-      Number(
-        orderRow?.next_order ||
-        1
-      )
-    )
-    .run();
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// DELETE PERSON
-// ============================================================
-
-async function deletePollPerson(
-  env,
-  request
-) {
-  const personId =
-    String(
-      request.personId || ""
-    ).trim();
-
-
-  if (!personId) {
-    throw new Error(
-      "Person ID is required."
-    );
-  }
-
-
-  await env.POLL_DB.batch([
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_availability
-        WHERE person_id = ?
-      `)
-      .bind(
-        personId
-      ),
-
-    env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_people
-        WHERE person_id = ?
-      `)
-      .bind(
-        personId
-      )
-  ]);
-
-
-  return getPollAdminState(env);
-}
-
-
-// ============================================================
-// POLL HELPERS
-// ============================================================
-
-async function getPollSessionByCode(
-  env,
-  sessionCode
-) {
-  sessionCode =
-    String(
-      sessionCode || ""
-    ).trim();
-
-
-  if (!sessionCode) {
-    throw new Error(
-      "Session code is required."
-    );
-  }
-
-
-  const session =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          session_id,
-          session_name,
-          session_code,
-          start_date,
-          end_date,
-          allowed_days,
-          default_start_hour,
-          default_end_hour
-        FROM poll_sessions
-        WHERE UPPER(session_code) =
-          UPPER(?)
-          AND is_active = 1
-        LIMIT 1
-      `)
-      .bind(
-        sessionCode
-      )
-      .first();
-
-
-  if (!session) {
-    throw new Error(
-      "Session not found or inactive."
-    );
-  }
-
-
-  return session;
-}
-
-
-async function verifyPollSessionId(
-  env,
-  sessionId
-) {
-  const session =
-    await env.POLL_DB
-      .prepare(`
-        SELECT
-          session_id
-        FROM poll_sessions
-        WHERE session_id = ?
-        LIMIT 1
-      `)
-      .bind(
-        sessionId
-      )
-      .first();
-
-
-  if (!session) {
-    throw new Error(
-      "Session not found."
-    );
-  }
-}
-
-
-function normalizeOptionalText(value) {
-  const text =
-    String(
-      value || ""
-    ).trim();
-
-  return text || null;
-}
-
-
-function parsePollAllowedDays(value) {
-  try {
-    const parsed =
-      JSON.parse(
-        String(
-          value || "[]"
-        )
-      );
-
-
-    if (!Array.isArray(parsed)) {
-      return [];
-    }
-
-
-    const validDays = [
-      "sun",
-      "mon",
-      "tue",
-      "wed",
-      "thu",
-      "fri",
-      "sat"
-    ];
-
-
-    return parsed
-      .map(day =>
-        String(
-          day || ""
-        )
-          .trim()
-          .toLowerCase()
-      )
-      .filter(day =>
-        validDays.includes(
-          day
-        )
-      );
-
-  } catch {
-    return [];
-  }
-}
-
-
-function normalizePollAllowedDays(value) {
-  const source =
-    Array.isArray(value)
-      ? value
+              };
+            }
+          )
+          .filter(Boolean)
       : [];
 
 
-  const validDays = [
-    "sun",
-    "mon",
-    "tue",
-    "wed",
-    "thu",
-    "fri",
-    "sat"
-  ];
-
-
-  return [
-    ...new Set(
-      source
-        .map(day =>
-          String(
-            day || ""
-          )
-            .trim()
-            .toLowerCase()
-        )
-        .filter(day =>
-          validDays.includes(
-            day
-          )
-        )
-    )
-  ];
-}
-
-
-function normalizePollHour(
-  value,
-  label
-) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
-  }
-
-
-  const hour =
-    Number(value);
-
-
-  if (
-    !Number.isInteger(hour) ||
-    hour < 0 ||
-    hour > 23
-  ) {
-    throw new Error(
-      label +
-      " must be a whole hour from 0 through 23."
-    );
-  }
-
-
-  return hour;
-}
-
-
-function validatePollDateRange(
-  startDate,
-  endDate
-) {
-  if (
-    startDate &&
-    !/^\d{4}-\d{2}-\d{2}$/.test(
-      startDate
-    )
-  ) {
-    throw new Error(
-      "Start date must use YYYY-MM-DD."
-    );
-  }
-
-
-  if (
-    endDate &&
-    !/^\d{4}-\d{2}-\d{2}$/.test(
-      endDate
-    )
-  ) {
-    throw new Error(
-      "End date must use YYYY-MM-DD."
-    );
-  }
-
-
-  if (
-    startDate &&
-    endDate &&
-    endDate < startDate
-  ) {
-    throw new Error(
-      "End date cannot be before start date."
-    );
-  }
-}
-
-
-function validatePollAvailabilityDate(
-  session,
-  dateKey
-) {
-  if (
-    !/^\d{4}-\d{2}-\d{2}$/.test(
-      dateKey
-    )
-  ) {
-    throw new Error(
-      "Invalid availability date."
-    );
-  }
-
-
-  const startDate =
-    String(
-      session.start_date || ""
-    );
-
-
-  const endDate =
-    String(
-      session.end_date || ""
-    );
-
-
-  if (
-    startDate &&
-    dateKey < startDate
-  ) {
-    throw new Error(
-      "That date is before this session begins."
-    );
-  }
-
-
-  if (
-    endDate &&
-    dateKey > endDate
-  ) {
-    throw new Error(
-      "That date is after this session ends."
-    );
-  }
-
-
-  const allowedDays =
-    parsePollAllowedDays(
-      session.allowed_days
-    );
-
-
-  if (!allowedDays.length) {
-    return;
-  }
-
-
-  const parts =
-    dateKey
-      .split("-")
-      .map(Number);
-
-
-  const date =
-    new Date(
-      Date.UTC(
-        parts[0],
-        parts[1] - 1,
-        parts[2]
-      )
-    );
-
-
-  const dayKeys = [
-    "sun",
-    "mon",
-    "tue",
-    "wed",
-    "thu",
-    "fri",
-    "sat"
-  ];
-
-
-  const dayKey =
-    dayKeys[
-      date.getUTCDay()
-    ];
-
-
-  if (
-    !allowedDays.includes(
-      dayKey
-    )
-  ) {
-    throw new Error(
-      "That day is not available for this session."
-    );
-  }
-}
-
-
-function normalizePollTimes(value) {
-  if (!Array.isArray(value)) {
-    return [];
-  }
-
-
-  return [
-    ...new Set(
-      value
-        .map(Number)
-        .filter(hour =>
-          Number.isInteger(hour) &&
-          hour >= 0 &&
-          hour <= 23
-        )
-    )
-  ];
-}
-
-// ============================================================
-// DATABASE HELPERS
-// ============================================================
-
-async function deleteRowsNotInList(
-  env,
-  tableName,
-  idColumn,
-  billId,
-  idsToKeep
-) {
-  if (!idsToKeep.length) {
-    return;
-  }
-
-  const placeholders =
-    idsToKeep
-      .map(() => "?")
-      .join(",");
-
-  const sql = `
-    DELETE FROM ${tableName}
-    WHERE bill_id = ?
-      AND ${idColumn}
-        NOT IN (${placeholders})
-  `;
-
-
-  await env.DB
-    .prepare(sql)
-    .bind(
-      billId,
-      ...idsToKeep
-    )
-    .run();
-}
-
-
-// ============================================================
-// HELPERS
-// ============================================================
-
-function firstAvailablePersonColor(
-  usedColors,
-  preferredIndex
-) {
-  for (
-    let offset = 0;
-    offset <
-      PERSON_COLOR_KEYS.length;
-    offset++
-  ) {
-    const key =
-      PERSON_COLOR_KEYS[
-        (
-          Number(
-            preferredIndex ||
-            0
-          ) +
-          offset
-        ) %
-        PERSON_COLOR_KEYS.length
-      ];
-
-
-    if (
-      !usedColors[key]
-    ) {
-      return key;
-    }
-  }
-
-
-  return PERSON_COLOR_KEYS[
-    Number(
-      preferredIndex ||
-      0
-    ) %
-    PERSON_COLOR_KEYS.length
-  ];
-}
-
-
-function requiredMoney(
-  value,
-  label
-) {
-  const number =
-    Number(value);
-
-  if (
-    !Number.isFinite(
-      number
-    ) ||
-    number < 0
-  ) {
-    throw new Error(
-      "Enter a valid " +
-      label +
-      "."
-    );
-  }
-
-  return roundMoney(
-    number
-  );
-}
-
-
-function numberOrNull(
-  value
-) {
-  if (
-    value === null ||
-    value === undefined ||
-    value === ""
-  ) {
-    return null;
-  }
-
-
-  const number =
-    Number(value);
-
-
-  return Number.isFinite(
-    number
-  )
-    ? number
-    : null;
-}
-
-
-function roundMoney(
-  value
-) {
-  return Math.round(
-    (
-      Number(
-        value || 0
-      ) +
-      Number.EPSILON
-    ) *
-    100
-  ) / 100;
-}
-
-
-function formatMoneyForError(
-  value
-) {
-  return (
-    "$" +
-    Number(
-      value || 0
-    ).toFixed(2)
-  );
-}
-
-
-function json(
-  data,
-  status = 200
-) {
-  return new Response(
-    JSON.stringify(data),
-    {
-      status,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        ...CORS_HEADERS
-      }
-    }
-  );
+  return {
+    storeName:
+      String(
+        receipt?.storeName ||
+        ""
+      ).trim(),
+
+    address:
+      String(
+        receipt?.address ||
+        ""
+      ).trim(),
+
+    date:
+      String(
+        receipt?.date ||
+        ""
+      ).trim(),
+
+    time:
+      String(
+        receipt?.time ||
+        ""
+      ).trim(),
+
+    subtotal:
+      safeMoney(
+        receipt?.subtotal
+      ),
+
+    tax:
+      safeMoney(
+        receipt?.tax
+      ),
+
+    tip:
+      safeMoney(
+        receipt?.tip
+      ),
+
+    grandTotal:
+      safeMoney(
+        receipt?.grandTotal
+      ),
+
+    items
+  };
 }
