@@ -1,82 +1,127 @@
-<div id="adminSessionPanel" class="hidden">
-
-  <!-- SESSION SETTINGS -->
-  <div class="admin-section">
-    <h3>Session Settings</h3>
-
-    <label class="field-label">
-      Name
-    </label>
-
-    <input
-      id="editSessionName"
-      class="input"
-      placeholder="Session name"
-    />
-
-    <label
-      class="field-label"
-      style="margin-top:10px;"
-    >
-      Code
-    </label>
-
-    <input
-      id="editSessionCode"
-      class="input"
-      placeholder="Session code"
-    />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Availability Poll</title>
+<style>
+:root{--bg:#0f172a;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--primary:#6366f1;--primary2:#4f46e5;--success:#10b981;--danger:#ef4444;--shadow:0 24px 70px rgba(2,6,23,.32)}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Inter,system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at top left,rgba(99,102,241,.45),transparent 34%),radial-gradient(circle at bottom right,rgba(16,185,129,.32),transparent 30%),linear-gradient(135deg,#020617,#111827 55%,#1e1b4b);padding:24px 14px}button,input,select{font:inherit}.hidden{display:none!important}.screen{width:min(1120px,100%);margin:auto}.login-wrap{min-height:calc(100vh - 48px);display:grid;place-items:center}.card,.calendar-card,.admin-card{background:rgba(255,255,255,.95);border-radius:28px;box-shadow:var(--shadow)}.login-card{width:min(460px,100%);padding:28px}.login-card h1,.hero h1{margin:0;letter-spacing:-.05em}.login-card p,.muted{color:var(--muted)}.input,.select{width:100%;padding:12px 14px;border:1px solid var(--border);border-radius:14px;background:#fff}.label{display:block;font-size:.85rem;font-weight:800;margin:12px 0 6px}.btn{border:0;border-radius:14px;padding:11px 14px;font-weight:900;cursor:pointer}.btn.primary{background:var(--text);color:#fff}.btn.secondary{background:#f1f5f9}.btn.danger{background:#fee2e2;color:#b91c1c}.btn.full{width:100%;margin-top:12px}.hero{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;color:#fff;margin-bottom:14px}.hero h1{font-size:clamp(2rem,5vw,3.8rem);line-height:1}.hero p{margin:6px 0 0;color:rgba(255,255,255,.72)}.hero-actions{display:flex;gap:8px;flex-wrap:wrap}.pill{padding:9px 13px;border-radius:999px;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);color:#fff;font-weight:800}.modebar,.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:20px;padding:11px;margin-bottom:12px}.toolbar{justify-content:space-between}.toolbar label{color:#fff;font-weight:800}.toolbar .select{width:auto;min-width:220px}.modebar .btn.active{background:var(--primary);color:#fff}.overlap-picker{width:100%;display:none;gap:8px;flex-wrap:wrap}.overlap-picker.show{display:flex}.person-check{background:#fff;border-radius:999px;padding:7px 10px;font-size:.82rem;font-weight:800}.calendar-card{padding:18px}.calendar-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}.calendar-header h2{margin:0;font-size:2rem}.nav{display:flex;gap:8px}.nav .btn{width:42px;height:42px;padding:0}.weekdays,.calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.weekday{text-align:center;color:var(--muted);font-weight:800;font-size:.72rem;text-transform:uppercase}.day{min-height:108px;border:1px solid var(--border);border-radius:18px;background:#fff;padding:9px;display:flex;flex-direction:column;cursor:pointer}.day.empty{visibility:hidden}.day.today .num{background:var(--primary);color:#fff}.num{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-weight:900}.badges{margin-top:auto}.split{display:grid;grid-template-rows:1fr 1fr;border:1px solid var(--border);border-radius:12px;overflow:hidden}.half{padding:5px;text-align:center;font-size:.68rem;font-weight:900}.am{background:#eef2ff;color:#4f46e5}.pm{background:#fff7ed;color:#c2410c}.badge{display:inline-block;margin:2px;padding:5px 7px;border-radius:999px;background:#ede9fe;color:#6d28d9;font-size:.7rem;font-weight:900}.best{background:#dcfce7;color:#166534}.helper{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:.85rem}.overlay{position:fixed;inset:0;background:rgba(2,6,23,.7);backdrop-filter:blur(7px);display:none;overflow:auto;padding:18px;z-index:20}.overlay.show{display:block}.modal{width:min(720px,100%);margin:20px auto;background:#fff;border-radius:26px;padding:20px}.modal-head{display:flex;justify-content:space-between;gap:12px}.modal h3{margin:0;font-size:1.6rem}.close{width:38px;height:38px;border:0;border-radius:12px;background:#f1f5f9}.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0}.choice,.time{border:1px solid var(--border);background:#f8fafc;border-radius:14px;font-weight:900;cursor:pointer}.choice{padding:18px;font-size:1.3rem}.choice.selected{background:var(--primary);color:#fff}.times{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.time{padding:10px}.time.selected{background:var(--success);color:#fff}.summary{margin-top:10px;padding:10px;border-radius:12px;background:#f8fafc;color:var(--muted)}.group-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.group-card,.overlap-row{border:1px solid var(--border);background:#f8fafc;border-radius:14px;padding:12px}.group-card{text-align:center}.overlap-list{display:grid;gap:8px;margin-top:10px}.admin-card{padding:18px}.admin-grid{display:grid;grid-template-columns:300px 1fr;gap:16px}.admin-side{border-right:1px solid var(--border);padding-right:16px}.session-list,.admin-list{display:grid;gap:8px;margin-top:10px}.session-item,.admin-row{border:1px solid var(--border);border-radius:14px;padding:10px;background:#f8fafc}.session-item{cursor:pointer}.session-item.active{border-color:var(--primary);background:#eef2ff}.admin-row{display:flex;justify-content:space-between;align-items:center;gap:10px}.admin-section{border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:12px}.inline{display:grid;grid-template-columns:1fr auto;gap:8px}.event-form{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:8px}.status{margin-top:10px;min-height:20px;color:var(--muted)}.status.error{color:#b91c1c}
+@media(max-width:760px){body{padding:7px}.hero,.calendar-header{align-items:stretch;flex-direction:column}.toolbar{align-items:stretch;flex-direction:column}.toolbar .select{width:100%}.weekdays,.calendar{gap:4px}.day{min-height:90px;padding:5px;border-radius:13px}.half{font-size:.53rem}.times{grid-template-columns:repeat(2,1fr)}.group-grid{grid-template-columns:1fr}.admin-grid{grid-template-columns:1fr}.admin-side{border-right:0;border-bottom:1px solid var(--border);padding:0 0 14px}.event-form,.inline{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<section id="loginScreen" class="screen login-wrap">
+  <div class="card login-card">
+    <h1>Availability Poll</h1>
+    <p>Enter your group's session code.</p>
+    <label class="label">Session code</label>
+    <input id="sessionCodeInput" class="input" placeholder="Enter code" autocomplete="off" />
+    <button id="loginBtn" class="btn primary full">Enter Session</button>
+    <div id="loginStatus" class="status"></div>
   </div>
+</section>
+
+<main id="pollScreen" class="screen hidden">
+  <section class="hero">
+    <div><h1 id="sessionTitle">Availability Poll</h1><p id="sessionSubtitle">General availability</p></div>
+    <div class="hero-actions"><div id="saveStatus" class="pill">Cloudflare sync active</div><button id="switchSessionBtn" class="btn secondary">Switch session</button></div>
+  </section>
 
 
-  <!-- PEOPLE -->
-  <div class="admin-section">
-    <h3>People</h3>
+  <section class="toolbar">
+    <div><label>Person&nbsp;</label><select id="personSelect" class="select"></select></div>
+    <div id="personSummary" class="pill">0 selected days</div>
+    <div id="overlapPicker" class="overlap-picker"></div>
+  </section>
 
-    <div class="person-form">
-      <input
-        id="newPersonName"
-        class="input"
-        placeholder="Name"
-      />
-
-      <button
-        id="addPerson"
-        class="btn secondary"
-      >
-        Add Person
-      </button>
+  <section class="calendar-card">
+    <div class="calendar-header">
+      <div><h2 id="monthLabel"></h2><div id="monthSubLabel" class="muted"></div></div>
+      <div class="nav"><button id="prevMonth" class="btn secondary">‹</button><button id="nextMonth" class="btn secondary">›</button></div>
     </div>
+    <div class="weekdays"><div class="weekday">Sun</div><div class="weekday">Mon</div><div class="weekday">Tue</div><div class="weekday">Wed</div><div class="weekday">Thu</div><div class="weekday">Fri</div><div class="weekday">Sat</div></div>
+    <div id="calendar" class="calendar"></div>
+    <div class="helper"><span>Click a date to add or edit availability.</span><span id="storageNote">Cloudflare sync active</span></div>
+  </section>
+</main>
 
-    <div
-      id="peopleList"
-      class="admin-list"
-    ></div>
-  </div>
+<main id="adminScreen" class="screen hidden">
+  <section class="hero"><div><h1>Poll Admin</h1><p>Create and manage availability sessions and people.</p></div><button id="adminExit" class="btn secondary">Exit admin</button></section>
+  <section class="admin-card">
+    <div class="admin-grid">
+      <aside class="admin-side">
+        <h3>Sessions</h3>
+        <label class="label">Session name</label><input id="newSessionName" class="input" placeholder="Chris Bday" />
+        <label class="label">Session code</label><input id="newSessionCode" class="input" placeholder="FRIENDS26" />
+        <button id="createSession" class="btn primary full">Create Session</button>
+        <div id="sessionList" class="session-list"></div>
+      </aside>
+      <section>
+        <div id="adminEmpty"><h3>Select a session</h3><p class="muted">Choose one on the left or create a new one.</p></div>
+        <div id="adminPanel" class="hidden">
+          <div class="admin-section"><h3>Session Settings</h3><label class="label">Name</label><input id="editSessionName" class="input" /><label class="label">Code</label><input id="editSessionCode" class="input" /></div>
+          <div class="admin-section"><h3>People</h3><div class="inline"><input id="newPerson" class="input" placeholder="Name" /><button id="addPerson" class="btn secondary">Add Person</button></div><div id="peopleList" class="admin-list"></div></div>
+          <div class="admin-section"><button id="saveSession" class="btn primary full">Save Session</button><button id="deleteSession" class="btn danger full">Delete Session</button></div>
+        </div>
+      </section>
+    </div>
+    <div id="adminStatus" class="status"></div>
+  </section>
+</main>
 
+<div id="dayModal" class="overlay"><div class="modal"><div class="modal-head"><div><h3 id="dayTitle">Choose availability</h3><p id="daySubtitle" class="muted"></p></div><button id="closeDay" class="close">×</button></div><div class="choices"><button id="amBtn" class="choice">AM</button><button id="pmBtn" class="choice">PM</button></div><strong>Exact Times</strong><div id="timeGrid" class="times"></div><div id="exactSummary" class="summary">No exact times selected yet.</div><button id="saveDay" class="btn primary full">Save Date</button><button id="clearDay" class="btn danger full">Clear this date</button></div></div>
+<div id="groupModal" class="overlay"><div class="modal"><div class="modal-head"><div><h3 id="groupTitle">Group availability</h3><p class="muted">Best overlap for selected people.</p></div><button id="closeGroup" class="close">×</button></div><div id="groupSummary" class="group-grid"></div><div id="overlapList" class="overlap-list"></div></div></div>
 
-  <!-- SESSION ACTIONS -->
-  <div style="margin-top:16px;">
+<script>
+const API_URL="https://chrisvillan-github-io.chrisvillanpro.workers.dev/api";
+const GROUP_VIEW="__GROUP__";
+const state={sessionCode:"",session:null,people:[],selectedPersonId:null,selectedPersonName:"",currentDate:new Date(),activeDateKey:null,draft:{am:false,pm:false,exactTimes:[]},data:{},overlapPeople:[],adminCode:"",adminState:{sessions:[]},adminSessionId:null};
+const $=id=>document.getElementById(id);
 
-    <button
-      id="saveSession"
-      class="btn primary"
-      style="width:100%;"
-    >
-      Save Session
-    </button>
+async function api(body){const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!j.ok)throw new Error(j.error||"Request failed");return j}
+function show(which){$("loginScreen").classList.toggle("hidden",which!=="login");$("pollScreen").classList.toggle("hidden",which!=="poll");$("adminScreen").classList.toggle("hidden",which!=="admin")}
+function status(el,msg,error=false){el.textContent=msg;el.classList.toggle("error",error)}
 
-    <button
-      id="deleteSession"
-      class="btn danger"
-      style="
-        width:100%;
-        margin-top:10px;
-      "
-    >
-      Delete Session
-    </button>
+async function login(code,silent=false){code=String(code||"").trim();if(!code)throw new Error("Enter a session code.");if(!silent)status($("loginStatus"),"Checking code...");const j=await api({action:"pollLogin",code});if(j.mode==="admin"){state.adminCode=code;show("admin");await refreshAdmin();return}state.sessionCode=code;localStorage.setItem("pollSessionCode",code);await loadPoll(null);show("poll")}
 
-  </div>
+async function loadPoll(eventId=null){$("saveStatus").textContent="Loading...";const j=await api({action:"pollLoad",sessionCode:state.sessionCode,eventId});applyPollState(j.state);$("saveStatus").textContent="Cloudflare sync active"}
+function applyPollState(s){state.session=s.session;state.people=s.people||[];state.data=s.availability||{};if(!state.people.some(p=>p.personId===state.selectedPersonId))state.selectedPersonId=state.people[0]?.personId||null;state.selectedPersonName=getSelectedPerson()?.name||"";state.overlapPeople=state.people.map(p=>p.name).filter(n=>state.overlapPeople.includes(n));if(!state.overlapPeople.length)state.overlapPeople=state.people.map(p=>p.name);renderPoll()}
+function getSelectedPerson(){return state.people.find(p=>p.personId===state.selectedPersonId)||null}
 
-</div>
+function renderPoll(){$("sessionTitle").textContent=state.session?.sessionName||"Availability Poll";$("sessionSubtitle").textContent="Availability";renderPeople();renderCalendar()}
+function renderPeople(){$("personSelect").innerHTML=state.people.map(p=>`<option value="${p.personId}">${esc(p.name)}</option>`).join("")+`<option value="${GROUP_VIEW}">Find overlap</option>`;$("personSelect").value=state.selectedPersonId||GROUP_VIEW;$("overlapPicker").innerHTML=state.people.map(p=>`<label class="person-check"><input type="checkbox" data-name="${escAttr(p.name)}" ${state.overlapPeople.includes(p.name)?"checked":""}> ${esc(p.name)}</label>`).join("");$("overlapPicker").classList.toggle("show",$("personSelect").value===GROUP_VIEW);$("overlapPicker").querySelectorAll("input").forEach(cb=>cb.onchange=()=>{const n=cb.dataset.name;if(cb.checked&&!state.overlapPeople.includes(n))state.overlapPeople.push(n);if(!cb.checked)state.overlapPeople=state.overlapPeople.filter(x=>x!==n);renderCalendar()})}
+
+function renderCalendar(){const y=state.currentDate.getFullYear(),m=state.currentDate.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),today=toKey(new Date()),group=$("personSelect").value===GROUP_VIEW;$("monthLabel").textContent=first.toLocaleDateString(undefined,{month:"long",year:"numeric"});$("monthSubLabel").textContent=`${last.getDate()} days · ${group?"group overlap":(state.selectedPersonName||"Person")+"'s availability"}`;$("calendar").innerHTML="";for(let i=0;i<first.getDay();i++)$("calendar").insertAdjacentHTML("beforeend",'<div class="day empty"></div>');for(let d=1;d<=last.getDate();d++){const date=new Date(y,m,d),key=toKey(date),entry=group?groupSummary(key):getEntry(key),el=document.createElement("button");el.className=`day ${key===today?"today":""}`;el.innerHTML=`<div class="num">${d}</div><div class="badges">${group?renderGroupBadge(entry):renderBadge(entry)}</div>`;el.onclick=()=>group?openGroup(key):openDay(key);$("calendar").appendChild(el)}updateSummary()}
+function getEntry(key){return state.data[state.selectedPersonName]?.[key]}
+function effective(entry){if(!entry)return[];const s=new Set(entry.exactTimes||[]);if(entry.am)[8,9,10,11].forEach(h=>s.add(h));if(entry.pm)[12,13,14,15,16,17,18,19,20,21,22,23,24].forEach(h=>s.add(h));return [...s].sort((a,b)=>a-b)}
+function renderBadge(entry){const t=effective(entry),a=t.filter(h=>h>=8&&h<=11).length,p=t.filter(h=>h>=12&&h<=24).length;if(!a&&!p)return"";return `<div class="split">${a?`<div class="half am">AM · ${a}</div>`:"<div></div>"}${p?`<div class="half pm">PM · ${p}</div>`:"<div></div>"}</div>`}
+function updateSummary(){if($("personSelect").value===GROUP_VIEW){const people=state.overlapPeople,total=people.reduce((n,p)=>n+Object.keys(state.data[p]||{}).length,0);$("personSummary").textContent=`${people.length} selected · ${total} total responses`}else{const c=Object.keys(state.data[state.selectedPersonName]||{}).length;$("personSummary").textContent=`${c} selected day${c===1?"":"s"}`}}
+
+function availableAt(e,h){return e?.exactTimes?.includes(h)||(e?.am&&h>=8&&h<=11)||(e?.pm&&h>=12&&h<=24)}
+function groupSummary(key){const hourly=getTimes().map(o=>({hour:o.value,label:o.label,people:state.overlapPeople.filter(p=>availableAt(state.data[p]?.[key],o.value))}));const responders=state.overlapPeople.filter(p=>state.data[p]?.[key]).length;let bestHour=null,bestCount=0;hourly.forEach(x=>{if(x.people.length>bestCount){bestCount=x.people.length;bestHour=x.hour}});return{hourly,responders,bestHour,bestCount}}
+function renderGroupBadge(s){if(!s?.responders)return"";return `<span class="badge">${s.responders}/${state.overlapPeople.length} people</span>${s.bestCount?`<span class="badge best">Best ${fmt(s.bestHour)} · ${s.bestCount}</span>`:""}`}
+function openGroup(key){const s=groupSummary(key),date=fromKey(key),resp=state.overlapPeople.filter(p=>state.data[p]?.[key]),none=state.overlapPeople.filter(p=>!state.data[p]?.[key]);$("groupTitle").textContent=date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});$("groupSummary").innerHTML=`<div class="group-card"><strong>${s.responders}</strong><div>responded</div></div><div class="group-card"><strong>${s.bestCount}</strong><div>best overlap</div></div><div class="group-card"><strong>${s.bestHour==null?"—":fmt(s.bestHour)}</strong><div>best time</div></div>`;const ranked=s.hourly.filter(x=>x.people.length).sort((a,b)=>b.people.length-a.people.length||a.hour-b.hour);$("overlapList").innerHTML=(ranked.length?ranked.map((x,i)=>`<div class="overlap-row ${i===0?"best":""}"><strong>${x.label} · ${x.people.length}/${state.overlapPeople.length}</strong><div class="muted">${x.people.map(esc).join(", ")}</div></div>`).join(""):'<div class="summary">No availability entered.</div>')+`<div class="summary"><strong>Responded:</strong> ${resp.length?resp.map(esc).join(", "):"Nobody"}<br><strong>No response:</strong> ${none.length?none.map(esc).join(", "):"Everyone responded"}</div>`;$("groupModal").classList.add("show")}
+
+function openDay(key){state.activeDateKey=key;const e=getEntry(key)||{am:false,pm:false,exactTimes:[]},t=effective(e);state.draft={am:[8,9,10,11].every(h=>t.includes(h)),pm:[12,13,14,15,16,17,18,19,20,21,22,23,24].every(h=>t.includes(h)),exactTimes:[...t]};const d=fromKey(key);$("dayTitle").textContent=d.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric"});$("daySubtitle").textContent=`Editing ${state.selectedPersonName}'s availability.`;renderDraft();$("dayModal").classList.add("show")}
+function periodHours(p){return p==="am"?[8,9,10,11]:[12,13,14,15,16,17,18,19,20,21,22,23,24]}
+function togglePeriod(p){const hrs=periodHours(p),s=new Set(state.draft.exactTimes),all=hrs.every(h=>s.has(h));hrs.forEach(h=>all?s.delete(h):s.add(h));state.draft.exactTimes=[...s].sort((a,b)=>a-b);syncDraft();renderDraft()}
+function syncDraft(){state.draft.am=periodHours("am").every(h=>state.draft.exactTimes.includes(h));state.draft.pm=periodHours("pm").every(h=>state.draft.exactTimes.includes(h))}
+function renderDraft(){$("amBtn").classList.toggle("selected",state.draft.am);$("pmBtn").classList.toggle("selected",state.draft.pm);$("timeGrid").innerHTML=getTimes().map(t=>`<button class="time ${state.draft.exactTimes.includes(t.value)?"selected":""}" data-hour="${t.value}">${t.label}</button>`).join("");$("timeGrid").querySelectorAll("button").forEach(b=>b.onclick=()=>{const h=Number(b.dataset.hour),s=new Set(state.draft.exactTimes);s.has(h)?s.delete(h):s.add(h);state.draft.exactTimes=[...s].sort((a,b)=>a-b);syncDraft();renderDraft()});$("exactSummary").textContent=state.draft.exactTimes.length?"Selected: "+state.draft.exactTimes.map(fmt).join(", "):"No exact times selected yet."}
+async function saveDay(clear=false){if(!state.activeDateKey||!state.selectedPersonId)return;$("saveStatus").textContent="Saving...";try{const j=await api({action:"pollSave",sessionCode:state.sessionCode,personId:state.selectedPersonId,eventId:null,date:state.activeDateKey,am:clear?false:state.draft.am,pm:clear?false:state.draft.pm,times:clear?[]:state.draft.exactTimes,cleared:clear});applyPollState(j.state);$("dayModal").classList.remove("show");$("saveStatus").textContent="Saved";setTimeout(()=>$("saveStatus").textContent="Cloudflare sync active",1000)}catch(e){alert("Could not save availability: "+e.message);$("saveStatus").textContent="Could not save"}}
+
+async function refreshAdmin(){try{const j=await api({action:"pollAdminLoad",adminCode:state.adminCode});state.adminState=j.state||{sessions:[]};if(!state.adminState.sessions.some(s=>s.sessionId===state.adminSessionId))state.adminSessionId=state.adminState.sessions[0]?.sessionId||null;renderAdmin();status($("adminStatus"),"")}catch(e){status($("adminStatus"),e.message,true)}}
+function adminSession(){return state.adminState.sessions.find(s=>s.sessionId===state.adminSessionId)||null}
+function renderAdmin(){$("sessionList").innerHTML=state.adminState.sessions.map(s=>`<div class="session-item ${s.sessionId===state.adminSessionId?"active":""}" data-id="${s.sessionId}"><strong>${esc(s.sessionName)}</strong><div class="muted">${esc(s.sessionCode)}</div></div>`).join("");$("sessionList").querySelectorAll(".session-item").forEach(x=>x.onclick=()=>{state.adminSessionId=x.dataset.id;renderAdmin();status($("adminStatus"),"Session loaded")});const s=adminSession();$("adminEmpty").classList.toggle("hidden",!!s);$("adminPanel").classList.toggle("hidden",!s);if(!s)return;$("editSessionName").value=s.sessionName;$("editSessionCode").value=s.sessionCode;$("peopleList").innerHTML=s.people.map(p=>`<div class="admin-row"><strong>${esc(p.name)}</strong><button class="btn danger" data-person="${p.personId}">Remove</button></div>`).join("");$("peopleList").querySelectorAll("button").forEach(b=>b.onclick=async()=>{if(confirm("Remove this person and their availability?"))await adminAction({action:"pollAdminDeletePerson",personId:b.dataset.person})});}
+async function adminAction(payload){status($("adminStatus"),"Saving...");try{const j=await api({...payload,adminCode:state.adminCode});state.adminState=j.state||state.adminState;renderAdmin();status($("adminStatus"),"Saved")}catch(e){status($("adminStatus"),e.message,true)}}
+
+$("loginBtn").onclick=async()=>{try{await login($("sessionCodeInput").value)}catch(e){status($("loginStatus"),e.message,true)}};$("sessionCodeInput").onkeydown=e=>{if(e.key==="Enter")$("loginBtn").click()};$("switchSessionBtn").onclick=()=>{localStorage.removeItem("pollSessionCode");state.sessionCode="";$("sessionCodeInput").value="";status($("loginStatus"),"");show("login")};$("personSelect").onchange=()=>{if($("personSelect").value===GROUP_VIEW){state.selectedPersonId=null;state.selectedPersonName=""}else{state.selectedPersonId=$("personSelect").value;state.selectedPersonName=getSelectedPerson()?.name||""}renderPeople();renderCalendar()};$("prevMonth").onclick=()=>{state.currentDate=new Date(state.currentDate.getFullYear(),state.currentDate.getMonth()-1,1);renderCalendar()};$("nextMonth").onclick=()=>{state.currentDate=new Date(state.currentDate.getFullYear(),state.currentDate.getMonth()+1,1);renderCalendar()};$("amBtn").onclick=()=>togglePeriod("am");$("pmBtn").onclick=()=>togglePeriod("pm");$("saveDay").onclick=()=>saveDay(false);$("clearDay").onclick=()=>saveDay(true);$("closeDay").onclick=()=>$("dayModal").classList.remove("show");$("closeGroup").onclick=()=>$("groupModal").classList.remove("show");$("adminExit").onclick=()=>{state.adminCode="";$("sessionCodeInput").value="";show("login")};
+$("createSession").onclick=async()=>{const name=$("newSessionName").value.trim(),code=$("newSessionCode").value.trim();if(!name||!code)return status($("adminStatus"),"Enter a session name and code.",true);await adminAction({action:"pollAdminCreateSession",sessionName:name,sessionCode:code});$("newSessionName").value="";$("newSessionCode").value="";const s=state.adminState.sessions.find(x=>x.sessionCode.toLowerCase()===code.toLowerCase());if(s){state.adminSessionId=s.sessionId;renderAdmin()}};
+$("saveSession").onclick=async()=>{const s=adminSession();if(!s)return;const name=$("editSessionName").value.trim(),code=$("editSessionCode").value.trim();if(!name||!code)return status($("adminStatus"),"Session name and code are required.",true);if(!confirm(`Save changes to "${s.sessionName}"?`))return;await adminAction({action:"pollAdminSaveSession",sessionId:state.adminSessionId,sessionName:name,sessionCode:code,isActive:true});status($("adminStatus"),"Session saved ✓");alert("Session saved successfully.");};$("deleteSession").onclick=async()=>{const s=adminSession();if(s&&confirm(`Delete ${s.sessionName}? Everything inside it will be deleted.`))await adminAction({action:"pollAdminDeleteSession",sessionId:s.sessionId})};$("addPerson").onclick=async()=>{const name=$("newPerson").value.trim();if(name){await adminAction({action:"pollAdminAddPerson",sessionId:state.adminSessionId,name});$("newPerson").value=""}};
+
+function getTimes(){const a=[];for(let h=8;h<=24;h++)a.push({value:h,label:fmt(h)});return a}function fmt(h){const n=h%24,s=n>=12?"PM":"AM",x=n%12||12;return `${x}:00 ${s}`}function toKey(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}function fromKey(k){const[y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)}function esc(v){return String(v??"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;")}function escAttr(v){return esc(v)}
+
+(async()=>{const remembered=localStorage.getItem("pollSessionCode");if(remembered){$("sessionCodeInput").value=remembered;try{await login(remembered,true);return}catch{localStorage.removeItem("pollSessionCode")}}show("login")})();
+</script>
+</body>
+</html>
