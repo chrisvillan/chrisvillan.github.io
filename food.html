@@ -14,48 +14,27 @@
       --text: #f4f7fb;
       --muted: #9aa4b2;
       --accent: #ff7a59;
-      --accent-2: #ff9d7f;
       --good: #4ade80;
-      --warning: #fbbf24;
       --danger: #fb7185;
       --shadow: 0 16px 40px rgba(0,0,0,.28);
       --radius: 18px;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
-    html {
-      color-scheme: dark;
-    }
+    html { color-scheme: dark; }
 
     body {
       margin: 0;
-      font-family:
-        Inter,
-        ui-sans-serif,
-        system-ui,
-        -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background:
         radial-gradient(circle at top left, rgba(255,122,89,.08), transparent 28rem),
         var(--bg);
       color: var(--text);
     }
 
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
-    button {
-      cursor: pointer;
-    }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
 
     .page {
       width: min(1400px, 100%);
@@ -106,10 +85,16 @@
       border-color: #3b4452;
     }
 
+    .btn:disabled {
+      opacity: .55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
     .btn-primary {
       background: var(--accent);
       border-color: var(--accent);
-      color: white;
+      color: #fff;
       font-weight: 700;
     }
 
@@ -152,9 +137,7 @@
       text-transform: uppercase;
     }
 
-    input,
-    select,
-    textarea {
+    input, select, textarea {
       width: 100%;
       border: 1px solid var(--border);
       background: #11151b;
@@ -164,9 +147,7 @@
       outline: none;
     }
 
-    input:focus,
-    select:focus,
-    textarea:focus {
+    input:focus, select:focus, textarea:focus {
       border-color: var(--accent);
       box-shadow: 0 0 0 3px rgba(255,122,89,.12);
     }
@@ -296,13 +277,9 @@
       font-size: 13px;
     }
 
-    .admin-edit {
-      display: none;
-    }
+    .admin-edit { display: none; }
 
-    .empty,
-    .loading,
-    .error-box {
+    .empty, .loading, .error-box {
       border: 1px dashed var(--border);
       border-radius: var(--radius);
       padding: 36px 20px;
@@ -318,7 +295,7 @@
     }
 
     dialog {
-      width: min(720px, calc(100vw - 28px));
+      width: min(760px, calc(100vw - 28px));
       border: 1px solid var(--border);
       border-radius: 20px;
       color: var(--text);
@@ -346,9 +323,7 @@
       font-size: 20px;
     }
 
-    .modal-body {
-      padding: 20px;
-    }
+    .modal-body { padding: 20px; }
 
     .modal-actions {
       padding: 16px 20px;
@@ -380,13 +355,8 @@
       background: rgba(255,122,89,.12);
     }
 
-    .tab-panel {
-      display: none;
-    }
-
-    .tab-panel.active {
-      display: block;
-    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
 
     .help {
       color: var(--muted);
@@ -401,9 +371,7 @@
       margin-bottom: 8px;
     }
 
-    .category-row input {
-      flex: 1;
-    }
+    .category-row input { flex: 1; }
 
     .tag-list {
       display: flex;
@@ -437,16 +405,28 @@
       min-height: 20px;
     }
 
-    .status.good {
-      color: var(--good);
+    .status.good { color: var(--good); }
+    .status.bad { color: var(--danger); }
+
+    .sync-box {
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      background: #11151b;
     }
 
-    .status.bad {
-      color: var(--danger);
+    .sync-box h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .sync-box .btn {
+      width: 100%;
+      margin-top: 10px;
     }
 
     .json-box {
-      min-height: 260px;
+      min-height: 220px;
       resize: vertical;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
       font-size: 12px;
@@ -454,61 +434,25 @@
     }
 
     @media (max-width: 1100px) {
-      .filter-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      .grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
+      .filter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
 
     @media (max-width: 720px) {
-      .page {
-        padding: 14px;
-      }
-
-      .topbar {
-        align-items: flex-start;
-      }
-
-      .filter-grid {
-        grid-template-columns: 1fr 1fr;
-      }
-
-      .field-search {
-        grid-column: 1 / -1;
-      }
-
-      .grid {
-        grid-template-columns: 1fr;
-      }
-
-      .filters {
-        position: static;
-      }
+      .page { padding: 14px; }
+      .topbar { align-items: flex-start; }
+      .filter-grid { grid-template-columns: 1fr 1fr; }
+      .field-search { grid-column: 1 / -1; }
+      .grid { grid-template-columns: 1fr; }
+      .filters { position: static; }
     }
 
     @media (max-width: 480px) {
-      .filter-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .field-search {
-        grid-column: auto;
-      }
-
-      .topbar {
-        flex-direction: column;
-      }
-
-      .top-actions {
-        width: 100%;
-      }
-
-      .top-actions .btn {
-        flex: 1;
-      }
+      .filter-grid { grid-template-columns: 1fr; }
+      .field-search { grid-column: auto; }
+      .topbar { flex-direction: column; }
+      .top-actions { width: 100%; }
+      .top-actions .btn { flex: 1; }
     }
   </style>
 </head>
@@ -532,12 +476,7 @@
       <div class="filter-grid">
         <div class="field field-search">
           <label for="searchInput">Search</label>
-          <input
-            id="searchInput"
-            type="search"
-            placeholder="Name, note, cuisine, tag…"
-            autocomplete="off"
-          />
+          <input id="searchInput" type="search" placeholder="Name, note, cuisine, tag…" autocomplete="off" />
         </div>
 
         <div class="field">
@@ -603,31 +542,22 @@
     </section>
   </main>
 
-
   <dialog id="adminLoginDialog">
     <div class="modal-head">
       <h2>Admin login</h2>
       <button class="btn" type="button" data-close="adminLoginDialog">Close</button>
     </div>
-
     <div class="modal-body">
       <div class="field">
         <label for="adminCodeInput">Food admin code</label>
-        <input
-          id="adminCodeInput"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Enter admin code"
-        />
+        <input id="adminCodeInput" type="password" autocomplete="current-password" placeholder="Enter admin code" />
       </div>
       <div class="status" id="adminLoginStatus"></div>
     </div>
-
     <div class="modal-actions">
       <button class="btn btn-primary" id="adminLoginSubmit" type="button">Log in</button>
     </div>
   </dialog>
-
 
   <dialog id="adminPanelDialog">
     <div class="modal-head">
@@ -637,27 +567,40 @@
 
     <div class="modal-body">
       <div class="tabs">
-        <button class="tab active" type="button" data-tab="categoriesPanel">Categories</button>
+        <button class="tab active" type="button" data-tab="syncPanel">Sync</button>
+        <button class="tab" type="button" data-tab="categoriesPanel">Categories</button>
         <button class="tab" type="button" data-tab="importPanel">Import JSON</button>
         <button class="tab" type="button" data-tab="statusPanel">Status</button>
       </div>
 
-      <div class="tab-panel active" id="categoriesPanel">
+      <div class="tab-panel active" id="syncPanel">
+        <div class="sync-box">
+          <h3>Sync from Siya's Google Maps list</h3>
+          <div class="help">
+            This opens the private source list in Cloudflare's browser, scrolls through the full list, extracts the restaurants, and updates the database automatically.
+          </div>
+          <button class="btn btn-primary" id="syncNowButton" type="button">
+            Sync from Siya's List
+          </button>
+          <div class="status" id="syncStatus"></div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="categoriesPanel">
         <div class="help">
           These are your own categories, separate from Google's category.
           Examples: Korean, Thai, Japanese, Mexican, Dessert.
         </div>
 
         <div id="categoryEditor"></div>
-
         <button class="btn" id="addCategoryButton" type="button">+ Add category</button>
         <div class="status" id="categoryStatus"></div>
       </div>
 
       <div class="tab-panel" id="importPanel">
         <div class="help">
-          Paste a JSON array of restaurants, or an object containing a
-          <code>places</code> array. This sends a complete snapshot to the Food API.
+          Backup/manual option: paste a JSON array of restaurants, or an object containing a
+          <code>places</code> array.
         </div>
 
         <textarea
@@ -674,7 +617,6 @@
   }
 ]'
         ></textarea>
-
         <div class="status" id="importStatus"></div>
       </div>
 
@@ -685,10 +627,9 @@
 
     <div class="modal-actions">
       <button class="btn btn-danger" id="adminLogoutButton" type="button">Log out</button>
-      <button class="btn btn-primary" id="adminPrimaryAction" type="button">Save categories</button>
+      <button class="btn btn-primary" id="adminPrimaryAction" type="button" style="display:none;"></button>
     </div>
   </dialog>
-
 
   <dialog id="editPlaceDialog">
     <div class="modal-head">
@@ -722,7 +663,6 @@
     </div>
   </dialog>
 
-
   <script>
     const API_URL =
       "https://chrisvillan-github-io.chrisvillanpro.workers.dev/api";
@@ -732,80 +672,50 @@
       adminCode: sessionStorage.getItem("foodAdminCode") || "",
       adminMode: false,
       editingPlaceId: null,
-      activeAdminTab: "categoriesPanel"
+      activeAdminTab: "syncPanel"
     };
 
-
-    const el = id =>
-      document.getElementById(id);
-
+    const el = id => document.getElementById(id);
 
     async function api(action, extra = {}) {
-      const response = await fetch(
-        API_URL,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            action,
-            ...extra
-          })
-        }
-      );
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, ...extra })
+      });
 
       const data = await response.json();
 
       if (!data.ok) {
-        throw new Error(
-          data.error || "Request failed."
-        );
+        throw new Error(data.error || "Request failed.");
       }
 
       return data;
     }
 
-
     async function loadFood() {
-      setGridMessage(
-        "loading",
-        "Loading restaurants…"
-      );
+      setGridMessage("loading", "Loading restaurants…");
 
       try {
-        const data =
-          await api("foodLoad");
-
+        const data = await api("foodLoad");
         app.state = data.state;
-
         renderEverything();
       } catch (error) {
-        setGridMessage(
-          "error-box",
-          error.message
-        );
-
-        el("subtitle").textContent =
-          "Could not load the food list.";
+        setGridMessage("error-box", error.message);
+        el("subtitle").textContent = "Could not load the food list.";
       }
     }
-
 
     function renderEverything() {
       const state = app.state || {};
       const list = state.list || {};
       const places = state.places || [];
 
-      el("pageTitle").textContent =
-        list.name || "Socal Food";
+      el("pageTitle").textContent = list.name || "Socal Food";
 
       const syncText =
         list.lastSyncedAt
-          ? "Last synced " +
-            formatDateTime(
-              list.lastSyncedAt
-            )
+          ? "Last synced " + formatDateTime(list.lastSyncedAt)
           : "Not synced yet";
 
       el("subtitle").textContent =
@@ -815,7 +725,6 @@
       renderRestaurants();
       renderAdminUi();
     }
-
 
     function renderFilterOptions() {
       const state = app.state || {};
@@ -837,11 +746,7 @@
       const googleCategories =
         uniqueSorted(
           places
-            .map(place =>
-              String(
-                place.googleCategory || ""
-              ).trim()
-            )
+            .map(place => String(place.googleCategory || "").trim())
             .filter(Boolean)
         );
 
@@ -849,10 +754,7 @@
         el("googleCategoryFilter"),
         [
           { value: "", label: "All" },
-          ...googleCategories.map(value => ({
-            value,
-            label: value
-          }))
+          ...googleCategories.map(value => ({ value, label: value }))
         ]
       );
 
@@ -870,9 +772,7 @@
       const prices =
         uniqueSorted(
           places
-            .map(place =>
-              String(place.price || "").trim()
-            )
+            .map(place => String(place.price || "").trim())
             .filter(Boolean)
         );
 
@@ -880,25 +780,16 @@
         el("priceFilter"),
         [
           { value: "", label: "All" },
-          ...prices.map(value => ({
-            value,
-            label: value
-          }))
+          ...prices.map(value => ({ value, label: value }))
         ]
       );
     }
 
-
     function renderRestaurants() {
-      if (!app.state) {
-        return;
-      }
+      if (!app.state) return;
 
-      const places =
-        getFilteredPlaces();
-
-      const grid =
-        el("restaurantGrid");
+      const places = getFilteredPlaces();
+      const grid = el("restaurantGrid");
 
       el("resultCount").textContent =
         `${places.length.toLocaleString()} restaurant${places.length === 1 ? "" : "s"}`;
@@ -915,238 +806,136 @@
 
       const categoryMap =
         Object.fromEntries(
-          (app.state.categories || [])
-            .map(category => [
-              category.categoryId,
-              category.name
-            ])
+          (app.state.categories || []).map(category => [
+            category.categoryId,
+            category.name
+          ])
         );
 
       const tagMap =
         Object.fromEntries(
-          (app.state.tags || [])
-            .map(tag => [
-              tag.tagId,
-              tag.name
-            ])
+          (app.state.tags || []).map(tag => [
+            tag.tagId,
+            tag.name
+          ])
         );
 
       grid.innerHTML =
-        places
-          .map(place => {
-            const customCategory =
-              place.categoryId
-                ? categoryMap[
-                    place.categoryId
-                  ]
-                : "";
+        places.map(place => {
+          const customCategory =
+            place.categoryId ? categoryMap[place.categoryId] : "";
 
-            const tagNames =
-              (place.tagIds || [])
-                .map(tagId =>
-                  tagMap[tagId]
-                )
-                .filter(Boolean);
+          const tagNames =
+            (place.tagIds || [])
+              .map(tagId => tagMap[tagId])
+              .filter(Boolean);
 
-            const rating =
-              place.rating == null
-                ? "—"
-                : Number(place.rating)
-                    .toFixed(1);
+          const rating =
+            place.rating == null
+              ? "—"
+              : Number(place.rating).toFixed(1);
 
-            const reviews =
-              place.reviews == null
-                ? ""
-                : `${Number(place.reviews).toLocaleString()} reviews`;
+          const reviews =
+            place.reviews == null
+              ? ""
+              : `${Number(place.reviews).toLocaleString()} reviews`;
 
-            const note =
-              String(place.note || "").trim();
+          const note = String(place.note || "").trim();
 
-            const mapsButton =
-              place.googleMapsUrl
-                ? `
-                  <button
-                    class="btn"
-                    type="button"
-                    onclick='window.open(${JSON.stringify(place.googleMapsUrl)}, "_blank", "noopener")'
-                  >
-                    Google Maps
-                  </button>
-                `
-                : "";
+          const mapsButton =
+            place.googleMapsUrl
+              ? `
+                <button
+                  class="btn"
+                  type="button"
+                  onclick='window.open(${JSON.stringify(place.googleMapsUrl)}, "_blank", "noopener")'
+                >
+                  Google Maps
+                </button>
+              `
+              : "";
 
-            return `
-              <article class="card">
-                <div class="card-top">
-                  <h2 class="place-name">${escapeHtml(place.name)}</h2>
-                  <div class="rating">★ ${escapeHtml(rating)}</div>
-                </div>
+          return `
+            <article class="card">
+              <div class="card-top">
+                <h2 class="place-name">${escapeHtml(place.name)}</h2>
+                <div class="rating">★ ${escapeHtml(rating)}</div>
+              </div>
 
-                <div class="meta">
-                  ${reviews
-                    ? `<span class="pill">${escapeHtml(reviews)}</span>`
-                    : ""
-                  }
+              <div class="meta">
+                ${reviews ? `<span class="pill">${escapeHtml(reviews)}</span>` : ""}
+                ${place.price ? `<span class="pill">${escapeHtml(place.price)}</span>` : ""}
+                ${place.googleCategory ? `<span class="pill">${escapeHtml(place.googleCategory)}</span>` : ""}
+                ${customCategory ? `<span class="pill pill-custom">${escapeHtml(customCategory)}</span>` : ""}
+                ${tagNames.map(tag => `<span class="pill pill-tag">${escapeHtml(tag)}</span>`).join("")}
+              </div>
 
-                  ${place.price
-                    ? `<span class="pill">${escapeHtml(place.price)}</span>`
-                    : ""
-                  }
+              <div class="note ${note ? "" : "note-empty"}">
+                ${note ? escapeHtml(note) : "No Siya note"}
+              </div>
 
-                  ${place.googleCategory
-                    ? `<span class="pill">${escapeHtml(place.googleCategory)}</span>`
-                    : ""
-                  }
-
-                  ${customCategory
-                    ? `<span class="pill pill-custom">${escapeHtml(customCategory)}</span>`
-                    : ""
-                  }
-
-                  ${tagNames
-                    .map(tag =>
-                      `<span class="pill pill-tag">${escapeHtml(tag)}</span>`
-                    )
-                    .join("")
-                  }
-                </div>
-
-                <div class="note ${note ? "" : "note-empty"}">
-                  ${note
-                    ? escapeHtml(note)
-                    : "No Siya note"
-                  }
-                </div>
-
-                <div class="card-actions">
-                  ${mapsButton}
-
-                  <button
-                    class="btn admin-edit"
-                    type="button"
-                    data-edit-place="${escapeAttribute(place.placeId)}"
-                  >
-                    Edit
-                  </button>
-                </div>
-              </article>
-            `;
-          })
-          .join("");
+              <div class="card-actions">
+                ${mapsButton}
+                <button
+                  class="btn admin-edit"
+                  type="button"
+                  data-edit-place="${escapeAttribute(place.placeId)}"
+                >
+                  Edit
+                </button>
+              </div>
+            </article>
+          `;
+        }).join("");
 
       applyAdminVisibility();
     }
 
-
     function getFilteredPlaces() {
-      const places =
-        [...(app.state?.places || [])];
+      const places = [...(app.state?.places || [])];
 
-      const query =
-        el("searchInput")
-          .value
-          .trim()
-          .toLowerCase();
-
-      const customCategory =
-        el("customCategoryFilter")
-          .value;
-
-      const googleCategory =
-        el("googleCategoryFilter")
-          .value;
-
-      const tagId =
-        el("tagFilter")
-          .value;
-
-      const price =
-        el("priceFilter")
-          .value;
-
-      const minRating =
-        Number(
-          el("ratingFilter").value || 0
-        );
+      const query = el("searchInput").value.trim().toLowerCase();
+      const customCategory = el("customCategoryFilter").value;
+      const googleCategory = el("googleCategoryFilter").value;
+      const tagId = el("tagFilter").value;
+      const price = el("priceFilter").value;
+      const minRating = Number(el("ratingFilter").value || 0);
 
       const categoryMap =
         Object.fromEntries(
-          (app.state?.categories || [])
-            .map(category => [
-              category.categoryId,
-              category.name
-            ])
+          (app.state?.categories || []).map(category => [
+            category.categoryId,
+            category.name
+          ])
         );
 
       const tagMap =
         Object.fromEntries(
-          (app.state?.tags || [])
-            .map(tag => [
-              tag.tagId,
-              tag.name
-            ])
+          (app.state?.tags || []).map(tag => [
+            tag.tagId,
+            tag.name
+          ])
         );
 
       let result =
         places.filter(place => {
-          if (
-            customCategory &&
-            place.categoryId !==
-              customCategory
-          ) {
-            return false;
-          }
-
-          if (
-            googleCategory &&
-            String(place.googleCategory || "") !==
-              googleCategory
-          ) {
-            return false;
-          }
-
-          if (
-            tagId &&
-            !(place.tagIds || [])
-              .includes(tagId)
-          ) {
-            return false;
-          }
-
-          if (
-            price &&
-            String(place.price || "") !==
-              price
-          ) {
-            return false;
-          }
+          if (customCategory && place.categoryId !== customCategory) return false;
+          if (googleCategory && String(place.googleCategory || "") !== googleCategory) return false;
+          if (tagId && !(place.tagIds || []).includes(tagId)) return false;
+          if (price && String(place.price || "") !== price) return false;
 
           if (
             minRating &&
-            (
-              place.rating == null ||
-              Number(place.rating) <
-                minRating
-            )
-          ) {
-            return false;
-          }
+            (place.rating == null || Number(place.rating) < minRating)
+          ) return false;
 
           if (query) {
             const customCategoryName =
-              place.categoryId
-                ? (
-                    categoryMap[
-                      place.categoryId
-                    ] || ""
-                  )
-                : "";
+              place.categoryId ? (categoryMap[place.categoryId] || "") : "";
 
             const tagNames =
               (place.tagIds || [])
-                .map(id =>
-                  tagMap[id] || ""
-                )
+                .map(id => tagMap[id] || "")
                 .join(" ");
 
             const haystack = [
@@ -1161,85 +950,46 @@
               .join(" ")
               .toLowerCase();
 
-            if (
-              !haystack.includes(query)
-            ) {
-              return false;
-            }
+            if (!haystack.includes(query)) return false;
           }
 
           return true;
         });
 
-      const sort =
-        el("sortSelect").value;
+      const sort = el("sortSelect").value;
 
       result.sort((a, b) => {
         if (sort === "rating-desc") {
           return (
-            numericSortValue(
-              b.rating
-            ) -
-            numericSortValue(
-              a.rating
-            )
-          ) ||
-          a.name.localeCompare(
-            b.name
-          );
+            numericSortValue(b.rating) -
+            numericSortValue(a.rating)
+          ) || a.name.localeCompare(b.name);
         }
 
         if (sort === "rating-asc") {
           return (
-            numericSortValue(
-              a.rating,
-              999
-            ) -
-            numericSortValue(
-              b.rating,
-              999
-            )
-          ) ||
-          a.name.localeCompare(
-            b.name
-          );
+            numericSortValue(a.rating, 999) -
+            numericSortValue(b.rating, 999)
+          ) || a.name.localeCompare(b.name);
         }
 
         if (sort === "reviews-desc") {
           return (
-            numericSortValue(
-              b.reviews
-            ) -
-            numericSortValue(
-              a.reviews
-            )
-          ) ||
-          a.name.localeCompare(
-            b.name
-          );
+            numericSortValue(b.reviews) -
+            numericSortValue(a.reviews)
+          ) || a.name.localeCompare(b.name);
         }
 
-        return a.name.localeCompare(
-          b.name
-        );
+        return a.name.localeCompare(b.name);
       });
 
       return result;
     }
 
-
-    function numericSortValue(
-      value,
-      fallback = -1
-    ) {
-      const number =
-        Number(value);
-
-      return Number.isFinite(number)
-        ? number
-        : fallback;
+    function numericSortValue(value, fallback = -1) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : fallback;
     }
-
 
     function clearFilters() {
       el("searchInput").value = "";
@@ -1249,117 +999,74 @@
       el("priceFilter").value = "";
       el("ratingFilter").value = "";
       el("sortSelect").value = "name";
-
       renderRestaurants();
     }
 
-
     async function attemptStoredAdminLogin() {
-      if (!app.adminCode) {
-        return;
-      }
+      if (!app.adminCode) return;
 
       try {
         const data =
-          await api(
-            "foodAdminStatus",
-            {
-              adminCode:
-                app.adminCode
-            }
-          );
+          await api("foodAdminStatus", {
+            adminCode: app.adminCode
+          });
 
         app.adminMode = true;
         app.state = data.state;
-
         renderEverything();
       } catch {
         app.adminCode = "";
         app.adminMode = false;
-        sessionStorage.removeItem(
-          "foodAdminCode"
-        );
+        sessionStorage.removeItem("foodAdminCode");
       }
     }
 
-
     async function loginAdmin() {
-      const code =
-        el("adminCodeInput")
-          .value
-          .trim();
-
-      const status =
-        el("adminLoginStatus");
+      const code = el("adminCodeInput").value.trim();
+      const status = el("adminLoginStatus");
 
       status.className = "status";
-      status.textContent =
-        "Checking…";
+      status.textContent = "Checking…";
 
       try {
         const data =
-          await api(
-            "foodAdminStatus",
-            {
-              adminCode: code
-            }
-          );
+          await api("foodAdminStatus", {
+            adminCode: code
+          });
 
         app.adminCode = code;
         app.adminMode = true;
         app.state = data.state;
 
-        sessionStorage.setItem(
-          "foodAdminCode",
-          code
-        );
+        sessionStorage.setItem("foodAdminCode", code);
 
-        status.className =
-          "status good";
+        status.className = "status good";
+        status.textContent = "Logged in.";
 
-        status.textContent =
-          "Logged in.";
-
-        el("adminLoginDialog")
-          .close();
+        el("adminLoginDialog").close();
 
         renderEverything();
         openAdminPanel();
       } catch (error) {
-        status.className =
-          "status bad";
-
-        status.textContent =
-          error.message;
+        status.className = "status bad";
+        status.textContent = error.message;
       }
     }
-
 
     function logoutAdmin() {
       app.adminCode = "";
       app.adminMode = false;
-
-      sessionStorage.removeItem(
-        "foodAdminCode"
-      );
-
-      el("adminPanelDialog")
-        .close();
-
+      sessionStorage.removeItem("foodAdminCode");
+      el("adminPanelDialog").close();
       renderEverything();
     }
 
-
     function renderAdminUi() {
       el("adminBadge").style.display =
-        app.adminMode
-          ? "inline-flex"
-          : "none";
+        app.adminMode ? "inline-flex" : "none";
 
       el("adminButton").textContent =
-        app.adminMode
-          ? "Admin panel"
-          : "Admin";
+        app.adminMode ? "Admin panel" : "Admin";
 
       applyAdminVisibility();
 
@@ -1369,20 +1076,11 @@
       }
     }
 
-
     function applyAdminVisibility() {
-      document
-        .querySelectorAll(
-          ".admin-edit"
-        )
-        .forEach(button => {
-          button.style.display =
-            app.adminMode
-              ? "inline-flex"
-              : "none";
-        });
+      document.querySelectorAll(".admin-edit").forEach(button => {
+        button.style.display = app.adminMode ? "inline-flex" : "none";
+      });
     }
-
 
     function openAdmin() {
       if (app.adminMode) {
@@ -1390,595 +1088,370 @@
         return;
       }
 
-      el("adminCodeInput").value =
-        "";
+      el("adminCodeInput").value = "";
+      el("adminLoginStatus").textContent = "";
+      el("adminLoginDialog").showModal();
 
-      el("adminLoginStatus")
-        .textContent = "";
-
-      el("adminLoginDialog")
-        .showModal();
-
-      setTimeout(() =>
-        el("adminCodeInput")
-          .focus(),
-      50);
+      setTimeout(() => el("adminCodeInput").focus(), 50);
     }
-
 
     function openAdminPanel() {
       renderCategoryEditor();
       renderAdminStatus();
-      setAdminTab(
-        app.activeAdminTab ||
-        "categoriesPanel"
-      );
-
-      el("adminPanelDialog")
-        .showModal();
+      setAdminTab(app.activeAdminTab || "syncPanel");
+      el("adminPanelDialog").showModal();
     }
 
-
     function setAdminTab(panelId) {
-      app.activeAdminTab =
-        panelId;
+      app.activeAdminTab = panelId;
 
-      document
-        .querySelectorAll(".tab")
-        .forEach(tab => {
-          tab.classList.toggle(
-            "active",
-            tab.dataset.tab ===
-              panelId
-          );
-        });
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.classList.toggle("active", tab.dataset.tab === panelId);
+      });
 
-      document
-        .querySelectorAll(
-          ".tab-panel"
-        )
-        .forEach(panel => {
-          panel.classList.toggle(
-            "active",
-            panel.id ===
-              panelId
-          );
-        });
+      document.querySelectorAll(".tab-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.id === panelId);
+      });
 
-      const primary =
-        el("adminPrimaryAction");
+      const primary = el("adminPrimaryAction");
 
-      if (
-        panelId ===
-        "categoriesPanel"
-      ) {
-        primary.style.display =
-          "inline-flex";
-
-        primary.textContent =
-          "Save categories";
-      } else if (
-        panelId ===
-        "importPanel"
-      ) {
-        primary.style.display =
-          "inline-flex";
-
-        primary.textContent =
-          "Import snapshot";
+      if (panelId === "categoriesPanel") {
+        primary.style.display = "inline-flex";
+        primary.textContent = "Save categories";
+      } else if (panelId === "importPanel") {
+        primary.style.display = "inline-flex";
+        primary.textContent = "Import snapshot";
       } else {
-        primary.style.display =
-          "none";
+        primary.style.display = "none";
       }
     }
 
+    async function syncNow() {
+      if (!app.adminMode || !app.adminCode) return;
 
-    function renderCategoryEditor() {
-      const container =
-        el("categoryEditor");
+      const button = el("syncNowButton");
+      const status = el("syncStatus");
 
-      const categories =
-        app.state?.categories || [];
+      button.disabled = true;
+      button.textContent = "Syncing…";
 
-      container.innerHTML =
-        categories
-          .map(category => `
-            <div
-              class="category-row"
-              data-category-row
-              data-category-id="${escapeAttribute(category.categoryId)}"
-            >
-              <input
-                type="text"
-                value="${escapeAttribute(category.name)}"
-                placeholder="Category name"
-              />
-              <button
-                class="btn btn-danger"
-                type="button"
-                data-remove-category
-              >
-                Remove
-              </button>
-            </div>
-          `)
-          .join("");
+      status.className = "status";
+      status.textContent =
+        "Opening Siya's Google Maps list and scraping restaurants. This may take a minute or two…";
+
+      try {
+        const data =
+          await api("foodAdminSync", {
+            adminCode: app.adminCode
+          });
+
+        app.state = data.state;
+
+        status.className = "status good";
+        status.textContent =
+          `Sync complete. ${(app.state.places || []).length.toLocaleString()} restaurants are now saved.`;
+
+        renderEverything();
+        renderAdminStatus();
+      } catch (error) {
+        status.className = "status bad";
+        status.textContent = error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "Sync from Siya's List";
+      }
     }
 
+    function renderCategoryEditor() {
+      const container = el("categoryEditor");
+      const categories = app.state?.categories || [];
+
+      container.innerHTML =
+        categories.map(category => `
+          <div
+            class="category-row"
+            data-category-row
+            data-category-id="${escapeAttribute(category.categoryId)}"
+          >
+            <input
+              type="text"
+              value="${escapeAttribute(category.name)}"
+              placeholder="Category name"
+            />
+            <button class="btn btn-danger" type="button" data-remove-category>
+              Remove
+            </button>
+          </div>
+        `).join("");
+    }
 
     function addCategoryRow() {
-      const wrapper =
-        document.createElement(
-          "div"
-        );
-
-      wrapper.className =
-        "category-row";
-
-      wrapper.dataset.categoryRow =
-        "";
-
-      wrapper.dataset.categoryId =
-        "";
+      const wrapper = document.createElement("div");
+      wrapper.className = "category-row";
+      wrapper.dataset.categoryRow = "";
+      wrapper.dataset.categoryId = "";
 
       wrapper.innerHTML = `
-        <input
-          type="text"
-          placeholder="Category name"
-        />
-        <button
-          class="btn btn-danger"
-          type="button"
-          data-remove-category
-        >
+        <input type="text" placeholder="Category name" />
+        <button class="btn btn-danger" type="button" data-remove-category>
           Remove
         </button>
       `;
 
-      el("categoryEditor")
-        .appendChild(wrapper);
-
-      wrapper
-        .querySelector("input")
-        .focus();
+      el("categoryEditor").appendChild(wrapper);
+      wrapper.querySelector("input").focus();
     }
 
-
     async function saveCategories() {
-      const status =
-        el("categoryStatus");
+      const status = el("categoryStatus");
 
-      status.className =
-        "status";
-
-      status.textContent =
-        "Saving…";
+      status.className = "status";
+      status.textContent = "Saving…";
 
       const categories =
-        [...document.querySelectorAll(
-          "[data-category-row]"
-        )]
+        [...document.querySelectorAll("[data-category-row]")]
           .map(row => ({
-            categoryId:
-              row.dataset.categoryId ||
-              "",
-
-            name:
-              row
-                .querySelector("input")
-                .value
-                .trim()
+            categoryId: row.dataset.categoryId || "",
+            name: row.querySelector("input").value.trim()
           }))
-          .filter(category =>
-            category.name
-          );
+          .filter(category => category.name);
 
       try {
         const data =
-          await api(
-            "foodAdminSaveCategories",
-            {
-              adminCode:
-                app.adminCode,
-              categories
-            }
-          );
+          await api("foodAdminSaveCategories", {
+            adminCode: app.adminCode,
+            categories
+          });
 
         app.state = data.state;
 
-        status.className =
-          "status good";
-
-        status.textContent =
-          "Categories saved.";
+        status.className = "status good";
+        status.textContent = "Categories saved.";
 
         renderEverything();
         renderCategoryEditor();
       } catch (error) {
-        status.className =
-          "status bad";
-
-        status.textContent =
-          error.message;
+        status.className = "status bad";
+        status.textContent = error.message;
       }
     }
 
-
     async function importSnapshot() {
-      const status =
-        el("importStatus");
+      const status = el("importStatus");
 
-      status.className =
-        "status";
-
-      status.textContent =
-        "Parsing JSON…";
+      status.className = "status";
+      status.textContent = "Parsing JSON…";
 
       try {
-        const parsed =
-          JSON.parse(
-            el("importJson").value
-          );
+        const parsed = JSON.parse(el("importJson").value);
+        const places = Array.isArray(parsed) ? parsed : parsed?.places;
 
-        const places =
-          Array.isArray(parsed)
-            ? parsed
-            : parsed?.places;
-
-        if (
-          !Array.isArray(places) ||
-          !places.length
-        ) {
-          throw new Error(
-            "JSON must contain a non-empty places array."
-          );
+        if (!Array.isArray(places) || !places.length) {
+          throw new Error("JSON must contain a non-empty places array.");
         }
 
         status.textContent =
           `Importing ${places.length.toLocaleString()} places…`;
 
         const data =
-          await api(
-            "foodAdminSync",
-            {
-              adminCode:
-                app.adminCode,
-              places
-            }
-          );
+          await api("foodAdminSync", {
+            adminCode: app.adminCode,
+            places
+          });
 
         app.state = data.state;
 
-        status.className =
-          "status good";
-
+        status.className = "status good";
         status.textContent =
           `Imported ${places.length.toLocaleString()} places.`;
 
         renderEverything();
       } catch (error) {
-        status.className =
-          "status bad";
-
-        status.textContent =
-          error.message;
+        status.className = "status bad";
+        status.textContent = error.message;
       }
     }
-
 
     function renderAdminStatus() {
-      const state =
-        app.state || {};
+      const state = app.state || {};
+      const sourceConfigured = state.sourceConfigured;
+      const list = state.list || {};
 
-      const sourceConfigured =
-        state.sourceConfigured;
+      el("adminStatusText").innerHTML = `
+        <strong>Restaurants:</strong>
+        ${(state.places || []).length.toLocaleString()}
+        <br><br>
 
-      const list =
-        state.list || {};
+        <strong>Categories:</strong>
+        ${(state.categories || []).length.toLocaleString()}
+        <br><br>
 
-      el("adminStatusText")
-        .innerHTML = `
-          <strong>Restaurants:</strong>
-          ${(state.places || []).length.toLocaleString()}
-          <br><br>
+        <strong>Tags:</strong>
+        ${(state.tags || []).length.toLocaleString()}
+        <br><br>
 
-          <strong>Categories:</strong>
-          ${(state.categories || []).length.toLocaleString()}
-          <br><br>
-
-          <strong>Tags:</strong>
-          ${(state.tags || []).length.toLocaleString()}
-          <br><br>
-
-          <strong>Last synced:</strong>
-          ${list.lastSyncedAt
-            ? escapeHtml(
-                formatDateTime(
-                  list.lastSyncedAt
-                )
-              )
+        <strong>Last synced:</strong>
+        ${
+          list.lastSyncedAt
+            ? escapeHtml(formatDateTime(list.lastSyncedAt))
             : "Never"
-          }
-          <br><br>
+        }
+        <br><br>
 
-          <strong>Private Google source URL configured:</strong>
-          ${sourceConfigured
-            ? "Yes"
-            : "No"
-          }
-        `;
+        <strong>Private Google source URL configured:</strong>
+        ${sourceConfigured ? "Yes" : "No"}
+      `;
     }
 
-
-    function openPlaceEditor(
-      placeId
-    ) {
+    function openPlaceEditor(placeId) {
       const place =
-        app.state?.places
-          ?.find(item =>
-            item.placeId ===
-              placeId
-          );
+        app.state?.places?.find(item => item.placeId === placeId);
 
-      if (!place) {
-        return;
-      }
+      if (!place) return;
 
-      app.editingPlaceId =
-        placeId;
+      app.editingPlaceId = placeId;
+      el("editPlaceTitle").textContent = `Edit: ${place.name}`;
 
-      el("editPlaceTitle")
-        .textContent =
-          `Edit: ${place.name}`;
-
-      const categories =
-        app.state?.categories || [];
+      const categories = app.state?.categories || [];
 
       replaceOptions(
         el("editCategorySelect"),
         [
-          {
-            value: "",
-            label:
-              "No custom category"
-          },
-          ...categories.map(
-            category => ({
-              value:
-                category.categoryId,
-              label:
-                category.name
-            })
-          )
+          { value: "", label: "No custom category" },
+          ...categories.map(category => ({
+            value: category.categoryId,
+            label: category.name
+          }))
         ]
       );
 
-      el("editCategorySelect").value =
-        place.categoryId || "";
+      el("editCategorySelect").value = place.categoryId || "";
 
-      const tags =
-        app.state?.tags || [];
-
-      const selected =
-        new Set(
-          place.tagIds || []
-        );
+      const tags = app.state?.tags || [];
+      const selected = new Set(place.tagIds || []);
 
       el("editTagList").innerHTML =
-        tags
-          .map(tag => `
-            <label class="tag-choice">
-              <input
-                type="checkbox"
-                value="${escapeAttribute(tag.tagId)}"
-                ${selected.has(tag.tagId) ? "checked" : ""}
-              />
-              ${escapeHtml(tag.name)}
-            </label>
-          `)
-          .join("");
+        tags.map(tag => `
+          <label class="tag-choice">
+            <input
+              type="checkbox"
+              value="${escapeAttribute(tag.tagId)}"
+              ${selected.has(tag.tagId) ? "checked" : ""}
+            />
+            ${escapeHtml(tag.name)}
+          </label>
+        `).join("");
 
-      el("noTagsHelp").style.display =
-        tags.length
-          ? "none"
-          : "block";
-
-      el("editPlaceStatus")
-        .textContent = "";
-
-      el("editPlaceDialog")
-        .showModal();
+      el("noTagsHelp").style.display = tags.length ? "none" : "block";
+      el("editPlaceStatus").textContent = "";
+      el("editPlaceDialog").showModal();
     }
 
-
     async function savePlaceEdits() {
-      const placeId =
-        app.editingPlaceId;
+      const placeId = app.editingPlaceId;
+      if (!placeId) return;
 
-      if (!placeId) {
-        return;
-      }
+      const status = el("editPlaceStatus");
+      status.className = "status";
+      status.textContent = "Saving…";
 
-      const status =
-        el("editPlaceStatus");
-
-      status.className =
-        "status";
-
-      status.textContent =
-        "Saving…";
-
-      const categoryId =
-        el("editCategorySelect")
-          .value;
+      const categoryId = el("editCategorySelect").value;
 
       const tagIds =
-        [...el("editTagList")
-          .querySelectorAll(
-            'input[type="checkbox"]:checked'
-          )]
-          .map(input =>
-            input.value
-          );
+        [...el("editTagList").querySelectorAll('input[type="checkbox"]:checked')]
+          .map(input => input.value);
 
       try {
         let data =
-          await api(
-            "foodAdminSavePlace",
-            {
-              adminCode:
-                app.adminCode,
-              placeId,
-              categoryId
-            }
-          );
+          await api("foodAdminSavePlace", {
+            adminCode: app.adminCode,
+            placeId,
+            categoryId
+          });
 
         app.state = data.state;
 
         data =
-          await api(
-            "foodAdminSaveTags",
-            {
-              adminCode:
-                app.adminCode,
-              placeId,
-              tagIds
-            }
-          );
+          await api("foodAdminSaveTags", {
+            adminCode: app.adminCode,
+            placeId,
+            tagIds
+          });
 
         app.state = data.state;
 
-        status.className =
-          "status good";
-
-        status.textContent =
-          "Saved.";
+        status.className = "status good";
+        status.textContent = "Saved.";
 
         renderEverything();
 
         setTimeout(() => {
-          el("editPlaceDialog")
-            .close();
+          el("editPlaceDialog").close();
         }, 350);
       } catch (error) {
-        status.className =
-          "status bad";
-
-        status.textContent =
-          error.message;
+        status.className = "status bad";
+        status.textContent = error.message;
       }
     }
 
-
     function handleAdminPrimaryAction() {
-      if (
-        app.activeAdminTab ===
-        "categoriesPanel"
-      ) {
+      if (app.activeAdminTab === "categoriesPanel") {
         saveCategories();
-      } else if (
-        app.activeAdminTab ===
-        "importPanel"
-      ) {
+      } else if (app.activeAdminTab === "importPanel") {
         importSnapshot();
       }
     }
 
-
-    function replaceOptions(
-      select,
-      options
-    ) {
-      const current =
-        select.value;
+    function replaceOptions(select, options) {
+      const current = select.value;
 
       select.innerHTML =
-        options
-          .map(option => `
-            <option
-              value="${escapeAttribute(option.value)}"
-            >
-              ${escapeHtml(option.label)}
-            </option>
-          `)
-          .join("");
+        options.map(option => `
+          <option value="${escapeAttribute(option.value)}">
+            ${escapeHtml(option.label)}
+          </option>
+        `).join("");
 
-      if (
-        options.some(
-          option =>
-            option.value === current
-        )
-      ) {
-        select.value =
-          current;
+      if (options.some(option => option.value === current)) {
+        select.value = current;
       }
     }
-
 
     function uniqueSorted(values) {
-      return [
-        ...new Set(values)
-      ].sort(
-        (a, b) =>
-          a.localeCompare(b)
-      );
+      return [...new Set(values)].sort((a, b) => a.localeCompare(b));
     }
 
-
-    function setGridMessage(
-      className,
-      message
-    ) {
-      el("restaurantGrid")
-        .innerHTML = `
-          <div class="${className}">
-            ${escapeHtml(message)}
-          </div>
-        `;
+    function setGridMessage(className, message) {
+      el("restaurantGrid").innerHTML = `
+        <div class="${className}">
+          ${escapeHtml(message)}
+        </div>
+      `;
     }
-
 
     function formatDateTime(value) {
-      if (!value) {
-        return "";
-      }
+      if (!value) return "";
 
       const iso =
-        String(value)
-          .includes("T")
+        String(value).includes("T")
           ? String(value)
-          : String(value)
-              .replace(" ", "T") +
-            "Z";
+          : String(value).replace(" ", "T") + "Z";
 
-      const date =
-        new Date(iso);
+      const date = new Date(iso);
 
-      if (
-        Number.isNaN(
-          date.getTime()
-        )
-      ) {
-        return String(value);
-      }
+      if (Number.isNaN(date.getTime())) return String(value);
 
-      return date.toLocaleString(
-        undefined,
-        {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-          hour: "numeric",
-          minute: "2-digit"
-        }
-      );
+      return date.toLocaleString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit"
+      });
     }
 
-
     function escapeHtml(value) {
-      return String(
-        value ?? ""
-      )
+      return String(value ?? "")
         .replaceAll("&", "&amp;")
         .replaceAll("<", "&lt;")
         .replaceAll(">", "&gt;")
@@ -1986,46 +1459,21 @@
         .replaceAll("'", "&#039;");
     }
 
-
     function escapeAttribute(value) {
       return escapeHtml(value);
     }
 
-
-    document
-      .querySelectorAll(
-        "[data-close]"
-      )
-      .forEach(button => {
-        button.addEventListener(
-          "click",
-          () => {
-            el(
-              button.dataset.close
-            ).close();
-          }
-        );
+    document.querySelectorAll("[data-close]").forEach(button => {
+      button.addEventListener("click", () => {
+        el(button.dataset.close).close();
       });
+    });
 
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => setAdminTab(tab.dataset.tab));
+    });
 
-    document
-      .querySelectorAll(".tab")
-      .forEach(tab => {
-        tab.addEventListener(
-          "click",
-          () =>
-            setAdminTab(
-              tab.dataset.tab
-            )
-        );
-      });
-
-
-    el("searchInput")
-      .addEventListener(
-        "input",
-        renderRestaurants
-      );
+    el("searchInput").addEventListener("input", renderRestaurants);
 
     [
       "customCategoryFilter",
@@ -2035,123 +1483,37 @@
       "ratingFilter",
       "sortSelect"
     ].forEach(id => {
-      el(id).addEventListener(
-        "change",
-        renderRestaurants
-      );
+      el(id).addEventListener("change", renderRestaurants);
     });
 
+    el("clearFiltersButton").addEventListener("click", clearFilters);
+    el("refreshButton").addEventListener("click", loadFood);
+    el("adminButton").addEventListener("click", openAdmin);
+    el("adminLoginSubmit").addEventListener("click", loginAdmin);
 
-    el("clearFiltersButton")
-      .addEventListener(
-        "click",
-        clearFilters
-      );
+    el("adminCodeInput").addEventListener("keydown", event => {
+      if (event.key === "Enter") loginAdmin();
+    });
 
+    el("adminLogoutButton").addEventListener("click", logoutAdmin);
+    el("syncNowButton").addEventListener("click", syncNow);
+    el("addCategoryButton").addEventListener("click", addCategoryRow);
 
-    el("refreshButton")
-      .addEventListener(
-        "click",
-        loadFood
-      );
+    el("categoryEditor").addEventListener("click", event => {
+      const button = event.target.closest("[data-remove-category]");
+      if (!button) return;
+      button.closest("[data-category-row]").remove();
+    });
 
+    el("adminPrimaryAction").addEventListener("click", handleAdminPrimaryAction);
 
-    el("adminButton")
-      .addEventListener(
-        "click",
-        openAdmin
-      );
+    el("restaurantGrid").addEventListener("click", event => {
+      const button = event.target.closest("[data-edit-place]");
+      if (!button) return;
+      openPlaceEditor(button.dataset.editPlace);
+    });
 
-
-    el("adminLoginSubmit")
-      .addEventListener(
-        "click",
-        loginAdmin
-      );
-
-
-    el("adminCodeInput")
-      .addEventListener(
-        "keydown",
-        event => {
-          if (
-            event.key === "Enter"
-          ) {
-            loginAdmin();
-          }
-        }
-      );
-
-
-    el("adminLogoutButton")
-      .addEventListener(
-        "click",
-        logoutAdmin
-      );
-
-
-    el("addCategoryButton")
-      .addEventListener(
-        "click",
-        addCategoryRow
-      );
-
-
-    el("categoryEditor")
-      .addEventListener(
-        "click",
-        event => {
-          const button =
-            event.target.closest(
-              "[data-remove-category]"
-            );
-
-          if (!button) {
-            return;
-          }
-
-          button
-            .closest(
-              "[data-category-row]"
-            )
-            .remove();
-        }
-      );
-
-
-    el("adminPrimaryAction")
-      .addEventListener(
-        "click",
-        handleAdminPrimaryAction
-      );
-
-
-    el("restaurantGrid")
-      .addEventListener(
-        "click",
-        event => {
-          const button =
-            event.target.closest(
-              "[data-edit-place]"
-            );
-
-          if (!button) {
-            return;
-          }
-
-          openPlaceEditor(
-            button.dataset.editPlace
-          );
-        }
-      );
-
-
-    el("savePlaceButton")
-      .addEventListener(
-        "click",
-        savePlaceEdits
-      );
-
+    el("savePlaceButton").addEventListener("click", savePlaceEdits);
 
     async function init() {
       await loadFood();
