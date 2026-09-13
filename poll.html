@@ -270,6 +270,31 @@
       color: #059669;
     }
 
+    .suggested-pick-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 40px;
+      margin: 0 0 14px;
+      padding: 9px 15px;
+      border: 1px solid rgba(129,140,248,.48);
+      border-radius: 13px;
+      background: rgba(99,102,241,.16);
+      color: #fff;
+      font-weight: 950;
+      cursor: pointer;
+      box-shadow: 0 8px 22px rgba(15,23,42,.12);
+    }
+
+    .suggested-pick-toggle.hidden {
+      display: none;
+    }
+
+    .suggested-pick-toggle:hover {
+      background: rgba(99,102,241,.24);
+    }
+
     .suggested-pick {
       margin: 0 0 14px;
       padding: 16px;
@@ -296,41 +321,6 @@
           rgba(16,185,129,.15),
           rgba(255,255,255,.045)
         );
-    }
-
-    .suggested-pick.complete {
-      padding: 0;
-      border: 0;
-      background: transparent;
-      box-shadow: none;
-    }
-
-    .suggested-pick.complete
-    .suggested-pick-kicker,
-    .suggested-pick.complete
-    .suggested-pick-title,
-    .suggested-pick.complete
-    .suggested-pick-copy,
-    .suggested-pick.complete
-    .suggested-date-chips,
-    .suggested-pick.complete
-    .suggested-pick-status {
-      display: none;
-    }
-
-    .suggested-pick.complete
-    .suggested-pick-actions {
-      margin-top: 0;
-    }
-
-    .suggested-pick.complete
-    .suggested-pick-btn {
-      width: auto;
-      min-height: 38px;
-      padding: 9px 14px;
-      background: #d1fae5;
-      color: #065f46;
-      border: 1px solid rgba(52,211,153,.35);
     }
 
     .suggested-pick-kicker {
@@ -1035,11 +1025,6 @@
         width: 100%;
       }
 
-      .suggested-pick.complete
-      .suggested-pick-btn {
-        width: 100%;
-      }
-
       .person-buttons-row {
         gap: 6px;
       }
@@ -1394,6 +1379,15 @@
     
     </section>
 
+
+    <button
+      id="suggestedPickToggle"
+      type="button"
+      class="suggested-pick-toggle hidden"
+      aria-expanded="false"
+    >
+      ✨ Suggested Pick
+    </button>
 
     <section
       id="suggestedPick"
@@ -2040,6 +2034,9 @@
 
       data: {},
       overlapPeople: [],
+
+      suggestedPickExpanded:
+        false,
 
       adminCode: "",
 
@@ -3177,8 +3174,14 @@
       const panel =
         $("suggestedPick");
 
+      const toggle =
+        $("suggestedPickToggle");
 
-      if (!panel) {
+
+      if (
+        !panel ||
+        !toggle
+      ) {
         return;
       }
 
@@ -3187,7 +3190,12 @@
         state.selectedPersonId === null ||
         !state.selectedPersonName
       ) {
+
         panel.classList.add(
+          "hidden"
+        );
+
+        toggle.classList.add(
           "hidden"
         );
 
@@ -3200,7 +3208,12 @@
 
 
       if (!dates.length) {
+
         panel.classList.add(
+          "hidden"
+        );
+
+        toggle.classList.add(
           "hidden"
         );
 
@@ -3208,9 +3221,45 @@
       }
 
 
-      panel.classList.remove(
+      const selectedCount =
+        getSelectedSuggestedCount();
+
+
+      const allAdded =
+        selectedCount ===
+        dates.length;
+
+
+      toggle.classList.remove(
         "hidden"
       );
+
+
+      toggle.setAttribute(
+        "aria-expanded",
+        state.suggestedPickExpanded
+          ? "true"
+          : "false"
+      );
+
+
+      toggle.innerHTML =
+        state.suggestedPickExpanded
+          ? "✨ Suggested Pick <span>▴</span>"
+          : "✨ Suggested Pick <span>▾</span>";
+
+
+      panel.classList.toggle(
+        "hidden",
+        !state.suggestedPickExpanded
+      );
+
+
+      if (
+        !state.suggestedPickExpanded
+      ) {
+        return;
+      }
 
 
       $("suggestedDateChips")
@@ -3227,15 +3276,6 @@
           .join("");
 
 
-      const selectedCount =
-        getSelectedSuggestedCount();
-
-
-      const allAdded =
-        selectedCount ===
-        dates.length;
-
-
       panel.classList.toggle(
         "complete",
         allAdded
@@ -3245,21 +3285,21 @@
       $("suggestedPickTitle")
         .textContent =
         allAdded
-          ? "✓ Suggested Pick added"
+          ? "✓ Suggested Pick already added"
           : "Start with our recommended dates";
 
 
       $("suggestedPickCopy")
         .textContent =
         allAdded
-          ? `${dates.length} suggested dates are on your calendar.`
+          ? `${dates.length} suggested dates are currently selected.`
           : `Add ${dates.length} suggested dates at once, then customize anything you need.`;
 
 
       $("applySuggestedPick")
         .textContent =
         allAdded
-          ? `✓ Suggested Pick added (${dates.length}/${dates.length})`
+          ? `✓ All ${dates.length} suggested dates selected`
           : (
               selectedCount > 0
                 ? `Add remaining ${dates.length - selectedCount} (out of ${dates.length})`
@@ -3267,10 +3307,15 @@
             );
 
 
+      $("applySuggestedPick")
+        .disabled =
+        allAdded;
+
+
       $("suggestedPickStatus")
         .textContent =
         allAdded
-          ? "You can still edit every date."
+          ? "Remove or edit dates directly on the calendar."
           : (
               selectedCount > 0
                 ? `${selectedCount}/${dates.length} already selected`
@@ -3309,6 +3354,12 @@
 
 
       if (!datesToAdd.length) {
+
+        state.suggestedPickExpanded =
+          false;
+
+        renderSuggestedPick();
+
         return;
       }
 
@@ -3394,6 +3445,13 @@
         $("saveStatus")
           .textContent =
           "Saved";
+
+
+        state.suggestedPickExpanded =
+          false;
+
+
+        renderSuggestedPick();
 
       } catch (error) {
 
@@ -4602,6 +4660,17 @@
 
         $("sessionCodeInput")
           .focus();
+      };
+
+
+    $("suggestedPickToggle")
+      .onclick =
+      () => {
+
+        state.suggestedPickExpanded =
+          !state.suggestedPickExpanded;
+
+        renderSuggestedPick();
       };
 
 
