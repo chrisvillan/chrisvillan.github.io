@@ -1,3 +1,5 @@
+import puppeteer from "@cloudflare/puppeteer";
+
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "https://chrisvillanpro.com",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
@@ -286,10 +288,28 @@ export default {
 
             case "foodAdminSync":
               verifyFoodAdmin(env, body.adminCode);
-
+            
+              // If places were explicitly supplied, keep supporting
+              // the JSON-import method. Otherwise scrape Siya's
+              // Google Maps list automatically.
+              if (
+                Array.isArray(body.places) &&
+                body.places.length
+              ) {
+                return json({
+                  ok: true,
+                  state: await syncFoodPlaces(
+                    env,
+                    body
+                  )
+                });
+              }
+            
               return json({
                 ok: true,
-                state: await syncFoodPlaces(env, body)
+                state: await syncFoodFromGoogleMaps(
+                  env
+                )
               });
 
             case "foodAdminSavePlace":
@@ -334,7 +354,28 @@ export default {
       }
     }
 
-    return env.ASSETS.fetch(request);
+return env.ASSETS.fetch(request);
+  },
+
+  async scheduled(
+    controller,
+    env,
+    ctx
+  ) {
+    ctx.waitUntil(
+      syncFoodFromGoogleMaps(env)
+        .then(() => {
+          console.log(
+            "Scheduled Food sync completed."
+          );
+        })
+        .catch(error => {
+          console.error(
+            "Scheduled Food sync failed:",
+            error
+          );
+        })
+    );
   }
 };
 
@@ -2797,6 +2838,593 @@ async function getFoodAdminState(env) {
   };
 }
 
+async function syncFoodFromGoogleMaps(env) {
+  if (!env.BROWSER) {
+    throw new Error(
+      "BROWSER binding is not configured."
+    );
+  }
+
+  if (!env.FOOD_SOURCE_URL) {
+    throw new Error(
+      "FOOD_SOURCE_URL secret is not configured."
+    );
+  }
+
+  let browser;
+
+  try {
+    browser =
+      await puppeteer.launch(
+        env.BROWSER
+      );
+
+    const page =
+      await browser.newPage();
+
+    console.log(
+      "Opening Food source..."
+    );
+
+    await page.goto(
+      env.FOOD_SOURCE_URL,
+      {
+        waitUntil:
+          "domcontentloaded",
+        timeout: 45000
+      }
+    );
+
+    // Give Google Maps time to finish
+    // rendering the shared-list UI.
+    await new Promise(resolve =>
+      setTimeout(resolve, 4000)
+    );
+
+
+    // Google occasionally presents a
+    // consent screen. Try the common
+    // consent buttons if one appears.
+    try {
+      await page.evaluate(() => {
+        const buttons =
+          Array.from(
+            document.querySelectorAll(
+              "button"
+            )
+          );
+
+        const consent =
+          buttons.find(button => {
+            const text =
+              (
+                button.innerText ||
+                ""
+              )
+                .trim()
+                .toLowerCase();
+
+            return (
+              text ===
+                "accept all" ||
+              text ===
+                "i agree"
+            );
+          });
+
+        consent?.click();
+      });
+
+      await new Promise(resolve =>
+        setTimeout(resolve, 2500)
+      );
+    } catch {
+      // No consent dialog is fine.
+    }
+
+
+    await page.waitForSelector(
+      'button[jsaction*="pane.wfvdle"]',
+      {
+        timeout: 30000
+      }
+    );
+
+
+    const places =
+      await page.evaluate(
+        async () => {
+          const sleep = ms =>
+            new Promise(resolve =>
+              setTimeout(
+                resolve,
+                ms
+              )
+            );
+
+
+          const results =
+            new Map();
+
+
+          function parsePlaceButton(
+            button
+          ) {
+            const lines =
+              (
+                button.innerText ||
+                ""
+              )
+                .split("\n")
+                .map(line =>
+                  line.trim()
+                )
+                .filter(Boolean);
+
+
+            if (!lines.length) {
+              return null;
+            }
+
+
+            const name =
+              lines[0];
+
+
+            let rating = null;
+            let reviews = null;
+            let price = "";
+            let googleCategory =
+              "";
+
+
+            for (
+              let i = 1;
+              i < lines.length;
+              i++
+            ) {
+              const line =
+                lines[i];
+
+
+              const ratingMatch =
+                line.match(
+                  /^([\d.]+)\(([\d,]+)\)$/
+                );
+
+
+              if (ratingMatch) {
+                rating =
+                  Number(
+                    ratingMatch[1]
+                  );
+
+                reviews =
+                  Number(
+                    ratingMatch[2]
+                      .replaceAll(
+                        ",",
+                        ""
+                      )
+                  );
+
+                continue;
+              }
+
+
+              if (
+                /^\$[\d,]+[–-]\$?[\d,]+$/
+                  .test(line)
+              ) {
+                price = line;
+                continue;
+              }
+
+
+              if (
+                !googleCategory
+              ) {
+                googleCategory =
+                  line.replace(
+                    /^·\s*/,
+                    ""
+                  );
+              }
+            }
+
+
+            return {
+              name,
+              rating,
+              reviews,
+              price,
+              googleCategory
+            };
+          }
+
+
+          function findNote(
+            button,
+            actionKey
+          ) {
+            if (!actionKey) {
+              return "";
+            }
+
+
+            const candidates =
+              Array.from(
+                document.querySelectorAll(
+                  "[jsaction]"
+                )
+              );
+
+
+            for (
+              const element of
+              candidates
+            ) {
+              if (
+                element ===
+                button ||
+                element.matches(
+                  'button[jsaction*="pane.wfvdle"]'
+                )
+              ) {
+                continue;
+              }
+
+
+              const jsaction =
+                element.getAttribute(
+                  "jsaction"
+                ) || "";
+
+
+              const elementKey =
+                jsaction
+                  .split(";")[0];
+
+
+              if (
+                elementKey !==
+                actionKey
+              ) {
+                continue;
+              }
+
+
+              const text =
+                (
+                  element.innerText ||
+                  ""
+                ).trim();
+
+
+              if (
+                text &&
+                text !==
+                  button.innerText.trim()
+              ) {
+                return text;
+              }
+            }
+
+
+            return "";
+          }
+
+
+          function collectVisible() {
+            const buttons =
+              document.querySelectorAll(
+                'button[jsaction*="pane.wfvdle"]'
+              );
+
+
+            for (
+              const button of
+              buttons
+            ) {
+              const place =
+                parsePlaceButton(
+                  button
+                );
+
+
+              if (!place?.name) {
+                continue;
+              }
+
+
+              const jsaction =
+                button.getAttribute(
+                  "jsaction"
+                ) || "";
+
+
+              const actionKey =
+                jsaction
+                  .split(";")[0];
+
+
+              const note =
+                findNote(
+                  button,
+                  actionKey
+                );
+
+
+              // Name is intentionally
+              // the stable identity here.
+              // Rating/review totals can
+              // change over time.
+              const key =
+                place.name
+                  .trim()
+                  .toLowerCase();
+
+
+              const previous =
+                results.get(key);
+
+
+              if (!previous) {
+                results.set(
+                  key,
+                  {
+                    ...place,
+                    note
+                  }
+                );
+              } else {
+                // Update fresh Google
+                // information while keeping
+                // a note if one was found.
+                results.set(
+                  key,
+                  {
+                    ...previous,
+                    ...place,
+                    note:
+                      note ||
+                      previous.note ||
+                      ""
+                  }
+                );
+              }
+            }
+          }
+
+
+          function findScroller() {
+            const firstPlace =
+              document.querySelector(
+                'button[jsaction*="pane.wfvdle"]'
+              );
+
+
+            if (!firstPlace) {
+              return null;
+            }
+
+
+            let element =
+              firstPlace.parentElement;
+
+
+            while (
+              element &&
+              element !==
+                document.body
+            ) {
+              const style =
+                getComputedStyle(
+                  element
+                );
+
+
+              if (
+                element.scrollHeight >
+                  element.clientHeight +
+                    200 &&
+                (
+                  style.overflowY ===
+                    "auto" ||
+                  style.overflowY ===
+                    "scroll"
+                )
+              ) {
+                return element;
+              }
+
+
+              element =
+                element.parentElement;
+            }
+
+
+            // Fallback: choose the
+            // largest scrollable element
+            // containing the list.
+            const candidates =
+              Array.from(
+                document.querySelectorAll(
+                  "div"
+                )
+              )
+                .filter(element =>
+                  element.scrollHeight >
+                    element.clientHeight +
+                      300
+                )
+                .sort(
+                  (a, b) =>
+                    b.scrollHeight -
+                    a.scrollHeight
+                );
+
+
+            return (
+              candidates[0] ||
+              null
+            );
+          }
+
+
+          collectVisible();
+
+
+          const scroller =
+            findScroller();
+
+
+          if (!scroller) {
+            throw new Error(
+              "Could not find the Google Maps list scroller."
+            );
+          }
+
+
+          let noGrowthCount = 0;
+          let previousCount =
+            results.size;
+
+
+          // The list is virtualized, so
+          // repeatedly collect currently
+          // rendered cards, then scroll.
+          for (
+            let pass = 0;
+            pass < 220;
+            pass++
+          ) {
+            collectVisible();
+
+
+            const beforeTop =
+              scroller.scrollTop;
+
+
+            scroller.scrollTop +=
+              Math.max(
+                350,
+                Math.floor(
+                  scroller.clientHeight *
+                    0.8
+                )
+              );
+
+
+            scroller.dispatchEvent(
+              new Event(
+                "scroll",
+                {
+                  bubbles: true
+                }
+              )
+            );
+
+
+            await sleep(650);
+
+
+            collectVisible();
+
+
+            if (
+              results.size ===
+              previousCount
+            ) {
+              noGrowthCount++;
+            } else {
+              noGrowthCount = 0;
+
+              previousCount =
+                results.size;
+            }
+
+
+            const atBottom =
+              scroller.scrollTop +
+                scroller.clientHeight >=
+              scroller.scrollHeight -
+                10;
+
+
+            const didNotMove =
+              scroller.scrollTop ===
+              beforeTop;
+
+
+            if (
+              (
+                atBottom ||
+                didNotMove
+              ) &&
+              noGrowthCount >= 4
+            ) {
+              break;
+            }
+
+
+            // Safety stop if Google stops
+            // producing new virtual cards.
+            if (
+              noGrowthCount >= 12
+            ) {
+              break;
+            }
+          }
+
+
+          collectVisible();
+
+
+          return Array.from(
+            results.values()
+          );
+        }
+      );
+
+
+    console.log(
+      `Google Maps scrape found ${places.length} places.`
+    );
+
+
+    // Prevent a broken/blocked Google page
+    // from replacing the database with a
+    // tiny accidental scrape.
+    if (places.length < 50) {
+      throw new Error(
+        `Google Maps scrape only found ${places.length} places. Sync cancelled for safety.`
+      );
+    }
+
+
+    // Reuse your existing D1 import
+    // function.
+    return await syncFoodPlaces(
+      env,
+      {
+        places
+      }
+    );
+
+  } finally {
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (error) {
+        console.error(
+          "Could not close browser:",
+          error
+        );
+      }
+    }
+  }
+}
 
 async function syncFoodPlaces(
   env,
