@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "chrisvillan-github-io",
   "compatibility_date": "2026-09-03",
+  "compatibility_flags": ["nodejs_compat"],
 
   "main": "src/index.js",
 
