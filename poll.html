@@ -232,9 +232,22 @@
     }
 
     .nav .btn {
-      width: 42px;
-      height: 42px;
+      width: 44px;
+      height: 44px;
       padding: 0;
+      display: grid;
+      place-items: center;
+      background: #e2e8f0;
+      color: var(--text);
+      border: 1px solid #cbd5e1;
+      font-size: 1.6rem;
+      line-height: 1;
+      font-weight: 900;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, .08);
+    }
+
+    .nav .btn:hover {
+      background: #cbd5e1;
     }
 
     .weekdays,
@@ -664,28 +677,162 @@
 
     @media(max-width: 760px) {
       body {
-        padding: 7px;
+        padding: 8px 6px 18px;
       }
 
-      .hero,
-      .calendar-header {
+      .screen {
+        width: 100%;
+      }
+
+      .hero {
         align-items: stretch;
         flex-direction: column;
+        gap: 10px;
+        margin-bottom: 10px;
+      }
+
+      .hero h1 {
+        font-size: clamp(1.8rem, 8vw, 2.4rem);
+        letter-spacing: -.045em;
+      }
+
+      .hero p {
+        font-size: .92rem;
+        line-height: 1.35;
+      }
+
+      .hero-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 7px;
+      }
+
+      .hero-actions .pill {
+        grid-column: 1 / -1;
+        text-align: center;
+        padding: 8px 10px;
+        font-size: .86rem;
+      }
+
+      .hero-actions .btn {
+        width: 100%;
+        padding: 10px 8px;
+        font-size: .88rem;
       }
 
       .toolbar {
         align-items: stretch;
         flex-direction: column;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 18px;
       }
-.weekdays,
+
+      .person-buttons-row {
+        gap: 6px;
+      }
+
+      .person-buttons {
+        gap: 6px;
+      }
+
+      .person-btn {
+        padding: 8px 11px;
+        font-size: .87rem;
+      }
+
+      .person-toolbar-right {
+        gap: 8px;
+      }
+
+      .person-toolbar-right .person-btn {
+        flex: 0 0 auto;
+      }
+
+      .person-toolbar-right .pill {
+        margin-left: auto;
+        padding: 8px 11px;
+        font-size: .82rem;
+        white-space: nowrap;
+      }
+
+      .calendar-card {
+        padding: 12px 8px 14px;
+        border-radius: 22px;
+      }
+
+      .calendar-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding: 0 2px;
+      }
+
+      .calendar-header h2 {
+        font-size: clamp(1.7rem, 7vw, 2.1rem);
+        line-height: 1.05;
+      }
+
+      .calendar-header .muted {
+        margin-top: 3px;
+        font-size: .9rem;
+      }
+
+      .nav {
+        gap: 6px;
+        flex-shrink: 0;
+      }
+
+      .nav .btn {
+        width: 42px;
+        height: 42px;
+        border-radius: 13px;
+        background: #e2e8f0;
+        border: 1px solid #cbd5e1;
+        font-size: 1.65rem;
+        color: #0f172a;
+      }
+
+      .weekdays,
       .calendar {
-        gap: 4px;
+        gap: 3px;
+      }
+
+      .weekday {
+        font-size: .66rem;
       }
 
       .day {
-        min-height: 90px;
-        padding: 5px;
-        border-radius: 13px;
+        min-height: 82px;
+        padding: 4px;
+        border-radius: 12px;
+      }
+
+      .num {
+        width: 28px;
+        height: 28px;
+        border-radius: 9px;
+        font-size: .9rem;
+      }
+
+      .badge {
+        display: block;
+        width: 100%;
+        margin: 2px 0 0;
+        padding: 4px 2px;
+        border-radius: 9px;
+        font-size: .62rem;
+        line-height: 1.05;
+        text-align: center;
+        white-space: nowrap;
+      }
+
+      .helper {
+        padding: 0 2px;
+        font-size: .78rem;
+        line-height: 1.35;
       }
 
       .times {
@@ -2403,9 +2550,17 @@
       }
 
 
+      const label =
+        window.matchMedia(
+          "(max-width: 760px)"
+        ).matches
+          ? summarizeTimesCompact(times)
+          : summarizeTimes(times);
+
+
       return (
         `<span class="badge available">
-          ${summarizeTimes(times)}
+          ${label}
         </span>`
       );
     }
@@ -2438,6 +2593,34 @@
           ordered[
             ordered.length - 1
           ]
+        )}`
+      );
+    }
+
+
+    function summarizeTimesCompact(times) {
+
+      if (!times.length) {
+        return "";
+      }
+
+
+      const ordered =
+        orderHoursForSession(
+          times
+        );
+
+
+      if (ordered.length === 1) {
+        return fmtCompact(
+          ordered[0]
+        );
+      }
+
+
+      return (
+        `${fmtCompact(ordered[0])}–${fmtCompact(
+          ordered[ordered.length - 1]
         )}`
       );
     }
@@ -4436,6 +4619,33 @@
 
       return (
         `${display}:00 ${suffix}`
+      );
+    }
+
+
+    function fmtCompact(hour) {
+
+      const normalized =
+        (
+          Number(hour) +
+          24
+        ) %
+        24;
+
+
+      const suffix =
+        normalized >= 12
+          ? "p"
+          : "a";
+
+
+      const display =
+        normalized % 12 ||
+        12;
+
+
+      return (
+        `${display}${suffix}`
       );
     }
 
