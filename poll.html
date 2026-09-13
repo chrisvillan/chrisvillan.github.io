@@ -870,6 +870,19 @@
       font-size: .85rem;
       font-weight: 900;
     }
+
+    .person-picker-wrap.needs-person {
+      border-radius: 14px;
+      outline: 2px solid rgba(129,140,248,.95);
+      outline-offset: 7px;
+      animation: personPromptPulse .75s ease 2;
+    }
+
+    @keyframes personPromptPulse {
+      0% { outline-color: rgba(129,140,248,.25); }
+      50% { outline-color: rgba(165,180,252,1); }
+      100% { outline-color: rgba(129,140,248,.25); }
+    }
     
     .person-buttons-row {
       display: flex;
@@ -1384,7 +1397,7 @@
 
     <section class="toolbar">
     
-      <div class="person-picker-wrap">
+      <div id="personPickerWrap" class="person-picker-wrap">
     
         <div class="person-picker-label">
           Who are you?
@@ -2129,6 +2142,8 @@
       people: [],
       selectedPersonId: null,
       selectedPersonName: "",
+      isOverlapMode: false,
+      personPromptTimer: null,
       currentDate: new Date(),
       activeDateKey: null,
 
@@ -2394,6 +2409,7 @@
 
 
       if (
+        state.selectedPersonId &&
         !state.people.some(
           p =>
             p.personId ===
@@ -2401,8 +2417,6 @@
         )
       ) {
         state.selectedPersonId =
-          state.people[0]
-            ?.personId ||
           null;
       }
 
@@ -2435,6 +2449,19 @@
         oldSessionId !==
         state.session?.sessionId
       ) {
+
+        state.selectedPersonId =
+          null;
+
+        state.selectedPersonName =
+          "";
+
+        state.isOverlapMode =
+          false;
+
+        state.suggestedPickExpanded =
+          false;
+
         setInitialCalendarMonth();
       }
 
@@ -2609,6 +2636,84 @@
     }
 
 
+    function promptForPersonSelection() {
+
+      state.isOverlapMode =
+        false;
+
+
+      const wrap =
+        $("personPickerWrap");
+
+
+      if (!wrap) {
+        return;
+      }
+
+
+      wrap.scrollIntoView({
+        behavior: "smooth",
+        block: "center"
+      });
+
+
+      wrap.classList.remove(
+        "needs-person"
+      );
+
+
+      void wrap.offsetWidth;
+
+
+      wrap.classList.add(
+        "needs-person"
+      );
+
+
+      const label =
+        wrap.querySelector(
+          ".person-picker-label"
+        );
+
+
+      if (label) {
+
+        const original =
+          label.dataset.originalText ||
+          label.textContent ||
+          "Who are you?";
+
+
+        label.dataset.originalText =
+          original;
+
+
+        label.textContent =
+          "Pick your name first";
+
+
+        clearTimeout(
+          state.personPromptTimer
+        );
+
+
+        state.personPromptTimer =
+          setTimeout(
+            () => {
+
+              label.textContent =
+                original;
+
+              wrap.classList.remove(
+                "needs-person"
+              );
+            },
+            2200
+          );
+      }
+    }
+
+
     function renderPeople() {
 
         $("personButtons")
@@ -2647,6 +2752,12 @@
       
                   state.selectedPersonId =
                     button.dataset.personId;
+
+                  state.isOverlapMode =
+                    false;
+
+                  state.suggestedPickExpanded =
+                    false;
       
                   state.selectedPersonName =
                     getSelectedPerson()
@@ -2664,7 +2775,7 @@
           .classList
           .toggle(
             "active",
-            state.selectedPersonId === null
+            state.isOverlapMode
           );
       
       
@@ -2693,7 +2804,7 @@
           .classList
           .toggle(
             "show",
-            state.selectedPersonId === null
+            state.isOverlapMode
           );
       
       
@@ -2748,13 +2859,24 @@
 
 
       const group =
-        state.selectedPersonId === null;
+        state.isOverlapMode;
+
+
+      const hasPerson =
+        Boolean(
+          state.selectedPersonId &&
+          state.selectedPersonName
+        );
 
 
       const subtitle =
         group
           ? "Group overlap"
-          : `${state.selectedPersonName || "Person"}'s availability`;
+          : (
+              hasPerson
+                ? `${state.selectedPersonName}'s availability`
+                : "Select your name to add availability"
+            );
 
 
       const calendars =
@@ -2929,8 +3051,12 @@
               ? groupSummary(
                   key
                 )
-              : getEntry(
-                  key
+              : (
+                  hasPerson
+                    ? getEntry(
+                        key
+                      )
+                    : null
                 );
 
 
@@ -2946,6 +3072,7 @@
 
           const selected =
             !group &&
+            hasPerson &&
             Boolean(
               getEntry(key)
             );
@@ -3006,14 +3133,30 @@
           if (enabled) {
 
             element.onclick =
-              () =>
-                group
-                  ? openGroup(
-                      key
-                    )
-                  : openDay(
-                      key
-                    );
+              () => {
+
+                if (group) {
+
+                  openGroup(
+                    key
+                  );
+
+                  return;
+                }
+
+
+                if (!hasPerson) {
+
+                  promptForPersonSelection();
+
+                  return;
+                }
+
+
+                openDay(
+                  key
+                );
+              };
 
           } else {
 
@@ -3307,23 +3450,6 @@
       }
 
 
-      if (
-        state.selectedPersonId === null ||
-        !state.selectedPersonName
-      ) {
-
-        panel.classList.add(
-          "hidden"
-        );
-
-        toggle.classList.add(
-          "hidden"
-        );
-
-        return;
-      }
-
-
       const dates =
         getSuggestedPickDates();
 
@@ -3354,6 +3480,16 @@
       toggle.classList.remove(
         "hidden"
       );
+
+
+      if (
+        !state.selectedPersonId ||
+        !state.selectedPersonName
+      ) {
+
+        state.suggestedPickExpanded =
+          false;
+      }
 
 
       toggle.setAttribute(
@@ -3701,8 +3837,8 @@
 
 
       if (
-          state.selectedPersonId === null
-        ) {
+        state.isOverlapMode
+      ) {
 
         const people =
           state.overlapPeople;
@@ -3727,6 +3863,14 @@
         $("personSummary")
           .textContent =
           `${people.length} selected · ${total} total responses`;
+
+      } else if (
+        !state.selectedPersonId
+      ) {
+
+        $("personSummary")
+          .textContent =
+          "Pick your name";
 
       } else {
 
@@ -4022,6 +4166,17 @@
     // ============================================================
 
     function openDay(key) {
+
+      if (
+        !state.selectedPersonId ||
+        !state.selectedPersonName
+      ) {
+
+        promptForPersonSelection();
+
+        return;
+      }
+
 
       state.activeDateKey =
         key;
@@ -5019,6 +5174,17 @@
       .onclick =
       () => {
 
+        if (
+          !state.selectedPersonId ||
+          !state.selectedPersonName
+        ) {
+
+          promptForPersonSelection();
+
+          return;
+        }
+
+
         state.suggestedPickExpanded =
           !state.suggestedPickExpanded;
 
@@ -5038,10 +5204,16 @@
       
           state.selectedPersonId =
             null;
-      
+
           state.selectedPersonName =
             "";
-      
+
+          state.isOverlapMode =
+            true;
+
+          state.suggestedPickExpanded =
+            false;
+
           renderPeople();
           renderCalendar();
         };
@@ -5161,6 +5333,9 @@
             }
       
       
+            state.isOverlapMode =
+              false;
+
             state.selectedPersonName =
               getSelectedPerson()
                 ?.name ||
