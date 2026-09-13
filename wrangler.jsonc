@@ -24,6 +24,11 @@
       "binding": "POLL_DB",
       "database_name": "availability-poll-db",
       "database_id": "a24f90cb-2877-4696-a72f-b0f3543ffb37"
+    },
+    {
+      "binding": "FOOD_DB",
+      "database_name": "food-db",
+      "database_id": "YOUR_FOOD_DB_DATABASE_ID"
     }
   ]
 }
