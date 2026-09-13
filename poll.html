@@ -3247,42 +3247,6 @@
       };
 
 
-    $("personSelect")
-      .onchange =
-      () => {
-
-        if (
-          $("personSelect")
-            .value ===
-          GROUP_VIEW
-        ) {
-
-          state.selectedPersonId =
-            null;
-
-          state.selectedPersonName =
-            "";
-
-        } else {
-
-          state.selectedPersonId =
-            $("personSelect")
-              .value;
-
-
-          state.selectedPersonName =
-            getSelectedPerson()
-              ?.name ||
-            "";
-        }
-
-
-        renderPeople();
-
-        renderCalendar();
-      };
-
-
     $("prevMonth")
       .onclick =
       () => {
