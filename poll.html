@@ -270,29 +270,35 @@
       color: #059669;
     }
 
-    .quick-picks {
+    .suggested-pick {
       margin: 0 0 14px;
       padding: 16px;
-      border: 1px solid rgba(165,180,252,.26);
+      border: 1px solid rgba(129,140,248,.42);
       border-radius: 20px;
       background:
-        linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.035));
+        linear-gradient(
+          135deg,
+          rgba(99,102,241,.20),
+          rgba(255,255,255,.045)
+        );
       box-shadow: 0 10px 30px rgba(15,23,42,.10);
     }
 
-    .quick-picks.hidden {
+    .suggested-pick.hidden {
       display: none;
     }
 
-    .quick-picks-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 14px;
-      margin-bottom: 12px;
+    .suggested-pick.complete {
+      border-color: rgba(52,211,153,.45);
+      background:
+        linear-gradient(
+          135deg,
+          rgba(16,185,129,.15),
+          rgba(255,255,255,.045)
+        );
     }
 
-    .quick-picks-kicker {
+    .suggested-pick-kicker {
       color: #c7d2fe;
       font-size: .72rem;
       font-weight: 950;
@@ -300,91 +306,82 @@
       text-transform: uppercase;
     }
 
-    .quick-picks-title {
-      margin-top: 2px;
-      color: #fff;
-      font-size: 1.05rem;
-      font-weight: 950;
-    }
-
-    .quick-picks-copy {
-      margin-top: 4px;
-      color: rgba(255,255,255,.72);
-      font-size: .82rem;
-      line-height: 1.4;
-    }
-
-    .quick-pick-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 10px;
-    }
-
-    .quick-pick-card {
-      min-width: 0;
-      padding: 12px;
-      border: 1px solid rgba(255,255,255,.14);
-      border-radius: 16px;
-      background: rgba(255,255,255,.08);
-    }
-
-    .quick-pick-card.recommended {
-      border-color: rgba(129,140,248,.70);
-      background: rgba(99,102,241,.18);
-    }
-
-    .quick-pick-card.added {
-      border-color: rgba(52,211,153,.55);
-      background: rgba(16,185,129,.12);
-    }
-
-    .quick-pick-date {
-      color: #fff;
-      font-weight: 950;
-      font-size: .98rem;
-    }
-
-    .quick-pick-label {
+    .suggested-pick-title {
       margin-top: 3px;
-      color: #c7d2fe;
-      font-size: .75rem;
-      font-weight: 900;
+      color: #fff;
+      font-size: 1.08rem;
+      font-weight: 950;
     }
 
-    .quick-pick-note {
-      min-height: 34px;
+    .suggested-pick-copy {
       margin-top: 5px;
-      color: rgba(255,255,255,.66);
-      font-size: .72rem;
-      line-height: 1.3;
+      max-width: 780px;
+      color: rgba(255,255,255,.74);
+      font-size: .84rem;
+      line-height: 1.45;
     }
 
-    .quick-pick-btn {
-      width: 100%;
-      min-height: 36px;
-      margin-top: 9px;
+    .suggested-date-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 12px;
+    }
+
+    .suggested-date-chip {
+      padding: 6px 9px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.88);
+      font-size: .72rem;
+      font-weight: 850;
+    }
+
+    .suggested-pick-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-top: 13px;
+      flex-wrap: wrap;
+    }
+
+    .suggested-pick-btn {
+      min-height: 40px;
+      padding: 10px 16px;
       border: 0;
-      border-radius: 11px;
+      border-radius: 12px;
       background: #fff;
       color: #111827;
       font-weight: 950;
+      cursor: pointer;
     }
 
-    .quick-pick-card.added .quick-pick-btn {
+    .suggested-pick-btn:disabled {
+      cursor: wait;
+      opacity: .72;
+    }
+
+    .suggested-pick.complete .suggested-pick-btn {
       background: #d1fae5;
       color: #065f46;
     }
 
-    .quick-pick-other {
-      margin-top: 11px;
-      border: 0;
-      padding: 0;
+    .suggested-review-btn {
+      min-height: 40px;
+      padding: 9px 13px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 12px;
       background: transparent;
-      color: #c7d2fe;
+      color: #e0e7ff;
       font-weight: 900;
-      font-size: .8rem;
-      text-decoration: underline;
-      text-underline-offset: 3px;
+      cursor: pointer;
+    }
+
+    .suggested-pick-status {
+      color: rgba(255,255,255,.68);
+      font-size: .76rem;
+      font-weight: 800;
     }
 
     .calendar-card {
@@ -981,54 +978,38 @@
         font-size: .8rem;
       }
 
-      .quick-picks {
+      .suggested-pick {
         padding: 13px;
         border-radius: 18px;
       }
 
-      .quick-picks-head {
-        margin-bottom: 10px;
+      .suggested-pick-title {
+        font-size: .98rem;
       }
 
-      .quick-pick-grid {
-        grid-template-columns: 1fr;
-        gap: 8px;
+      .suggested-pick-copy {
+        font-size: .79rem;
       }
 
-      .quick-pick-card {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr) auto;
-        grid-template-areas:
-          "date button"
-          "label button"
-          "note button";
-        column-gap: 10px;
-        align-items: center;
-        padding: 11px 12px;
+      .suggested-date-chips {
+        gap: 5px;
+        margin-top: 10px;
       }
 
-      .quick-pick-date {
-        grid-area: date;
-        font-size: .92rem;
+      .suggested-date-chip {
+        padding: 5px 7px;
+        font-size: .66rem;
       }
 
-      .quick-pick-label {
-        grid-area: label;
-        margin-top: 1px;
+      .suggested-pick-actions {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 7px;
       }
 
-      .quick-pick-note {
-        grid-area: note;
-        min-height: 0;
-        margin-top: 3px;
-      }
-
-      .quick-pick-btn {
-        grid-area: button;
-        width: auto;
-        min-width: 86px;
-        margin-top: 0;
-        padding: 9px 10px;
+      .suggested-pick-btn,
+      .suggested-review-btn {
+        width: 100%;
       }
 
       .person-buttons-row {
@@ -1387,38 +1368,55 @@
 
 
     <section
-      id="quickPicks"
-      class="quick-picks hidden"
+      id="suggestedPick"
+      class="suggested-pick hidden"
     >
-      <div class="quick-picks-head">
-        <div>
-          <div class="quick-picks-kicker">
-            Quick pick
-          </div>
-
-          <div class="quick-picks-title">
-            Suggested Scary Farm nights
-          </div>
-
-          <div class="quick-picks-copy">
-            Good energy without jumping straight to the busiest October weekends.
-            Tap any night you can make and we'll save the default event hours for you.
-          </div>
-        </div>
+      <div class="suggested-pick-kicker">
+        Suggested Pick
       </div>
 
       <div
-        id="quickPickGrid"
-        class="quick-pick-grid"
+        id="suggestedPickTitle"
+        class="suggested-pick-title"
+      >
+        Start with our recommended dates
+      </div>
+
+      <div
+        id="suggestedPickCopy"
+        class="suggested-pick-copy"
+      >
+        One tap adds a balanced set of dates with good energy while avoiding the busiest late-October weekends.
+        You can remove or edit anything afterward.
+      </div>
+
+      <div
+        id="suggestedDateChips"
+        class="suggested-date-chips"
       ></div>
 
-      <button
-        id="chooseOtherDates"
-        type="button"
-        class="quick-pick-other"
-      >
-        None of these work? Choose other dates ↓
-      </button>
+      <div class="suggested-pick-actions">
+        <button
+          id="applySuggestedPick"
+          type="button"
+          class="suggested-pick-btn"
+        >
+          Add suggested dates
+        </button>
+
+        <button
+          id="reviewSuggestedDates"
+          type="button"
+          class="suggested-review-btn"
+        >
+          Review dates ↓
+        </button>
+
+        <span
+          id="suggestedPickStatus"
+          class="suggested-pick-status"
+        ></span>
+      </div>
     </section>
 
 
@@ -1992,23 +1990,19 @@
     };
 
 
-    const KNOTTS_SUGGESTED_NIGHTS = [
-      {
-        date: "2026-09-18",
-        label: "Best balance",
-        note: "Friday energy + still early in the season.",
-        recommended: true
-      },
-      {
-        date: "2026-09-24",
-        label: "Shortest-line pick",
-        note: "Thursday is the calmer option if waits matter most."
-      },
-      {
-        date: "2026-09-25",
-        label: "Friday night",
-        note: "More weekend energy without going deep into October."
-      }
+    // Suggested Pick dates.
+    // Edit this one list if you want to change the preset later.
+    const SUGGESTED_PICK_DATES = [
+      "2026-09-17",
+      "2026-09-18",
+      "2026-09-24",
+      "2026-09-25",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-15",
+      "2026-10-16"
     ];
 
 
@@ -3096,41 +3090,73 @@
     }
 
 
-    function getQuickPickNights() {
-
-      const sessionName =
-        String(
-          state.session
-            ?.sessionName ||
-          ""
-        );
-
-
-      if (
-        !/knott/i.test(
-          sessionName
-        )
-      ) {
-        return [];
-      }
-
+    function getSuggestedPickDates() {
 
       return (
-        KNOTTS_SUGGESTED_NIGHTS
+        SUGGESTED_PICK_DATES
           .filter(
-            item =>
+            dateKey =>
               isDateAllowed(
-                item.date
+                dateKey
               )
           )
       );
     }
 
 
-    function renderQuickPicks() {
+    function formatSuggestedChip(
+      dateKey
+    ) {
+
+      return (
+        fromKey(dateKey)
+          .toLocaleDateString(
+            undefined,
+            {
+              month:
+                "short",
+              day:
+                "numeric"
+            }
+          )
+      );
+    }
+
+
+    function getSelectedSuggestedCount() {
+
+      if (
+        !state.selectedPersonName
+      ) {
+        return 0;
+      }
+
+
+      const personData =
+        state.data[
+          state.selectedPersonName
+        ] || {};
+
+
+      return (
+        getSuggestedPickDates()
+          .filter(
+            dateKey =>
+              Boolean(
+                personData[
+                  dateKey
+                ]
+              )
+          )
+          .length
+      );
+    }
+
+
+    function renderSuggestedPick() {
 
       const panel =
-        $("quickPicks");
+        $("suggestedPick");
 
 
       if (!panel) {
@@ -3150,11 +3176,11 @@
       }
 
 
-      const picks =
-        getQuickPickNights();
+      const dates =
+        getSuggestedPickDates();
 
 
-      if (!picks.length) {
+      if (!dates.length) {
         panel.classList.add(
           "hidden"
         );
@@ -3168,146 +3194,105 @@
       );
 
 
-      $("quickPickGrid")
+      $("suggestedDateChips")
         .innerHTML =
-        picks
+        dates
           .map(
-            item => {
-
-              const existing =
-                state.data[
-                  state.selectedPersonName
-                ]?.[
-                  item.date
-                ];
-
-
-              const added =
-                Boolean(
-                  existing
-                );
-
-
-              const date =
-                fromKey(
-                  item.date
-                );
-
-
-              const dateLabel =
-                date
-                  .toLocaleDateString(
-                    undefined,
-                    {
-                      weekday:
-                        "short",
-                      month:
-                        "short",
-                      day:
-                        "numeric"
-                    }
-                  );
-
-
-              return `
-                <div
-                  class="quick-pick-card ${
-                    item.recommended
-                      ? "recommended"
-                      : ""
-                  } ${
-                    added
-                      ? "added"
-                      : ""
-                  }"
-                >
-                  <div class="quick-pick-date">
-                    ${
-                      item.recommended
-                        ? "⭐ "
-                        : ""
-                    }${esc(dateLabel)}
-                  </div>
-
-                  <div class="quick-pick-label">
-                    ${esc(item.label)}
-                  </div>
-
-                  <div class="quick-pick-note">
-                    ${esc(item.note)}
-                  </div>
-
-                  <button
-                    type="button"
-                    class="quick-pick-btn"
-                    data-quick-date="${item.date}"
-                  >
-                    ${
-                      added
-                        ? "✓ Added"
-                        : "I'm free"
-                    }
-                  </button>
-                </div>
-              `;
-            }
+            dateKey =>
+              `<span class="suggested-date-chip">${esc(
+                formatSuggestedChip(
+                  dateKey
+                )
+              )}</span>`
           )
           .join("");
 
 
-      $("quickPickGrid")
-        .querySelectorAll(
-          "[data-quick-date]"
-        )
-        .forEach(
-          button => {
-
-            button.onclick =
-              async () => {
-
-                const dateKey =
-                  button
-                    .dataset
-                    .quickDate;
+      const selectedCount =
+        getSelectedSuggestedCount();
 
 
-                const existing =
-                  state.data[
-                    state.selectedPersonName
-                  ]?.[
-                    dateKey
-                  ];
+      const allAdded =
+        selectedCount ===
+        dates.length;
 
 
-                if (existing) {
-
-                  openDay(
-                    dateKey
-                  );
-
-                  return;
-                }
+      panel.classList.toggle(
+        "complete",
+        allAdded
+      );
 
 
-                await saveSuggestedDate(
-                  dateKey,
-                  button
-                );
-              };
-          }
-        );
+      $("suggestedPickTitle")
+        .textContent =
+        allAdded
+          ? "✓ Suggested Pick added"
+          : "Start with our recommended dates";
+
+
+      $("suggestedPickCopy")
+        .textContent =
+        allAdded
+          ? `${dates.length} suggested dates are on your calendar. Review them below and remove or edit anything that doesn't work.`
+          : `Add ${dates.length} suggested dates at once, then customize your calendar instead of starting from scratch.`;
+
+
+      $("applySuggestedPick")
+        .textContent =
+        allAdded
+          ? "✓ Suggested Pick added"
+          : (
+              selectedCount > 0
+                ? `Add remaining ${dates.length - selectedCount}`
+                : `Add ${dates.length} suggested dates`
+            );
+
+
+      $("suggestedPickStatus")
+        .textContent =
+        allAdded
+          ? "You can still edit every date."
+          : (
+              selectedCount > 0
+                ? `${selectedCount}/${dates.length} already selected`
+                : "Uses the session's default hours."
+            );
     }
 
 
-    async function saveSuggestedDate(
-      dateKey,
-      button
-    ) {
+    async function applySuggestedPick() {
 
       if (
         !state.selectedPersonId ||
-        !dateKey
+        !state.selectedPersonName
       ) {
+        return;
+      }
+
+
+      const dates =
+        getSuggestedPickDates();
+
+
+      const personData =
+        state.data[
+          state.selectedPersonName
+        ] || {};
+
+
+      const datesToAdd =
+        dates.filter(
+          dateKey =>
+            !personData[
+              dateKey
+            ]
+        );
+
+
+      if (!datesToAdd.length) {
+
+        scrollToCalendar();
+
         return;
       }
 
@@ -3318,24 +3303,20 @@
 
       if (!times.length) {
 
-        openDay(
-          dateKey
+        alert(
+          "This session does not have default hours set yet."
         );
 
         return;
       }
 
 
-      const original =
-        button.textContent;
+      const button =
+        $("applySuggestedPick");
 
 
       button.disabled =
         true;
-
-
-      button.textContent =
-        "Adding...";
 
 
       $("saveStatus")
@@ -3345,46 +3326,63 @@
 
       try {
 
-        const result =
-          await api({
-
-            action:
-              "pollSave",
-
-            sessionCode:
-              state.sessionCode,
-
-            personId:
-              state.selectedPersonId,
-
-            date:
-              dateKey,
-
-            times,
-
-            cleared:
-              false
-          });
+        let latestState =
+          null;
 
 
-        applyPollState(
-          result.state
-        );
+        for (
+          let index = 0;
+          index < datesToAdd.length;
+          index++
+        ) {
+
+          button.textContent =
+            `Adding ${index + 1}/${datesToAdd.length}...`;
+
+
+          const result =
+            await api({
+
+              action:
+                "pollSave",
+
+              sessionCode:
+                state.sessionCode,
+
+              personId:
+                state.selectedPersonId,
+
+              date:
+                datesToAdd[index],
+
+              times,
+
+              cleared:
+                false
+            });
+
+
+          latestState =
+            result.state;
+        }
+
+
+        if (latestState) {
+
+          applyPollState(
+            latestState
+          );
+        }
 
 
         $("saveStatus")
           .textContent =
           "Saved";
 
+
+        scrollToCalendar();
+
       } catch (error) {
-
-        button.disabled =
-          false;
-
-
-        button.textContent =
-          original;
-
 
         $("saveStatus")
           .textContent =
@@ -3392,10 +3390,33 @@
 
 
         alert(
-          "Could not save that night: " +
+          "Could not add the Suggested Pick: " +
           error.message
         );
+
+      } finally {
+
+        button.disabled =
+          false;
+
+
+        renderSuggestedPick();
       }
+    }
+
+
+    function scrollToCalendar() {
+
+      document
+        .querySelector(
+          ".calendar-card"
+        )
+        ?.scrollIntoView({
+          behavior:
+            "smooth",
+          block:
+            "start"
+        });
     }
 
 
@@ -3482,7 +3503,7 @@
 
     function updateSummary() {
 
-      renderQuickPicks();
+      renderSuggestedPick();
 
       renderAvailabilityGuide();
 
@@ -4571,21 +4592,16 @@
       };
 
 
-    $("chooseOtherDates")
+    $("applySuggestedPick")
       .onclick =
-      () => {
+      () =>
+        applySuggestedPick();
 
-        document
-          .querySelector(
-            ".calendar-card"
-          )
-          ?.scrollIntoView({
-            behavior:
-              "smooth",
-            block:
-              "start"
-          });
-      };
+
+    $("reviewSuggestedDates")
+      .onclick =
+      () =>
+        scrollToCalendar();
 
 
     $("overlapBtn")
