@@ -4340,7 +4340,8 @@ async function loadPollState(
 
   const [
     peopleResult,
-    availabilityResult
+    availabilityResult,
+    suggestedDatesResult
   ] = await Promise.all([
 
     env.POLL_DB
@@ -4375,6 +4376,20 @@ async function loadPollState(
         ORDER BY
           person_id,
           date_key
+      `)
+      .bind(
+        session.session_id
+      )
+      .all(),
+
+
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          date
+        FROM poll_suggested_dates
+        WHERE session_id = ?
+        ORDER BY date
       `)
       .bind(
         session.session_id
@@ -4523,6 +4538,16 @@ async function loadPollState(
       defaultEndHour:
         numberOrNull(
           session.default_end_hour
+        ),
+
+      suggestedDates:
+        (
+          suggestedDatesResult.results || []
+        ).map(
+          row =>
+            String(
+              row.date || ""
+            )
         )
     },
 
@@ -4821,11 +4846,12 @@ async function addPollPersonSelf(
 // ============================================================
 
 async function getPollAdminState(env) {
-  const [
-    sessionsResult,
-    peopleResult,
-    settings
-  ] = await Promise.all([
+    const [
+        sessionsResult,
+        peopleResult,
+        suggestedDatesResult,
+        settings
+      ] = await Promise.all([
 
     env.POLL_DB
       .prepare(`
@@ -4863,6 +4889,18 @@ async function getPollAdminState(env) {
       `)
       .all(),
 
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id,
+          date
+        FROM poll_suggested_dates
+        ORDER BY
+          session_id,
+          date
+      `)
+      .all(),
+      
     getPollSettings(env)
   ]);
 
@@ -4923,6 +4961,24 @@ async function getPollAdminState(env) {
             Boolean(
               row.is_active
             ),
+
+          suggestedDates:
+            (
+              suggestedDatesResult.results || []
+            )
+              .filter(
+                item =>
+                  String(
+                    item.session_id
+                  ) ===
+                  sessionId
+              )
+              .map(
+                item =>
+                  String(
+                    item.date || ""
+                  )
+              ),
 
           people:
             (peopleResult.results || [])
@@ -5160,6 +5216,24 @@ async function updatePollSession(
       "Default end time"
     );
 
+  const suggestedDates =
+    Array.isArray(
+      request.suggestedDates
+    )
+      ? [
+          ...new Set(
+            request.suggestedDates
+              .map(
+                value =>
+                  String(
+                    value || ""
+                  ).trim()
+              )
+              .filter(Boolean)
+          )
+        ]
+      : [];
+  
 
   if (
     !sessionId ||
@@ -5258,7 +5332,51 @@ async function updatePollSession(
   }
 
 
+  const suggestedStatements = [
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_suggested_dates
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      )
+
+  ];
+
+
+  for (
+    const date
+    of suggestedDates
+  ) {
+
+    suggestedStatements.push(
+
+      env.POLL_DB
+        .prepare(`
+          INSERT INTO poll_suggested_dates (
+            session_id,
+            date
+          )
+          VALUES (?, ?)
+        `)
+        .bind(
+          sessionId,
+          date
+        )
+
+    );
+  }
+
+
+  await env.POLL_DB.batch(
+    suggestedStatements
+  );
+
+
   return getPollAdminState(env);
+  
 }
 
 
@@ -5287,6 +5405,15 @@ async function deletePollSession(
   // safe regardless of FK settings.
   await env.POLL_DB.batch([
 
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_suggested_dates
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      ),
+    
     env.POLL_DB
       .prepare(`
         DELETE FROM poll_availability
