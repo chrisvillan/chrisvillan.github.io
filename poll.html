@@ -12,15 +12,12 @@
 
   <style>
     :root {
-      --bg: #0f172a;
       --card: #fff;
       --text: #0f172a;
       --muted: #64748b;
       --border: #e2e8f0;
       --primary: #6366f1;
-      --primary2: #4f46e5;
       --success: #10b981;
-      --danger: #ef4444;
       --shadow: 0 24px 70px rgba(2, 6, 23, .32);
     }
 
@@ -192,13 +189,7 @@
       color: #fff;
       font-weight: 800;
     }
-
-    .toolbar .select {
-      width: auto;
-      min-width: 220px;
-    }
-
-    .overlap-picker {
+.overlap-picker {
       width: 100%;
       display: none;
       gap: 8px;
@@ -211,6 +202,7 @@
 
     .person-check {
       background: #fff;
+      color: var(--text);
       border-radius: 999px;
       padding: 7px 10px;
       font-size: .82rem;
@@ -544,57 +536,7 @@
     .status.error {
       color: #b91c1c;
     }
-
-    .person-picker-wrap {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      min-width: 0;
-    }
-    
-    .person-picker-label {
-      color: #fff;
-      font-size: .85rem;
-      font-weight: 900;
-    }
-    
-    .person-buttons {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    
-    .person-btn {
-      border: 1px solid rgba(255,255,255,.22);
-      background: rgba(255,255,255,.12);
-      color: #fff;
-      border-radius: 999px;
-      padding: 10px 15px;
-      font-weight: 900;
-      cursor: pointer;
-    }
-    
-    .person-btn:hover {
-      background: rgba(255,255,255,.2);
-    }
-    
-    .person-btn.active {
-      background: #fff;
-      color: var(--text);
-      border-color: #fff;
-    }
-    
-    .person-btn.overlap {
-      background: rgba(99,102,241,.22);
-    }
-    
-    .person-btn.overlap.active {
-      background: var(--primary);
-      color: #fff;
-      border-color: var(--primary);
-    }
-
-    .person-picker-wrap {
+.person-picker-wrap {
       display: flex;
       flex-direction: column;
       gap: 8px;
@@ -690,12 +632,7 @@
         align-items: stretch;
         flex-direction: column;
       }
-
-      .toolbar .select {
-        width: 100%;
-      }
-
-      .weekdays,
+.weekdays,
       .calendar {
         gap: 4px;
       }
@@ -1441,11 +1378,6 @@
 
     const API_URL =
       "https://chrisvillan-github-io.chrisvillanpro.workers.dev/api";
-
-    const GROUP_VIEW =
-      "__GROUP__";
-
-
     const DAY_KEYS = [
       "sun",
       "mon",
