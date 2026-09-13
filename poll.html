@@ -593,6 +593,87 @@
       color: #fff;
       border-color: var(--primary);
     }
+
+    .person-picker-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      flex: 1;
+    }
+    
+    .person-picker-label {
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 900;
+    }
+    
+    .person-buttons-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .person-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .person-btn {
+      border: 1px solid rgba(255,255,255,.22);
+      background: rgba(255,255,255,.12);
+      color: #fff;
+      border-radius: 999px;
+      padding: 10px 15px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+    
+    .person-btn:hover {
+      background: rgba(255,255,255,.2);
+    }
+    
+    .person-btn.active {
+      background: #fff;
+      color: var(--text);
+      border-color: #fff;
+    }
+    
+    .person-btn.add-person {
+      border-style: dashed;
+      color: rgba(255,255,255,.8);
+    }
+    
+    .person-btn.overlap {
+      background: rgba(99,102,241,.25);
+      border-color: rgba(129,140,248,.55);
+    }
+    
+    .person-btn.overlap.active {
+      background: var(--primary);
+      color: #fff;
+      border-color: var(--primary);
+    }
+    
+    .person-toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    
+    .add-person-form {
+      display: grid;
+      grid-template-columns: minmax(180px,280px) auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .add-person-form.hidden {
+      display: none;
+    }
     
     @media(max-width: 760px) {
       body {
@@ -651,6 +732,17 @@
 
       .weekday-picker {
         grid-template-columns: repeat(4, 1fr);
+      }
+
+      .person-toolbar-right {
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
+      }
+      
+      .add-person-form {
+        grid-template-columns: 1fr auto auto;
+        width: 100%;
       }
       
     }
@@ -739,30 +831,89 @@
 
 
     <section class="toolbar">
-
-    <div class="person-picker-wrap">
-      <div class="person-picker-label">
-        Who are you?
+    
+      <div class="person-picker-wrap">
+    
+        <div class="person-picker-label">
+          Who are you?
+        </div>
+    
+        <div class="person-buttons-row">
+    
+          <div
+            id="personButtons"
+            class="person-buttons"
+          ></div>
+    
+          <button
+            id="showAddPersonBtn"
+            type="button"
+            class="person-btn add-person"
+          >
+            + Add your name
+          </button>
+    
+        </div>
+    
+    
+        <div
+          id="addPersonForm"
+          class="add-person-form hidden"
+        >
+    
+          <input
+            id="participantNameInput"
+            class="input"
+            placeholder="Enter your name"
+            maxlength="50"
+          />
+    
+          <button
+            id="confirmAddPerson"
+            type="button"
+            class="btn primary"
+          >
+            Add
+          </button>
+    
+          <button
+            id="cancelAddPerson"
+            type="button"
+            class="btn secondary"
+          >
+            Cancel
+          </button>
+    
+        </div>
+    
       </div>
     
+    
+      <div class="person-toolbar-right">
+    
+        <button
+          id="overlapBtn"
+          type="button"
+          class="person-btn overlap"
+        >
+          Find overlap
+        </button>
+    
+        <div
+          id="personSummary"
+          class="pill"
+        >
+          0 selected days
+        </div>
+    
+      </div>
+    
+    
       <div
-        id="personButtons"
-        class="person-buttons"
+        id="overlapPicker"
+        class="overlap-picker"
       ></div>
-    </div>
     
-    <div
-      id="personSummary"
-      class="pill"
-    >
-      0 selected days
-    </div>
-    
-    <div
-      id="overlapPicker"
-      class="overlap-picker"
-    ></div>
-
     </section>
 
 
@@ -1761,153 +1912,129 @@
 
 
     function renderPeople() {
-    
-      $("personButtons")
-        .innerHTML =
-        state.people
-          .map(
-            person =>
-              `<button
-                type="button"
-                class="person-btn ${
-                  state.selectedPersonId === person.personId
-                    ? "active"
-                    : ""
-                }"
-                data-person-id="${person.personId}"
-              >
-                ${
-                  state.selectedPersonId === person.personId
-                    ? "✓ "
-                    : ""
-                }${esc(person.name)}
-              </button>`
-          )
-          .join("")
-    
-        +
-    
-        `<button
-          type="button"
-          class="person-btn overlap ${
-            state.selectedPersonId === null
-              ? "active"
-              : ""
-          }"
-          data-overlap="true"
-        >
-          Find overlap
-        </button>`;
-    
-    
-      $("personButtons")
-        .querySelectorAll(
-          "[data-person-id]"
-        )
-        .forEach(
-          button => {
-    
-            button.onclick =
-              () => {
-    
-                state.selectedPersonId =
-                  button.dataset.personId;
-    
-                state.selectedPersonName =
-                  getSelectedPerson()
-                    ?.name ||
-                  "";
-    
-                renderPeople();
-                renderCalendar();
-              };
-          }
-        );
-    
-    
-      $("personButtons")
-        .querySelector(
-          "[data-overlap='true']"
-        )
-        .onclick =
-        () => {
-    
-          state.selectedPersonId =
-            null;
-    
-          state.selectedPersonName =
-            "";
-    
-          renderPeople();
-          renderCalendar();
-        };
-    
-    
-      $("overlapPicker")
-        .innerHTML =
-        state.people
-          .map(
-            person =>
-              `<label class="person-check">
-                <input
-                  type="checkbox"
-                  data-name="${escAttr(person.name)}"
-                  ${
-                    state.overlapPeople.includes(person.name)
-                      ? "checked"
+
+        $("personButtons")
+          .innerHTML =
+          state.people
+            .map(
+              person =>
+                `<button
+                  type="button"
+                  class="person-btn ${
+                    state.selectedPersonId === person.personId
+                      ? "active"
                       : ""
-                  }
+                  }"
+                  data-person-id="${person.personId}"
                 >
-                ${esc(person.name)}
-              </label>`
+                  ${
+                    state.selectedPersonId === person.personId
+                      ? "✓ "
+                      : ""
+                  }${esc(person.name)}
+                </button>`
+            )
+            .join("");
+      
+      
+        $("personButtons")
+          .querySelectorAll(
+            "[data-person-id]"
           )
-          .join("");
-    
-    
-      $("overlapPicker")
-        .classList
-        .toggle(
-          "show",
-          state.selectedPersonId === null
-        );
-    
-    
-      $("overlapPicker")
-        .querySelectorAll(
-          "input"
-        )
-        .forEach(
-          checkbox => {
-    
-            checkbox.onchange =
-              () => {
-    
-                const name =
-                  checkbox.dataset.name;
-    
-    
-                if (
-                  checkbox.checked &&
-                  !state.overlapPeople.includes(name)
-                ) {
-                  state.overlapPeople.push(name);
-                }
-    
-    
-                if (!checkbox.checked) {
-                  state.overlapPeople =
-                    state.overlapPeople.filter(
-                      value =>
-                        value !== name
-                    );
-                }
-    
-    
-                renderCalendar();
-              };
-          }
-        );
-    }
+          .forEach(
+            button => {
+      
+              button.onclick =
+                () => {
+      
+                  state.selectedPersonId =
+                    button.dataset.personId;
+      
+                  state.selectedPersonName =
+                    getSelectedPerson()
+                      ?.name ||
+                    "";
+      
+                  renderPeople();
+                  renderCalendar();
+                };
+            }
+          );
+      
+      
+        $("overlapBtn")
+          .classList
+          .toggle(
+            "active",
+            state.selectedPersonId === null
+          );
+      
+      
+        $("overlapPicker")
+          .innerHTML =
+          state.people
+            .map(
+              person =>
+                `<label class="person-check">
+                  <input
+                    type="checkbox"
+                    data-name="${escAttr(person.name)}"
+                    ${
+                      state.overlapPeople.includes(person.name)
+                        ? "checked"
+                        : ""
+                    }
+                  >
+                  ${esc(person.name)}
+                </label>`
+            )
+            .join("");
+      
+      
+        $("overlapPicker")
+          .classList
+          .toggle(
+            "show",
+            state.selectedPersonId === null
+          );
+      
+      
+        $("overlapPicker")
+          .querySelectorAll(
+            "input"
+          )
+          .forEach(
+            checkbox => {
+      
+              checkbox.onchange =
+                () => {
+      
+                  const name =
+                    checkbox.dataset.name;
+      
+      
+                  if (
+                    checkbox.checked &&
+                    !state.overlapPeople.includes(name)
+                  ) {
+                    state.overlapPeople.push(name);
+                  }
+      
+      
+                  if (!checkbox.checked) {
+                    state.overlapPeople =
+                      state.overlapPeople.filter(
+                        value =>
+                          value !== name
+                      );
+                  }
+      
+      
+                  renderCalendar();
+                };
+            }
+          );
+      }
 
 
     // ============================================================
@@ -3246,7 +3373,197 @@
         );
       };
 
-
+    $("overlapBtn")
+        .onclick =
+        () => {
+      
+          state.selectedPersonId =
+            null;
+      
+          state.selectedPersonName =
+            "";
+      
+          renderPeople();
+          renderCalendar();
+        };
+      
+      
+      $("showAddPersonBtn")
+        .onclick =
+        () => {
+      
+          $("addPersonForm")
+            .classList
+            .remove(
+              "hidden"
+            );
+      
+          $("showAddPersonBtn")
+            .classList
+            .add(
+              "hidden"
+            );
+      
+          $("participantNameInput")
+            .focus();
+        };
+      
+      
+      $("cancelAddPerson")
+        .onclick =
+        () => {
+      
+          $("participantNameInput")
+            .value =
+            "";
+      
+          $("addPersonForm")
+            .classList
+            .add(
+              "hidden"
+            );
+      
+          $("showAddPersonBtn")
+            .classList
+            .remove(
+              "hidden"
+            );
+        };
+      
+      
+      $("confirmAddPerson")
+        .onclick =
+        async () => {
+      
+          const name =
+            $("participantNameInput")
+              .value
+              .trim();
+      
+      
+          if (!name) {
+            return;
+          }
+      
+      
+          $("confirmAddPerson")
+            .disabled =
+            true;
+      
+      
+          $("confirmAddPerson")
+            .textContent =
+            "Adding...";
+      
+      
+          try {
+      
+            const result =
+              await api({
+      
+                action:
+                  "pollAddPerson",
+      
+                sessionCode:
+                  state.sessionCode,
+      
+                name
+              });
+      
+      
+            applyPollState(
+              result.state
+            );
+      
+      
+            if (
+              result.state
+                ?.addedPersonId
+            ) {
+      
+              state.selectedPersonId =
+                result.state
+                  .addedPersonId;
+      
+            } else {
+      
+              const added =
+                state.people.find(
+                  person =>
+                    person.name
+                      .toLowerCase() ===
+                    name.toLowerCase()
+                );
+      
+              if (added) {
+                state.selectedPersonId =
+                  added.personId;
+              }
+            }
+      
+      
+            state.selectedPersonName =
+              getSelectedPerson()
+                ?.name ||
+              "";
+      
+      
+            $("participantNameInput")
+              .value =
+              "";
+      
+      
+            $("addPersonForm")
+              .classList
+              .add(
+                "hidden"
+              );
+      
+      
+            $("showAddPersonBtn")
+              .classList
+              .remove(
+                "hidden"
+              );
+      
+      
+            renderPeople();
+            renderCalendar();
+      
+      
+          } catch (error) {
+      
+            alert(
+              "Could not add your name: " +
+              error.message
+            );
+      
+          } finally {
+      
+            $("confirmAddPerson")
+              .disabled =
+              false;
+      
+      
+            $("confirmAddPerson")
+              .textContent =
+              "Add";
+          }
+        };
+      
+      
+      $("participantNameInput")
+        .onkeydown =
+        event => {
+      
+          if (
+            event.key ===
+            "Enter"
+          ) {
+            $("confirmAddPerson")
+              .click();
+          }
+        };
     $("prevMonth")
       .onclick =
       () => {
