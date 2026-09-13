@@ -179,7 +179,12 @@ export default {
                 ok: true,
                 state: await savePollAvailability(env, body)
               });
-            
+            case "pollAddPerson":
+              return json({
+                ok: true,
+                state: await addPollPersonSelf(env, body)
+              });
+                        
             
             // ============================================================
             // POLL ADMIN
@@ -2968,6 +2973,128 @@ async function savePollAvailability(
   );
 }
 
+// ============================================================
+// PARTICIPANT - ADD YOURSELF
+// ============================================================
+
+async function addPollPersonSelf(
+  env,
+  request
+) {
+  const session =
+    await getPollSessionByCode(
+      env,
+      request.sessionCode
+    );
+
+
+  const name =
+    String(
+      request.name || ""
+    ).trim();
+
+
+  if (!name) {
+    throw new Error(
+      "Enter your name."
+    );
+  }
+
+
+  if (name.length > 50) {
+    throw new Error(
+      "Name is too long."
+    );
+  }
+
+
+  const existing =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          person_id
+        FROM poll_people
+        WHERE session_id = ?
+          AND LOWER(name) = LOWER(?)
+        LIMIT 1
+      `)
+      .bind(
+        session.session_id,
+        name
+      )
+      .first();
+
+
+  if (existing) {
+    throw new Error(
+      "That name is already in this session."
+    );
+  }
+
+
+  const orderRow =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          COALESCE(
+            MAX(sort_order),
+            0
+          ) + 1 AS next_order
+        FROM poll_people
+        WHERE session_id = ?
+      `)
+      .bind(
+        session.session_id
+      )
+      .first();
+
+
+  const personId =
+    crypto.randomUUID();
+
+
+  await env.POLL_DB
+    .prepare(`
+      INSERT INTO poll_people (
+        person_id,
+        session_id,
+        name,
+        sort_order,
+        created_at
+      )
+      VALUES (
+        ?, ?, ?, ?,
+        CURRENT_TIMESTAMP
+      )
+    `)
+    .bind(
+      personId,
+      session.session_id,
+      name,
+      Number(
+        orderRow?.next_order || 1
+      )
+    )
+    .run();
+
+
+  const state =
+    await loadPollState(
+      env,
+      {
+        sessionCode:
+          request.sessionCode
+      }
+    );
+
+
+  return {
+    ...state,
+
+    addedPersonId:
+      personId
+  };
+}
 
 // ============================================================
 // POLL ADMIN STATE
