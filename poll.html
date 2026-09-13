@@ -616,7 +616,52 @@
     .add-person-form.hidden {
       display: none;
     }
-    
+
+    .access-mode-card {
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 16px;
+      margin-bottom: 16px;
+      background: #f8fafc;
+    }
+
+    .access-mode-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+    }
+
+    .access-mode-option {
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    .access-mode-option input {
+      margin-right: 6px;
+    }
+
+    .access-mode-option strong {
+      display: inline-block;
+      margin-bottom: 4px;
+    }
+
+    .access-mode-option span {
+      display: block;
+      color: var(--muted);
+      font-size: .82rem;
+      line-height: 1.35;
+      margin-left: 22px;
+    }
+
+    .live-session-row {
+      margin-top: 12px;
+    }
+
     @media(max-width: 760px) {
       body {
         padding: 7px;
@@ -680,6 +725,10 @@
       .add-person-form {
         grid-template-columns: 1fr auto auto;
         width: 100%;
+      }
+
+      .access-mode-options {
+        grid-template-columns: 1fr;
       }
       
     }
@@ -761,6 +810,13 @@
           class="btn secondary"
         >
           Switch session
+        </button>
+
+        <button
+          id="openAdminBtn"
+          class="btn secondary"
+        >
+          Admin
         </button>
 
       </div>
@@ -946,6 +1002,55 @@
 
 
     <section class="admin-card">
+
+      <div class="access-mode-card">
+        <h3 style="margin:0;">Poll Access Mode</h3>
+        <p class="muted" style="margin:6px 0 0;">
+          Choose whether visitors open one live poll automatically or enter a session code.
+        </p>
+
+        <div class="access-mode-options">
+          <label class="access-mode-option">
+            <input
+              type="radio"
+              name="pollAccessMode"
+              id="accessModeLive"
+              value="live"
+            />
+            <strong>Live Mode</strong>
+            <span>Everyone visiting /poll goes directly to one selected poll.</span>
+          </label>
+
+          <label class="access-mode-option">
+            <input
+              type="radio"
+              name="pollAccessMode"
+              id="accessModeSession"
+              value="session"
+            />
+            <strong>Session Mode</strong>
+            <span>Visitors must enter a session code.</span>
+          </label>
+        </div>
+
+        <div
+          id="liveSessionRow"
+          class="live-session-row hidden"
+        >
+          <label class="label">Live Session</label>
+          <select
+            id="liveSessionSelect"
+            class="select"
+          ></select>
+        </div>
+
+        <button
+          id="saveAccessMode"
+          class="btn primary full"
+        >
+          Save Access Mode
+        </button>
+      </div>
 
       <div class="admin-grid">
 
@@ -1419,10 +1524,15 @@
       adminCode: "",
 
       adminState: {
+        settings: {
+          accessMode: "session",
+          liveSessionId: null
+        },
         sessions: []
       },
 
-      adminSessionId: null
+      adminSessionId: null,
+      accessMode: "session"
     };
 
 
@@ -1503,6 +1613,41 @@
         "error",
         error
       );
+    }
+
+
+    async function routeFromBootstrap() {
+
+      const bootstrap =
+        await api({
+          action: "pollBootstrap"
+        });
+
+
+      state.accessMode =
+        bootstrap.mode === "live"
+          ? "live"
+          : "session";
+
+
+      if (
+        bootstrap.mode === "live" &&
+        bootstrap.sessionCode
+      ) {
+        state.sessionCode =
+          bootstrap.sessionCode;
+
+        localStorage.removeItem(
+          "pollSessionCode"
+        );
+
+        await loadPoll();
+        show("poll");
+        return true;
+      }
+
+
+      return false;
     }
 
 
@@ -2929,6 +3074,58 @@
     }
 
 
+    function renderAccessModeSettings() {
+
+      const settings =
+        state.adminState?.settings || {
+          accessMode: "session",
+          liveSessionId: null
+        };
+
+
+      const accessMode =
+        settings.accessMode === "live"
+          ? "live"
+          : "session";
+
+
+      $("accessModeLive").checked =
+        accessMode === "live";
+
+      $("accessModeSession").checked =
+        accessMode === "session";
+
+
+      $("liveSessionRow")
+        .classList
+        .toggle(
+          "hidden",
+          accessMode !== "live"
+        );
+
+
+      const sessions =
+        state.adminState?.sessions || [];
+
+
+      $("liveSessionSelect").innerHTML =
+        sessions.length
+          ? sessions
+              .map(
+                session =>
+                  `<option value="${escAttr(session.sessionId)}">${esc(session.sessionName)} (${esc(session.sessionCode)})</option>`
+              )
+              .join("")
+          : `<option value="">No sessions available</option>`;
+
+
+      if (settings.liveSessionId) {
+        $("liveSessionSelect").value =
+          settings.liveSessionId;
+      }
+    }
+
+
     function adminSession() {
 
       return (
@@ -2947,6 +3144,7 @@
     function renderAdmin() {
 
       populateAdminHourSelects();
+      renderAccessModeSettings();
 
 
       $("sessionList")
@@ -3305,6 +3503,32 @@
         );
       };
 
+    $("openAdminBtn")
+      .onclick =
+      () => {
+        localStorage.removeItem(
+          "pollSessionCode"
+        );
+
+        state.sessionCode =
+          "";
+
+        $("sessionCodeInput")
+          .value =
+          "";
+
+        status(
+          $("loginStatus"),
+          "Enter the admin code."
+        );
+
+        show("login");
+
+        $("sessionCodeInput")
+          .focus();
+      };
+
+
     $("overlapBtn")
         .onclick =
         () => {
@@ -3572,9 +3796,74 @@
           );
 
 
+    $("accessModeLive")
+      .onchange =
+      () => {
+        $("liveSessionRow")
+          .classList
+          .remove("hidden");
+      };
+
+
+    $("accessModeSession")
+      .onchange =
+      () => {
+        $("liveSessionRow")
+          .classList
+          .add("hidden");
+      };
+
+
+    $("saveAccessMode")
+      .onclick =
+      async () => {
+
+        const accessMode =
+          $("accessModeLive").checked
+            ? "live"
+            : "session";
+
+        const liveSessionId =
+          accessMode === "live"
+            ? $("liveSessionSelect").value
+            : null;
+
+
+        if (
+          accessMode === "live" &&
+          !liveSessionId
+        ) {
+          return status(
+            $("adminStatus"),
+            "Choose a session for Live Mode.",
+            true
+          );
+        }
+
+
+        await adminAction({
+          action: "pollAdminSaveSettings",
+          accessMode,
+          liveSessionId
+        });
+
+
+        state.accessMode =
+          accessMode;
+
+
+        status(
+          $("adminStatus"),
+          accessMode === "live"
+            ? "Live Mode saved ✓"
+            : "Session Mode saved ✓"
+        );
+      };
+
+
     $("adminExit")
       .onclick =
-      () => {
+      async () => {
 
         state.adminCode =
           "";
@@ -3582,6 +3871,17 @@
         $("sessionCodeInput")
           .value =
           "";
+
+        try {
+          const openedLive =
+            await routeFromBootstrap();
+
+          if (openedLive) {
+            return;
+          }
+        } catch (error) {
+          console.error(error);
+        }
 
         show(
           "login"
@@ -4245,6 +4545,21 @@
 
     (
       async () => {
+
+        try {
+          const openedLive =
+            await routeFromBootstrap();
+
+          if (openedLive) {
+            return;
+          }
+        } catch (error) {
+          console.error(
+            "Poll bootstrap failed:",
+            error
+          );
+        }
+
 
         const remembered =
           localStorage.getItem(
