@@ -298,6 +298,41 @@
         );
     }
 
+    .suggested-pick.complete {
+      padding: 0;
+      border: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .suggested-pick.complete
+    .suggested-pick-kicker,
+    .suggested-pick.complete
+    .suggested-pick-title,
+    .suggested-pick.complete
+    .suggested-pick-copy,
+    .suggested-pick.complete
+    .suggested-date-chips,
+    .suggested-pick.complete
+    .suggested-pick-status {
+      display: none;
+    }
+
+    .suggested-pick.complete
+    .suggested-pick-actions {
+      margin-top: 0;
+    }
+
+    .suggested-pick.complete
+    .suggested-pick-btn {
+      width: auto;
+      min-height: 38px;
+      padding: 9px 14px;
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid rgba(52,211,153,.35);
+    }
+
     .suggested-pick-kicker {
       color: #c7d2fe;
       font-size: .72rem;
@@ -365,17 +400,6 @@
     .suggested-pick.complete .suggested-pick-btn {
       background: #d1fae5;
       color: #065f46;
-    }
-
-    .suggested-review-btn {
-      min-height: 40px;
-      padding: 9px 13px;
-      border: 1px solid rgba(255,255,255,.18);
-      border-radius: 12px;
-      background: transparent;
-      color: #e0e7ff;
-      font-weight: 900;
-      cursor: pointer;
     }
 
     .suggested-pick-status {
@@ -1007,8 +1031,12 @@
         gap: 7px;
       }
 
-      .suggested-pick-btn,
-      .suggested-review-btn {
+      .suggested-pick-btn {
+        width: 100%;
+      }
+
+      .suggested-pick.complete
+      .suggested-pick-btn {
         width: 100%;
       }
 
@@ -1386,8 +1414,7 @@
         id="suggestedPickCopy"
         class="suggested-pick-copy"
       >
-        One tap adds a balanced set of dates with good energy while avoiding the busiest late-October weekends.
-        You can remove or edit anything afterward.
+        One tap adds our recommended dates. You can edit anything afterward.
       </div>
 
       <div
@@ -1402,14 +1429,6 @@
           class="suggested-pick-btn"
         >
           Add suggested dates
-        </button>
-
-        <button
-          id="reviewSuggestedDates"
-          type="button"
-          class="suggested-review-btn"
-        >
-          Review dates ↓
         </button>
 
         <span
@@ -3233,17 +3252,17 @@
       $("suggestedPickCopy")
         .textContent =
         allAdded
-          ? `${dates.length} suggested dates are on your calendar. Review them below and remove or edit anything that doesn't work.`
-          : `Add ${dates.length} suggested dates at once, then customize your calendar instead of starting from scratch.`;
+          ? `${dates.length} suggested dates are on your calendar.`
+          : `Add ${dates.length} suggested dates at once, then customize anything you need.`;
 
 
       $("applySuggestedPick")
         .textContent =
         allAdded
-          ? "✓ Suggested Pick added"
+          ? `✓ Suggested Pick added (${dates.length}/${dates.length})`
           : (
               selectedCount > 0
-                ? `Add remaining ${dates.length - selectedCount}`
+                ? `Add remaining ${dates.length - selectedCount} (out of ${dates.length})`
                 : `Add ${dates.length} suggested dates`
             );
 
@@ -3290,9 +3309,6 @@
 
 
       if (!datesToAdd.length) {
-
-        scrollToCalendar();
-
         return;
       }
 
@@ -3378,9 +3394,6 @@
         $("saveStatus")
           .textContent =
           "Saved";
-
-
-        scrollToCalendar();
 
       } catch (error) {
 
@@ -4596,12 +4609,6 @@
       .onclick =
       () =>
         applySuggestedPick();
-
-
-    $("reviewSuggestedDates")
-      .onclick =
-      () =>
-        scrollToCalendar();
 
 
     $("overlapBtn")
