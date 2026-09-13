@@ -158,16 +158,111 @@ export default {
               )
             });
             
-            case "loadPoll":
+            // ============================================================
+            // POLL
+            // ============================================================
+            
+            case "pollLogin":
               return json({
                 ok: true,
-                data: await loadPollData(env)
+                ...(await pollLogin(env, body))
               });
             
-            case "savePoll":
+            case "pollLoad":
               return json({
                 ok: true,
-                data: await savePollData(env, body)
+                state: await loadPollState(env, body)
+              });
+            
+            case "pollSave":
+              return json({
+                ok: true,
+                state: await savePollAvailability(env, body)
+              });
+            
+            
+            // ============================================================
+            // POLL ADMIN
+            // ============================================================
+            
+            case "pollAdminLoad":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await getPollAdminState(env)
+              });
+            
+            
+            case "pollAdminCreateSession":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await createPollSession(env, body)
+              });
+            
+            
+            case "pollAdminSaveSession":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await updatePollSession(env, body)
+              });
+            
+            
+            case "pollAdminDeleteSession":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await deletePollSession(env, body)
+              });
+            
+            
+            case "pollAdminAddPerson":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await addPollPerson(env, body)
+              });
+            
+            
+            case "pollAdminDeletePerson":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await deletePollPerson(env, body)
+              });
+            
+            
+            case "pollAdminAddEvent":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await addPollEvent(env, body)
+              });
+            
+            
+            case "pollAdminSaveEvent":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await updatePollEvent(env, body)
+              });
+            
+            
+            case "pollAdminDeleteEvent":
+              verifyPollAdmin(env, body.adminCode);
+            
+              return json({
+                ok: true,
+                state: await deletePollEvent(env, body)
               });
             
           default:
@@ -2414,86 +2509,400 @@ function getReceiptSchema() {
 // POLL
 // ============================================================
 
-async function loadPollData(env) {
-  const result = await env.POLL_DB
-    .prepare(`
-      SELECT
-        person,
-        date_key,
-        am,
-        pm,
-        exact_times
-      FROM poll_availability
-      ORDER BY person, date_key
-    `)
-    .all();
+function verifyPollAdmin(env, candidate) {
+  if (!env.POLL_ADMIN_CODE) {
+    throw new Error(
+      "POLL_ADMIN_CODE secret is not configured."
+    );
+  }
 
-  const data = {};
+  if (
+    String(candidate || "") !==
+    String(env.POLL_ADMIN_CODE)
+  ) {
+    throw new Error(
+      "Incorrect admin code."
+    );
+  }
+}
 
-  for (const row of result.results || []) {
-    const person = String(row.person || "");
-    const dateKey = String(row.date_key || "");
 
-    if (!person || !dateKey) continue;
+// ============================================================
+// POLL LOGIN
+// ============================================================
 
-    if (!data[person]) {
-      data[person] = {};
+async function pollLogin(env, request) {
+  const code =
+    String(request.code || "")
+      .trim();
+
+  if (!code) {
+    throw new Error(
+      "Enter a session code."
+    );
+  }
+
+
+  // Admin code
+  if (
+    env.POLL_ADMIN_CODE &&
+    code === String(env.POLL_ADMIN_CODE)
+  ) {
+    return {
+      mode: "admin"
+    };
+  }
+
+
+  // Normal friend-group session
+  const session =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id,
+          session_name,
+          session_code
+        FROM poll_sessions
+        WHERE UPPER(session_code) = UPPER(?)
+          AND is_active = 1
+        LIMIT 1
+      `)
+      .bind(code)
+      .first();
+
+
+  if (!session) {
+    throw new Error(
+      "Invalid session code."
+    );
+  }
+
+
+  return {
+    mode: "session",
+
+    session: {
+      sessionId:
+        String(session.session_id),
+
+      sessionName:
+        String(session.session_name),
+
+      sessionCode:
+        String(session.session_code)
     }
+  };
+}
+
+
+// ============================================================
+// LOAD POLL
+// ============================================================
+
+async function loadPollState(
+  env,
+  request
+) {
+  const session =
+    await getPollSessionByCode(
+      env,
+      request.sessionCode
+    );
+
+
+  const eventId =
+    normalizeOptionalId(
+      request.eventId
+    );
+
+
+  if (eventId) {
+    await verifyPollEventBelongsToSession(
+      env,
+      session.session_id,
+      eventId
+    );
+  }
+
+
+  const [
+    peopleResult,
+    eventsResult,
+    availabilityResult
+  ] = await Promise.all([
+
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          person_id,
+          name,
+          sort_order
+        FROM poll_people
+        WHERE session_id = ?
+        ORDER BY
+          sort_order,
+          name
+      `)
+      .bind(
+        session.session_id
+      )
+      .all(),
+
+
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          event_id,
+          event_name,
+          start_date,
+          end_date,
+          is_active,
+          sort_order
+        FROM poll_events
+        WHERE session_id = ?
+          AND is_active = 1
+        ORDER BY
+          sort_order,
+          start_date,
+          event_name
+      `)
+      .bind(
+        session.session_id
+      )
+      .all(),
+
+
+    eventId
+      ? env.POLL_DB
+          .prepare(`
+            SELECT
+              person_id,
+              date_key,
+              am,
+              pm,
+              exact_times
+            FROM poll_availability
+            WHERE session_id = ?
+              AND event_id = ?
+            ORDER BY
+              person_id,
+              date_key
+          `)
+          .bind(
+            session.session_id,
+            eventId
+          )
+          .all()
+
+      : env.POLL_DB
+          .prepare(`
+            SELECT
+              person_id,
+              date_key,
+              am,
+              pm,
+              exact_times
+            FROM poll_availability
+            WHERE session_id = ?
+              AND event_id IS NULL
+            ORDER BY
+              person_id,
+              date_key
+          `)
+          .bind(
+            session.session_id
+          )
+          .all()
+  ]);
+
+
+  const people =
+    (peopleResult.results || [])
+      .map(row => ({
+        personId:
+          String(row.person_id),
+
+        name:
+          String(row.name || "")
+      }));
+
+
+  const events =
+    (eventsResult.results || [])
+      .map(row => ({
+        eventId:
+          String(row.event_id),
+
+        eventName:
+          String(row.event_name || ""),
+
+        startDate:
+          String(row.start_date || ""),
+
+        endDate:
+          String(row.end_date || "")
+      }));
+
+
+  const peopleById = {};
+
+  for (const person of people) {
+    peopleById[
+      person.personId
+    ] = person;
+  }
+
+
+  const availability = {};
+
+  for (
+    const row
+    of availabilityResult.results || []
+  ) {
+    const personId =
+      String(row.person_id || "");
+
+    const person =
+      peopleById[personId];
+
+    if (!person) {
+      continue;
+    }
+
+
+    const dateKey =
+      String(row.date_key || "");
+
+    if (!dateKey) {
+      continue;
+    }
+
+
+    if (
+      !availability[
+        person.name
+      ]
+    ) {
+      availability[
+        person.name
+      ] = {};
+    }
+
 
     let exactTimes = [];
 
     try {
-      exactTimes = JSON.parse(
-        String(row.exact_times || "[]")
-      );
+      exactTimes =
+        JSON.parse(
+          String(
+            row.exact_times ||
+            "[]"
+          )
+        );
     } catch {
       exactTimes = [];
     }
 
-    data[person][dateKey] = {
-      am: Boolean(row.am),
-      pm: Boolean(row.pm),
+
+    availability[
+      person.name
+    ][dateKey] = {
+      am:
+        Boolean(row.am),
+
+      pm:
+        Boolean(row.pm),
+
       exactTimes:
-        Array.isArray(exactTimes)
+        Array.isArray(
+          exactTimes
+        )
           ? exactTimes
           : []
     };
   }
 
-  return data;
+
+  let selectedEvent = null;
+
+  if (eventId) {
+    selectedEvent =
+      events.find(
+        event =>
+          event.eventId ===
+          eventId
+      ) || null;
+  }
+
+
+  return {
+    session: {
+      sessionId:
+        String(
+          session.session_id
+        ),
+
+      sessionName:
+        String(
+          session.session_name
+        )
+    },
+
+    mode:
+      eventId
+        ? "event"
+        : "general",
+
+    selectedEvent,
+
+    people,
+
+    events,
+
+    availability
+  };
 }
 
 
-async function savePollData(env, request) {
-  const person =
-    String(request.person || "").trim();
+// ============================================================
+// SAVE POLL AVAILABILITY
+// ============================================================
+
+async function savePollAvailability(
+  env,
+  request
+) {
+  const session =
+    await getPollSessionByCode(
+      env,
+      request.sessionCode
+    );
+
+
+  const personId =
+    String(
+      request.personId || ""
+    ).trim();
+
 
   const dateKey =
-    String(request.date || "").trim();
+    String(
+      request.date || ""
+    ).trim();
 
-  const am =
-    Boolean(request.am);
 
-  const pm =
-    Boolean(request.pm);
+  const eventId =
+    normalizeOptionalId(
+      request.eventId
+    );
 
-  const exactTimes =
-    Array.isArray(request.times)
-      ? request.times
-          .map(Number)
-          .filter(value =>
-            Number.isFinite(value)
-          )
-      : [];
 
-  const cleared =
-    Boolean(request.cleared);
-
-  if (!person) {
+  if (!personId) {
     throw new Error(
-      "Person is required."
+      "Choose a person."
     );
   }
+
 
   if (!dateKey) {
     throw new Error(
@@ -2501,53 +2910,1155 @@ async function savePollData(env, request) {
     );
   }
 
-  if (cleared) {
-    await env.POLL_DB
-      .prepare(`
-        DELETE FROM poll_availability
-        WHERE person = ?
-          AND date_key = ?
-      `)
-      .bind(person, dateKey)
-      .run();
-  } else {
-    await env.POLL_DB
-      .prepare(`
-        INSERT INTO poll_availability (
-          poll_id,
-          person,
-          date_key,
-          am,
-          pm,
-          exact_times,
-          created_at,
-          updated_at
-        )
-        VALUES (
-          ?, ?, ?, ?, ?, ?,
-          CURRENT_TIMESTAMP,
-          CURRENT_TIMESTAMP
-        )
 
-        ON CONFLICT(person, date_key)
-        DO UPDATE SET
-          am = excluded.am,
-          pm = excluded.pm,
-          exact_times = excluded.exact_times,
-          updated_at = CURRENT_TIMESTAMP
+  const person =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          person_id
+        FROM poll_people
+        WHERE person_id = ?
+          AND session_id = ?
+        LIMIT 1
       `)
       .bind(
-        crypto.randomUUID(),
-        person,
-        dateKey,
-        am ? 1 : 0,
-        pm ? 1 : 0,
-        JSON.stringify(exactTimes)
+        personId,
+        session.session_id
       )
-      .run();
+      .first();
+
+
+  if (!person) {
+    throw new Error(
+      "That person does not belong to this session."
+    );
   }
 
-  return loadPollData(env);
+
+  if (eventId) {
+    await verifyPollEventBelongsToSession(
+      env,
+      session.session_id,
+      eventId
+    );
+  }
+
+
+  const am =
+    Boolean(
+      request.am
+    );
+
+  const pm =
+    Boolean(
+      request.pm
+    );
+
+
+  const exactTimes =
+    Array.isArray(
+      request.times
+    )
+      ? request.times
+          .map(Number)
+          .filter(
+            value =>
+              Number.isFinite(
+                value
+              )
+          )
+      : [];
+
+
+  const cleared =
+    Boolean(
+      request.cleared
+    ) ||
+    (
+      !am &&
+      !pm &&
+      !exactTimes.length
+    );
+
+
+  if (cleared) {
+
+    if (eventId) {
+      await env.POLL_DB
+        .prepare(`
+          DELETE FROM poll_availability
+          WHERE session_id = ?
+            AND person_id = ?
+            AND event_id = ?
+            AND date_key = ?
+        `)
+        .bind(
+          session.session_id,
+          personId,
+          eventId,
+          dateKey
+        )
+        .run();
+
+    } else {
+      await env.POLL_DB
+        .prepare(`
+          DELETE FROM poll_availability
+          WHERE session_id = ?
+            AND person_id = ?
+            AND event_id IS NULL
+            AND date_key = ?
+        `)
+        .bind(
+          session.session_id,
+          personId,
+          dateKey
+        )
+        .run();
+    }
+
+  } else {
+
+    if (eventId) {
+      await env.POLL_DB
+        .prepare(`
+          INSERT INTO poll_availability (
+            availability_id,
+            session_id,
+            person_id,
+            event_id,
+            date_key,
+            am,
+            pm,
+            exact_times,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ?, ?, ?, ?, ?,
+            ?, ?, ?,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+
+          ON CONFLICT(
+            session_id,
+            person_id,
+            event_id,
+            date_key
+          )
+          WHERE event_id IS NOT NULL
+
+          DO UPDATE SET
+            am = excluded.am,
+            pm = excluded.pm,
+            exact_times =
+              excluded.exact_times,
+            updated_at =
+              CURRENT_TIMESTAMP
+        `)
+        .bind(
+          crypto.randomUUID(),
+          session.session_id,
+          personId,
+          eventId,
+          dateKey,
+          am ? 1 : 0,
+          pm ? 1 : 0,
+          JSON.stringify(
+            exactTimes
+          )
+        )
+        .run();
+
+    } else {
+      await env.POLL_DB
+        .prepare(`
+          INSERT INTO poll_availability (
+            availability_id,
+            session_id,
+            person_id,
+            event_id,
+            date_key,
+            am,
+            pm,
+            exact_times,
+            created_at,
+            updated_at
+          )
+          VALUES (
+            ?, ?, ?, NULL, ?,
+            ?, ?, ?,
+            CURRENT_TIMESTAMP,
+            CURRENT_TIMESTAMP
+          )
+
+          ON CONFLICT(
+            session_id,
+            person_id,
+            date_key
+          )
+          WHERE event_id IS NULL
+
+          DO UPDATE SET
+            am = excluded.am,
+            pm = excluded.pm,
+            exact_times =
+              excluded.exact_times,
+            updated_at =
+              CURRENT_TIMESTAMP
+        `)
+        .bind(
+          crypto.randomUUID(),
+          session.session_id,
+          personId,
+          dateKey,
+          am ? 1 : 0,
+          pm ? 1 : 0,
+          JSON.stringify(
+            exactTimes
+          )
+        )
+        .run();
+    }
+  }
+
+
+  return loadPollState(
+    env,
+    {
+      sessionCode:
+        request.sessionCode,
+
+      eventId
+    }
+  );
+}
+
+
+// ============================================================
+// POLL ADMIN STATE
+// ============================================================
+
+async function getPollAdminState(env) {
+  const [
+    sessionsResult,
+    peopleResult,
+    eventsResult
+  ] = await Promise.all([
+
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id,
+          session_name,
+          session_code,
+          is_active,
+          created_at,
+          updated_at
+        FROM poll_sessions
+        ORDER BY
+          session_name
+      `)
+      .all(),
+
+
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          person_id,
+          session_id,
+          name,
+          sort_order
+        FROM poll_people
+        ORDER BY
+          session_id,
+          sort_order,
+          name
+      `)
+      .all(),
+
+
+    env.POLL_DB
+      .prepare(`
+        SELECT
+          event_id,
+          session_id,
+          event_name,
+          start_date,
+          end_date,
+          is_active,
+          sort_order
+        FROM poll_events
+        ORDER BY
+          session_id,
+          sort_order,
+          event_name
+      `)
+      .all()
+  ]);
+
+
+  const sessions =
+    (sessionsResult.results || [])
+      .map(row => {
+
+        const sessionId =
+          String(row.session_id);
+
+        return {
+          sessionId,
+
+          sessionName:
+            String(
+              row.session_name ||
+              ""
+            ),
+
+          sessionCode:
+            String(
+              row.session_code ||
+              ""
+            ),
+
+          isActive:
+            Boolean(
+              row.is_active
+            ),
+
+          people:
+            (peopleResult.results || [])
+              .filter(
+                person =>
+                  String(
+                    person.session_id
+                  ) ===
+                  sessionId
+              )
+              .map(person => ({
+                personId:
+                  String(
+                    person.person_id
+                  ),
+
+                name:
+                  String(
+                    person.name || ""
+                  )
+              })),
+
+          events:
+            (eventsResult.results || [])
+              .filter(
+                event =>
+                  String(
+                    event.session_id
+                  ) ===
+                  sessionId
+              )
+              .map(event => ({
+                eventId:
+                  String(
+                    event.event_id
+                  ),
+
+                eventName:
+                  String(
+                    event.event_name ||
+                    ""
+                  ),
+
+                startDate:
+                  String(
+                    event.start_date ||
+                    ""
+                  ),
+
+                endDate:
+                  String(
+                    event.end_date ||
+                    ""
+                  ),
+
+                isActive:
+                  Boolean(
+                    event.is_active
+                  )
+              }))
+        };
+      });
+
+
+  return {
+    sessions
+  };
+}
+
+
+// ============================================================
+// CREATE SESSION
+// ============================================================
+
+async function createPollSession(
+  env,
+  request
+) {
+  const sessionName =
+    String(
+      request.sessionName || ""
+    ).trim();
+
+  const sessionCode =
+    String(
+      request.sessionCode || ""
+    ).trim();
+
+
+  if (!sessionName) {
+    throw new Error(
+      "Session name is required."
+    );
+  }
+
+
+  if (!sessionCode) {
+    throw new Error(
+      "Session code is required."
+    );
+  }
+
+
+  if (
+    env.POLL_ADMIN_CODE &&
+    sessionCode ===
+      String(
+        env.POLL_ADMIN_CODE
+      )
+  ) {
+    throw new Error(
+      "That code is reserved for admin access."
+    );
+  }
+
+
+  const duplicate =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id
+        FROM poll_sessions
+        WHERE UPPER(session_code) =
+          UPPER(?)
+        LIMIT 1
+      `)
+      .bind(
+        sessionCode
+      )
+      .first();
+
+
+  if (duplicate) {
+    throw new Error(
+      "That session code is already in use."
+    );
+  }
+
+
+  await env.POLL_DB
+    .prepare(`
+      INSERT INTO poll_sessions (
+        session_id,
+        session_name,
+        session_code,
+        is_active,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ?, ?, ?, 1,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+    `)
+    .bind(
+      crypto.randomUUID(),
+      sessionName,
+      sessionCode
+    )
+    .run();
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// UPDATE SESSION
+// ============================================================
+
+async function updatePollSession(
+  env,
+  request
+) {
+  const sessionId =
+    String(
+      request.sessionId || ""
+    ).trim();
+
+  const sessionName =
+    String(
+      request.sessionName || ""
+    ).trim();
+
+  const sessionCode =
+    String(
+      request.sessionCode || ""
+    ).trim();
+
+
+  if (
+    !sessionId ||
+    !sessionName ||
+    !sessionCode
+  ) {
+    throw new Error(
+      "Session name and code are required."
+    );
+  }
+
+
+  if (
+    env.POLL_ADMIN_CODE &&
+    sessionCode ===
+      String(
+        env.POLL_ADMIN_CODE
+      )
+  ) {
+    throw new Error(
+      "That code is reserved for admin access."
+    );
+  }
+
+
+  const duplicate =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id
+        FROM poll_sessions
+        WHERE UPPER(session_code) =
+          UPPER(?)
+          AND session_id <> ?
+        LIMIT 1
+      `)
+      .bind(
+        sessionCode,
+        sessionId
+      )
+      .first();
+
+
+  if (duplicate) {
+    throw new Error(
+      "That session code is already in use."
+    );
+  }
+
+
+  const result =
+    await env.POLL_DB
+      .prepare(`
+        UPDATE poll_sessions
+        SET
+          session_name = ?,
+          session_code = ?,
+          is_active = ?,
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionName,
+        sessionCode,
+        request.isActive === false
+          ? 0
+          : 1,
+        sessionId
+      )
+      .run();
+
+
+  if (!result.meta?.changes) {
+    throw new Error(
+      "Session not found."
+    );
+  }
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// DELETE SESSION
+// ============================================================
+
+async function deletePollSession(
+  env,
+  request
+) {
+  const sessionId =
+    String(
+      request.sessionId || ""
+    ).trim();
+
+
+  if (!sessionId) {
+    throw new Error(
+      "Session ID is required."
+    );
+  }
+
+
+  // Explicit child deletion keeps this
+  // safe regardless of FK settings.
+  await env.POLL_DB.batch([
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_availability
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      ),
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_events
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      ),
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_people
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      ),
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_sessions
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      )
+  ]);
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// ADD PERSON
+// ============================================================
+
+async function addPollPerson(
+  env,
+  request
+) {
+  const sessionId =
+    String(
+      request.sessionId || ""
+    ).trim();
+
+  const name =
+    String(
+      request.name || ""
+    ).trim();
+
+
+  if (!sessionId || !name) {
+    throw new Error(
+      "Session and name are required."
+    );
+  }
+
+
+  await verifyPollSessionId(
+    env,
+    sessionId
+  );
+
+
+  const existing =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          person_id
+        FROM poll_people
+        WHERE session_id = ?
+          AND LOWER(name) =
+            LOWER(?)
+        LIMIT 1
+      `)
+      .bind(
+        sessionId,
+        name
+      )
+      .first();
+
+
+  if (existing) {
+    throw new Error(
+      "That person is already in this session."
+    );
+  }
+
+
+  const orderRow =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          COALESCE(
+            MAX(sort_order),
+            0
+          ) + 1 AS next_order
+        FROM poll_people
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      )
+      .first();
+
+
+  await env.POLL_DB
+    .prepare(`
+      INSERT INTO poll_people (
+        person_id,
+        session_id,
+        name,
+        sort_order,
+        created_at
+      )
+      VALUES (
+        ?, ?, ?, ?,
+        CURRENT_TIMESTAMP
+      )
+    `)
+    .bind(
+      crypto.randomUUID(),
+      sessionId,
+      name,
+      Number(
+        orderRow?.next_order ||
+        1
+      )
+    )
+    .run();
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// DELETE PERSON
+// ============================================================
+
+async function deletePollPerson(
+  env,
+  request
+) {
+  const personId =
+    String(
+      request.personId || ""
+    ).trim();
+
+
+  if (!personId) {
+    throw new Error(
+      "Person ID is required."
+    );
+  }
+
+
+  await env.POLL_DB.batch([
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_availability
+        WHERE person_id = ?
+      `)
+      .bind(
+        personId
+      ),
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_people
+        WHERE person_id = ?
+      `)
+      .bind(
+        personId
+      )
+  ]);
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// ADD EVENT
+// ============================================================
+
+async function addPollEvent(
+  env,
+  request
+) {
+  const sessionId =
+    String(
+      request.sessionId || ""
+    ).trim();
+
+  const eventName =
+    String(
+      request.eventName || ""
+    ).trim();
+
+  const startDate =
+    normalizeOptionalText(
+      request.startDate
+    );
+
+  const endDate =
+    normalizeOptionalText(
+      request.endDate
+    );
+
+
+  if (!sessionId || !eventName) {
+    throw new Error(
+      "Session and event name are required."
+    );
+  }
+
+
+  await verifyPollSessionId(
+    env,
+    sessionId
+  );
+
+
+  const orderRow =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          COALESCE(
+            MAX(sort_order),
+            0
+          ) + 1 AS next_order
+        FROM poll_events
+        WHERE session_id = ?
+      `)
+      .bind(
+        sessionId
+      )
+      .first();
+
+
+  await env.POLL_DB
+    .prepare(`
+      INSERT INTO poll_events (
+        event_id,
+        session_id,
+        event_name,
+        start_date,
+        end_date,
+        is_active,
+        sort_order,
+        created_at,
+        updated_at
+      )
+      VALUES (
+        ?, ?, ?, ?, ?,
+        1, ?,
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP
+      )
+    `)
+    .bind(
+      crypto.randomUUID(),
+      sessionId,
+      eventName,
+      startDate,
+      endDate,
+      Number(
+        orderRow?.next_order ||
+        1
+      )
+    )
+    .run();
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// UPDATE EVENT
+// ============================================================
+
+async function updatePollEvent(
+  env,
+  request
+) {
+  const eventId =
+    String(
+      request.eventId || ""
+    ).trim();
+
+  const eventName =
+    String(
+      request.eventName || ""
+    ).trim();
+
+  const startDate =
+    normalizeOptionalText(
+      request.startDate
+    );
+
+  const endDate =
+    normalizeOptionalText(
+      request.endDate
+    );
+
+
+  if (!eventId || !eventName) {
+    throw new Error(
+      "Event ID and event name are required."
+    );
+  }
+
+
+  const result =
+    await env.POLL_DB
+      .prepare(`
+        UPDATE poll_events
+        SET
+          event_name = ?,
+          start_date = ?,
+          end_date = ?,
+          is_active = ?,
+          updated_at =
+            CURRENT_TIMESTAMP
+        WHERE event_id = ?
+      `)
+      .bind(
+        eventName,
+        startDate,
+        endDate,
+        request.isActive === false
+          ? 0
+          : 1,
+        eventId
+      )
+      .run();
+
+
+  if (!result.meta?.changes) {
+    throw new Error(
+      "Event not found."
+    );
+  }
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// DELETE EVENT
+// ============================================================
+
+async function deletePollEvent(
+  env,
+  request
+) {
+  const eventId =
+    String(
+      request.eventId || ""
+    ).trim();
+
+
+  if (!eventId) {
+    throw new Error(
+      "Event ID is required."
+    );
+  }
+
+
+  await env.POLL_DB.batch([
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_availability
+        WHERE event_id = ?
+      `)
+      .bind(
+        eventId
+      ),
+
+    env.POLL_DB
+      .prepare(`
+        DELETE FROM poll_events
+        WHERE event_id = ?
+      `)
+      .bind(
+        eventId
+      )
+  ]);
+
+
+  return getPollAdminState(env);
+}
+
+
+// ============================================================
+// POLL HELPERS
+// ============================================================
+
+async function getPollSessionByCode(
+  env,
+  sessionCode
+) {
+  sessionCode =
+    String(
+      sessionCode || ""
+    ).trim();
+
+
+  if (!sessionCode) {
+    throw new Error(
+      "Session code is required."
+    );
+  }
+
+
+  const session =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id,
+          session_name,
+          session_code
+        FROM poll_sessions
+        WHERE UPPER(session_code) =
+          UPPER(?)
+          AND is_active = 1
+        LIMIT 1
+      `)
+      .bind(
+        sessionCode
+      )
+      .first();
+
+
+  if (!session) {
+    throw new Error(
+      "Session not found or inactive."
+    );
+  }
+
+
+  return session;
+}
+
+
+async function verifyPollSessionId(
+  env,
+  sessionId
+) {
+  const session =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          session_id
+        FROM poll_sessions
+        WHERE session_id = ?
+        LIMIT 1
+      `)
+      .bind(
+        sessionId
+      )
+      .first();
+
+
+  if (!session) {
+    throw new Error(
+      "Session not found."
+    );
+  }
+}
+
+
+async function verifyPollEventBelongsToSession(
+  env,
+  sessionId,
+  eventId
+) {
+  const event =
+    await env.POLL_DB
+      .prepare(`
+        SELECT
+          event_id
+        FROM poll_events
+        WHERE event_id = ?
+          AND session_id = ?
+          AND is_active = 1
+        LIMIT 1
+      `)
+      .bind(
+        eventId,
+        sessionId
+      )
+      .first();
+
+
+  if (!event) {
+    throw new Error(
+      "Event not found for this session."
+    );
+  }
+}
+
+
+function normalizeOptionalId(value) {
+  const text =
+    String(
+      value || ""
+    ).trim();
+
+  return text || null;
+}
+
+
+function normalizeOptionalText(value) {
+  const text =
+    String(
+      value || ""
+    ).trim();
+
+  return text || null;
 }
 
 // ============================================================
