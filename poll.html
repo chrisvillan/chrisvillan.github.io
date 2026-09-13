@@ -603,6 +603,56 @@
       .weekday-picker {
         grid-template-columns: repeat(4, 1fr);
       }
+
+      .person-picker-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        min-width: 0;
+      }
+      
+      .person-picker-label {
+        color: #fff;
+        font-size: .85rem;
+        font-weight: 900;
+      }
+      
+      .person-buttons {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      
+      .person-btn {
+        border: 1px solid rgba(255,255,255,.22);
+        background: rgba(255,255,255,.12);
+        color: #fff;
+        border-radius: 999px;
+        padding: 10px 15px;
+        font-weight: 900;
+        cursor: pointer;
+      }
+      
+      .person-btn:hover {
+        background: rgba(255,255,255,.2);
+      }
+      
+      .person-btn.active {
+        background: #fff;
+        color: var(--text);
+        border-color: #fff;
+      }
+      
+      .person-btn.overlap {
+        background: rgba(99,102,241,.22);
+      }
+      
+      .person-btn.overlap.active {
+        background: var(--primary);
+        color: #fff;
+        border-color: var(--primary);
+      }
+      
     }
   </style>
 </head>
@@ -690,28 +740,28 @@
 
     <section class="toolbar">
 
-      <div>
-        <label>
-          Person&nbsp;
-        </label>
-
-        <select
-          id="personSelect"
-          class="select"
-        ></select>
+    <div class="person-picker-wrap">
+      <div class="person-picker-label">
+        Who are you?
       </div>
-
+    
       <div
-        id="personSummary"
-        class="pill"
-      >
-        0 selected days
-      </div>
-
-      <div
-        id="overlapPicker"
-        class="overlap-picker"
+        id="personButtons"
+        class="person-buttons"
       ></div>
+    </div>
+    
+    <div
+      id="personSummary"
+      class="pill"
+    >
+      0 selected days
+    </div>
+    
+    <div
+      id="overlapPicker"
+      class="overlap-picker"
+    ></div>
 
     </section>
 
@@ -1711,29 +1761,88 @@
 
 
     function renderPeople() {
-
-      $("personSelect")
+    
+      $("personButtons")
         .innerHTML =
         state.people
           .map(
             person =>
-              `<option value="${person.personId}">
-                ${esc(person.name)}
-              </option>`
+              `<button
+                type="button"
+                class="person-btn ${
+                  state.selectedPersonId === person.personId
+                    ? "active"
+                    : ""
+                }"
+                data-person-id="${person.personId}"
+              >
+                ${
+                  state.selectedPersonId === person.personId
+                    ? "✓ "
+                    : ""
+                }${esc(person.name)}
+              </button>`
           )
-          .join("") +
-
-        `<option value="${GROUP_VIEW}">
+          .join("")
+    
+        +
+    
+        `<button
+          type="button"
+          class="person-btn overlap ${
+            state.selectedPersonId === null
+              ? "active"
+              : ""
+          }"
+          data-overlap="true"
+        >
           Find overlap
-        </option>`;
-
-
-      $("personSelect")
-        .value =
-        state.selectedPersonId ||
-        GROUP_VIEW;
-
-
+        </button>`;
+    
+    
+      $("personButtons")
+        .querySelectorAll(
+          "[data-person-id]"
+        )
+        .forEach(
+          button => {
+    
+            button.onclick =
+              () => {
+    
+                state.selectedPersonId =
+                  button.dataset.personId;
+    
+                state.selectedPersonName =
+                  getSelectedPerson()
+                    ?.name ||
+                  "";
+    
+                renderPeople();
+                renderCalendar();
+              };
+          }
+        );
+    
+    
+      $("personButtons")
+        .querySelector(
+          "[data-overlap='true']"
+        )
+        .onclick =
+        () => {
+    
+          state.selectedPersonId =
+            null;
+    
+          state.selectedPersonName =
+            "";
+    
+          renderPeople();
+          renderCalendar();
+        };
+    
+    
       $("overlapPicker")
         .innerHTML =
         state.people
@@ -1744,10 +1853,7 @@
                   type="checkbox"
                   data-name="${escAttr(person.name)}"
                   ${
-                    state.overlapPeople
-                      .includes(
-                        person.name
-                      )
+                    state.overlapPeople.includes(person.name)
                       ? "checked"
                       : ""
                   }
@@ -1756,56 +1862,47 @@
               </label>`
           )
           .join("");
-
-
+    
+    
       $("overlapPicker")
         .classList
         .toggle(
           "show",
-          $("personSelect").value ===
-            GROUP_VIEW
+          state.selectedPersonId === null
         );
-
-
+    
+    
       $("overlapPicker")
         .querySelectorAll(
           "input"
         )
         .forEach(
           checkbox => {
-
+    
             checkbox.onchange =
               () => {
-
+    
                 const name =
-                  checkbox
-                    .dataset
-                    .name;
-
-
+                  checkbox.dataset.name;
+    
+    
                 if (
                   checkbox.checked &&
-                  !state.overlapPeople
-                    .includes(name)
+                  !state.overlapPeople.includes(name)
                 ) {
-                  state.overlapPeople
-                    .push(name);
+                  state.overlapPeople.push(name);
                 }
-
-
-                if (
-                  !checkbox.checked
-                ) {
+    
+    
+                if (!checkbox.checked) {
                   state.overlapPeople =
-                    state.overlapPeople
-                      .filter(
-                        value =>
-                          value !==
-                          name
-                      );
+                    state.overlapPeople.filter(
+                      value =>
+                        value !== name
+                    );
                 }
-
-
+    
+    
                 renderCalendar();
               };
           }
@@ -1852,9 +1949,7 @@
 
 
       const group =
-        $("personSelect")
-          .value ===
-        GROUP_VIEW;
+        state.selectedPersonId === null;
 
 
       $("monthLabel")
@@ -2147,9 +2242,8 @@
     function updateSummary() {
 
       if (
-        $("personSelect").value ===
-        GROUP_VIEW
-      ) {
+          state.selectedPersonId === null
+        ) {
 
         const people =
           state.overlapPeople;
